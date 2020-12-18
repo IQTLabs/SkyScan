@@ -1,0 +1,21 @@
+version: '2.0'
+
+services:
+  piaware:
+    image: mikenye/piaware:latest
+    tty: true
+    container_name: piaware
+    restart: always
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - 8080:80
+      - 30003:30003
+      - 30005:30005
+    environment:
+      - TZ=${TZ}
+      - LAT=${LAT}
+      - LONG=${LONG}
+      - FEEDER_ID=${FEEDER_ID}
+      - RECEIVER_TYPE=rtlsdr
+      - DUMP1090_DEVICE=1
