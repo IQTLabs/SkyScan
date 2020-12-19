@@ -482,7 +482,7 @@ class FlightTracker(object):
                             self.__tracking_icao24 = icao24
                             self.updateTrackingDistance()
                             plane = df.loc[df['icao24'] == icao24.lower()]
-                            print("{} {} {} {}".format(plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+                            print("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
                             logging.info("Tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
                         elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
@@ -493,8 +493,8 @@ class FlightTracker(object):
                                 self.__tracking_distance = distance
                                 logging.info("Now tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
                                 plane = df.loc[df['icao24'] == icao24.lower()]
-                                print("{} {} {} {}".format(plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
-
+                                print("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+                            
     def selectNearestObservation(self):
         """Select nearest presentable aircraft
         """
