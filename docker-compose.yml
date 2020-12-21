@@ -4,11 +4,6 @@ services:
 
   funhouse:
     build: ./ADS-B-funhouse
-    ports:
-      - "9001:9001"
-      - "1883:1883"
-      - 30003:30003
-      - 30005:30005
     entrypoint: "./flighttracker.py -H piaware -m broker.hivemq.com  -l ${LAT} -L ${LONG} --prox SkyScan"
     
     volumes:
