@@ -460,8 +460,10 @@ class FlightTracker(object):
         """
         self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "FlightTracker-%d" % (os.getpid())) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
         threading.Thread(target = self.__publish_thread, daemon = True).start()
-        df = pd.read_csv("aircraftDatabase.csv") #,index_col='icao24')
-        print(df)
+
+        df = pd.read_csv("/app/data/aircraftDatabase.csv") #,index_col='icao24')
+        logging.info("Printing table")
+        logging.info(df)
         while True:
             if not self.dump1090Connect():
                 continue
@@ -482,7 +484,7 @@ class FlightTracker(object):
                             self.__tracking_icao24 = icao24
                             self.updateTrackingDistance()
                             plane = df.loc[df['icao24'] == icao24.lower()]
-                            print("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+                            logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
                             logging.info("Tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
                         elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
@@ -493,7 +495,7 @@ class FlightTracker(object):
                                 self.__tracking_distance = distance
                                 logging.info("Now tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
                                 plane = df.loc[df['icao24'] == icao24.lower()]
-                                print("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+                                logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
                             
     def selectNearestObservation(self):
         """Select nearest presentable aircraft
