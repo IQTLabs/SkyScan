@@ -246,7 +246,7 @@ class Observation(object):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
 
-    def json(self, bearing: int, distance: int) -> str:
+    def json(self, bearing: int, distance: int, azimuth: float) -> str:
         """Return JSON representation of this observation
         
         Arguments:
@@ -268,8 +268,8 @@ class Observation(object):
             callsign = "\"%s\"" % self.__callsign
 
         distance = distance / 1000
-        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f, "distance": %.2f, "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s", "bearing": %d, "loggedDate": "%s", "type": "%s", "manufacturer": "%s", "mode": "%s", "callsign": %s}' % \
-            (self.__verticalRate, time.time(), self.__lat, self.__lon, distance, self.__altitude, self.__groundSpeed, self.__icao24, self.__registration, self.__track, self.__operator, bearing, self.__loggedDate, self.__type, self.__manufacturer, self.__model, callsign)
+        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f, "distance": %.2f, "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s", "bearing": %d, "azimuth": %f, "loggedDate": "%s", "type": "%s", "manufacturer": "%s", "mode": "%s", "callsign": %s}' % \
+            (self.__verticalRate, time.time(), self.__lat, self.__lon, distance, self.__altitude, self.__groundSpeed, self.__icao24, self.__registration, self.__track, self.__operator, bearing, azimuth, self.__loggedDate, self.__type, self.__manufacturer, self.__model, callsign)
 
 
     def dict(self):
@@ -434,12 +434,13 @@ class FlightTracker(object):
                 # Round off to nearest 100 meters
                 distance = round(distance/100) * 100
                 bearing = utils.bearing(self.__latitude, self.__longitude, lat, lon)
+                azimuth = utils.azimuth(distance * 3.28084, cur.getAltitude()) # we need to convert to feet because the altitude is in feet
 
                 # @todo: update altitude
                 # altitude = sbs1["altitude"]
 
                 retain = False
-                self.__mqtt_bridge.publish(self.__prox_topic, cur.json(bearing, distance), 0, retain)
+                self.__mqtt_bridge.publish(self.__prox_topic, cur.json(bearing, distance, azimuth), 0, retain)
                 logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance, bearing, cur.getAltitude(), cur.getHeading(), cur.getGroundSpeed(), cur.getType()))
 
                 if distance < 3000:
