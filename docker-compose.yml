@@ -1,6 +1,18 @@
-version: '2.0'
+version: '3.7'
 
 services:
+
+  funhouse:
+    build: ./ADS-B-funhouse
+    ports:
+      - "9001:9001"
+      - "1883:1883"
+      - 30003:30003
+      - 30005:30005
+    entrypoint: "./flighttracker.py -H piaware -m broker.hivemq.com  -l ${LAT} -L ${LONG} --prox SkyScan"
+    
+    volumes:
+      - ./data:/app/data
   piaware:
     image: mikenye/piaware:latest
     tty: true
@@ -19,3 +31,9 @@ services:
       - FEEDER_ID=${FEEDER_ID}
       - RECEIVER_TYPE=rtlsdr
       - DUMP1090_DEVICE=1
+  mqtt:
+    build: ./mqtt
+    ports:
+        - "9001:9001"
+        - "1883:1883"
+    restart: unless-stopped
