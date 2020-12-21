@@ -96,6 +96,8 @@ class Observation(object):
     __operator = None
     __registration = None
     __type = None
+    __manufacturer = None
+    __model = None
     __updated = None
     __route = None
     __image_url = None
@@ -117,20 +119,25 @@ class Observation(object):
         self.__operator = None
         self.__registration = None
         self.__type = None
+        self.__model = None
+        self.__manufacturer = None
         self.__updated = True
-        if args.pdb_host:
-            plane = planedb.lookup_aircraft(self.__icao24)
-            if plane:
-                self.__registration = plane["registration"]
-                self.__type = plane["manufacturer"] + " " + plane["model"]
-                self.__operator = plane["operator"]
-                self.__image_url = plane["image"]
-                if self.__image_url is None:
-                    self.__image_url = utils.image_search(self.__icao24, self.__operator, self.__type, self.__registration)
-            else:
-                if not self.__planedb_nagged:
-                    self.__planedb_nagged = True
-                    logging.error("icao24 %s not found in the database" % (self.__icao24))
+        plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
+        
+        if plane.size == 27:
+            logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+
+            self.__registration = plane['registration'].values[0]
+            self.__type = plane['manufacturername'].values[0] + " " + plane['model'].values[0]
+            self.__manufacturer = plane['manufacturername'].values[0] 
+            self.__model =  plane['model'].values[0] 
+            self.__operator = plane['operator'].values[0] 
+        else:
+            if not self.__planedb_nagged:
+                self.__planedb_nagged = True
+                logging.error("icao24 %s not found in the database" % (self.__icao24))
+                logging.error(plane)
+
 
     def update(self, sbs1msg):
         oldData = dict(self.__dict__)
@@ -161,33 +168,22 @@ class Observation(object):
         #if sbs1msg["loggedDate"]:
         #    self.__loggedDate = sbs1msg["loggedDate"]
 
-        if args.pdb_host:
-            plane = planedb.lookup_aircraft(self.__icao24)
-            if plane:
-                self.__registration = plane['registration']
-                self.__type = plane['manufacturer'] + " " + plane['model']
-                self.__operator = plane['operator']
+        if self.__planedb_nagged == False and self.__registration == None:
+            plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
+            
+            if plane.size == 27:
+                logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+
+                self.__registration = plane['registration'].values[0]
+                self.__type = plane['manufacturername'].values[0] + " " + plane['model'].values[0]
+                self.__manufacturer = plane['manufacturername'].values[0] 
+                self.__model =  plane['model'].values[0] 
+                self.__operator = plane['operator'].values[0] 
             else:
                 if not self.__planedb_nagged:
                     self.__planedb_nagged = True
                     logging.error("icao24 %s not found in the database" % (self.__icao24))
-            if self.__callsign and not self.__route:
-                route = planedb.lookup_route(self.__callsign)
-                if route:
-                    src = planedb.lookup_airport(route['src_iata'])
-                    dst = planedb.lookup_airport(route['dst_iata'])
-                    if src and dst:
-                        src.pop('id', None)
-                        src.pop('added_on', None)
-                        src.pop('updated_on', None)
-                        dst.pop('id', None)
-                        dst.pop('added_on', None)
-                        dst.pop('updated_on', None)
-                        self.__route = {'origin' : src, 'destination' : dst}
-                    else:
-                        self.__route = {}
-                else:
-                    self.__route = {}
+
 
         # Check if observation was updated
         newData = dict(self.__dict__)
@@ -222,6 +218,12 @@ class Observation(object):
 
     def getType(self) -> str:
         return self.__type
+
+    def getManufacturer(self) -> str:
+        return self.__manufacturer
+
+    def getModel(self) -> str:
+        return self.__model
 
     def getRegistration(self) -> str:
         return self.__registration
@@ -266,8 +268,8 @@ class Observation(object):
             callsign = "\"%s\"" % self.__callsign
 
         distance = distance / 1000
-        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f, "distance": %.2f, "image": "%s", "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s", "bearing": %d, "loggedDate": "%s", "type": "%s", "callsign": %s, "route" : %s, "counter": 0}' % \
-            (self.__verticalRate, time.time(), self.__lat, self.__lon, distance, self.__image_url, self.__altitude, self.__groundSpeed, self.__icao24, self.__registration, self.__track, self.__operator, bearing, self.__loggedDate, self.__type, callsign, route)
+        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f, "distance": %.2f, "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s", "bearing": %d, "loggedDate": "%s", "type": "%s", "manufacturer": "%s", "mode": "%s", "callsign": %s}' % \
+            (self.__verticalRate, time.time(), self.__lat, self.__lon, distance, self.__altitude, self.__groundSpeed, self.__icao24, self.__registration, self.__track, self.__operator, bearing, self.__loggedDate, self.__type, self.__manufacturer, self.__model, callsign)
 
 
     def dict(self):
@@ -461,9 +463,7 @@ class FlightTracker(object):
         self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "FlightTracker-%d" % (os.getpid())) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
-        df = pd.read_csv("/app/data/aircraftDatabase.csv") #,index_col='icao24')
-        logging.info("Printing table")
-        logging.info(df)
+        
         while True:
             if not self.dump1090Connect():
                 continue
@@ -483,8 +483,6 @@ class FlightTracker(object):
                         if not self.__tracking_icao24:
                             self.__tracking_icao24 = icao24
                             self.updateTrackingDistance()
-                            plane = df.loc[df['icao24'] == icao24.lower()]
-                            logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
                             logging.info("Tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
                         elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
@@ -494,9 +492,7 @@ class FlightTracker(object):
                                 self.__tracking_icao24 = icao24
                                 self.__tracking_distance = distance
                                 logging.info("Now tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
-                                plane = df.loc[df['icao24'] == icao24.lower()]
-                                logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
-                            
+                              
     def selectNearestObservation(self):
         """Select nearest presentable aircraft
         """
@@ -540,6 +536,7 @@ class FlightTracker(object):
 def main():
     global args
     global logging
+    global planes
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
     parser.add_argument('-r', '--radar-name', help="name of radar, used as topic string /adsb/<radar>/json", default='radar')
@@ -580,8 +577,9 @@ def main():
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
 
-    if args.pdb_host:
-        planedb.init(args.pdb_host)
+    planes = pd.read_csv("/app/data/aircraftDatabase.csv") #,index_col='icao24')
+    logging.info("Printing table")
+    logging.info(planes)
 
     tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.lat, args.lon, args.prox_topic, dump1090_port = args.dump1090_port, mqtt_port = args.mqtt_port)
     tracker.run()  # Never returns
