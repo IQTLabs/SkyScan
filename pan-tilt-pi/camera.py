@@ -70,11 +70,13 @@ def moveCamera():
     global actualTilt
     while True:
         if actualTilt != tilt:
+            logging.info("Moving Tilt to: %d"%actualTilt)
             if actualTilt < tilt:
                 actualTilt += 1
             else:
                 actualTilt -= 1
         if actualPan != pan:
+            logging.info("Moving Pan to: %d"%actualPan)
             if actualPan < pan:
                 actualPan += 1
             else:
@@ -82,7 +84,7 @@ def moveCamera():
         pantilthat.tilt(actualTilt)
         pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
-        time.sleep(0.005)
+        time.sleep(0.05)
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
@@ -91,7 +93,6 @@ def on_message(client, userdata, message):
     #rint(command)
     try:
         update = json.loads(command)
-        print(update)
         #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
     except JSONDecodeError as e:
     # do whatever you want
@@ -104,7 +105,7 @@ def on_message(client, userdata, message):
     except:
         print("Caught it!")
     
-    logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
+    #logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
     setTilt(update["azimuth"])
     setPan(update["bearing"])
 
