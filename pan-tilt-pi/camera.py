@@ -24,6 +24,8 @@ import pantilthat
 args = None
 pan = 0
 tilt = 0
+actualPan = 0
+actualTilt = 0
 
 # https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
 
@@ -52,7 +54,7 @@ def setPan(bearing):
     if diff_heading  > -90 and diff_heading < 90:
         if abs(pan - diff_heading) > 2:
             pan = diff_heading
-            pantilthat.pan(diff_heading)
+            
             logging.info("Setting Pan to: %d"%pan)
 
 def setTilt(azimuth):
@@ -60,9 +62,27 @@ def setTilt(azimuth):
     if azimuth < 90:
         if abs(tilt-azimuth) > 2:
             tilt = azimuth
-            pantilthat.tilt(tilt)
+            
             logging.info("Setting Tilt to: %d"%azimuth)
 
+def moveCamera():
+    global actualPan
+    global actualTilt
+    while True:
+        if actualTilt != tilt:
+            if actualTilt < tile:
+                actualTilt += 1
+            else:
+                actualTilt -= 1
+        if actualPan != pan:
+            if actualPan < pan:
+                actualPan += 1
+            else:
+                actualPan -= 1
+        pantilthat.tilt(actualTilt)
+        pantilthat.pan(actualPan)
+        # Sleep for a bit so we're not hammering the HAT with updates
+        time.sleep(0.005)
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
@@ -122,6 +142,7 @@ def main():
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
     pantilthat.pan(pan)
     pantilthat.tilt(tilt)
+    threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+args.mqtt_topic+"'")
