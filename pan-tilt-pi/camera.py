@@ -25,17 +25,51 @@ args = None
 pan = 0
 tilt = 0
 
+# https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
+
+# The camera hat takes bearings between -90 and 90. 
+def getHeadingDiff(h1, h2):
+    if h1 > 360 or h1 < 0 or h2 > 360 or h2 < 0:
+        raise Exception("out of range")
+    diff = h1 - h2
+    absDiff = abs(diff)
+
+    if absDiff == 180:
+        return absDiff
+    elif absDiff < 180:
+        return diff
+    elif h2 > h1:
+        return absDiff - 360
+    else:
+        return 360 - absDiff
+
+def setPan(bearing):
+    global pan
+    camera_bearing = args.bearing
+    diff_heading = getHeadingDiff(camera_bearing, bearing)
+    print(diff_heading)
+    if diff_heading  > -90 and diff_heading < 90:
+        if abs(pan - diff_heading) > 2:
+            pan = diff_heading
+            pantilthat.pan(diff_heading)
+            print("Setting Pan to: {}".format(pan))
+
+def setTilt(azimuth):
+    global tilt
+    if azimuth < 90:
+        if abs(tilt-azimuth) > 2:
+            tilt = azimuth
+            pantilthat.tilt(tilt)
+            print("Setting Tilt to: {}".format(azimuth))
+
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
 def on_message(client, userdata, message):
     command = str(message.payload.decode("utf-8"))
-    print(command)
     try:
         update = json.loads(command)
         #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
-        print(type(update["bearing"]))
-        print(type(update["azimuth"]))
     except JSONDecodeError as e:
     # do whatever you want
         print(e)
@@ -46,16 +80,8 @@ def on_message(client, userdata, message):
         print(e)
     except:
         print("Caught it!")
-    if (update["bearing"] < 90):
-        print("Setting Pan to: {}".format(update["bearing"]))
-        pantilthat.pan(update["bearing"])
-    if (update["bearing"] > 270):
-        print("Setting Pan to: {}".format(update["bearing"]))
-        pantilthat.pan(update["bearing"]-360)
-    if (update["azimuth"] < 90):
-        print("Setting Tilt to: {}".format(update["azimuth"]))
-        pantilthat.tilt(update["azimuth"])
-
+    setTilt(update["azimuth"])
+    setPan(update["bearing"])
 
 def main():
     global args
