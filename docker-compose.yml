@@ -4,10 +4,14 @@ services:
 
   funhouse:
     build: ./ADS-B-funhouse
-    entrypoint: "./flighttracker.py -H piaware -m broker.hivemq.com  -l ${LAT} -L ${LONG} --prox SkyScan"
-    
+    entrypoint: "./flighttracker.py -H piaware -m mqtt  -l ${LAT} -L ${LONG} --prox SkyScan"
+
     volumes:
       - ./data:/app/data
+  pan-tilt-pi:
+    build: ./pan-tilt-pi
+    entrypoint: "./camera.py -m mqtt  -t SkyScan"
+
   piaware:
     image: mikenye/piaware:latest
     tty: true
