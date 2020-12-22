@@ -18,6 +18,7 @@ import time
 import re
 import errno
 import paho.mqtt.client as mqtt 
+from json.decoder import JSONDecodeError
 import pantilthat
 
 args = None
@@ -29,22 +30,30 @@ tilt = 0
 #############################################
 def on_message(client, userdata, message):
     command = str(message.payload.decode("utf-8"))
-    update = json.loads(command)
-    payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
-    
-    logging.info(type(update))
-    logging.info(payload)
-    print(update)
-    print(payload)
-    logging.info("Bearing: $d" % update["bearing"])
+    print(command)
+    try:
+        update = json.loads(command)
+        #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
+        print(type(update["bearing"]))
+        print(type(update["azimuth"]))
+    except JSONDecodeError as e:
+    # do whatever you want
+        print(e)
+    except TypeError as e:
+    # do whatever you want in this case
+        print(e)
+    except ValueError as e:
+        print(e)
+    except:
+        print("Caught it!")
     if (update["bearing"] < 90):
-        logging.info("Setting Pan to: $d" % update["bearing"])
+        print("Setting Pan to: {}".format(update["bearing"]))
         pantilthat.pan(update["bearing"])
     if (update["bearing"] > 270):
-        logging.info("Setting Pan to: $d" % update["bearing"])
+        print("Setting Pan to: {}".format(update["bearing"]))
         pantilthat.pan(update["bearing"]-360)
     if (update["azimuth"] < 90):
-        logging.info("Setting Tilt to: $f" % update["azimuth"])
+        print("Setting Tilt to: {}".format(update["azimuth"]))
         pantilthat.tilt(update["azimuth"])
 
 
