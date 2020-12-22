@@ -246,7 +246,7 @@ class Observation(object):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
 
-    def json(self, bearing: int, distance: int, azimuth: float) -> str:
+    def json(self, bearing: int, distance: int, azimuth: int) -> str:
         """Return JSON representation of this observation
         
         Arguments:
@@ -268,7 +268,7 @@ class Observation(object):
             callsign = "\"%s\"" % self.__callsign
 
         distance = distance / 1000
-        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f, "distance": %.2f, "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s", "bearing": %d, "azimuth": %f, "loggedDate": "%s", "type": "%s", "manufacturer": "%s", "mode": "%s", "callsign": %s}' % \
+        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f, "distance": %.2f, "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s", "bearing": %d, "azimuth": %d, "loggedDate": "%s", "type": "%s", "manufacturer": "%s", "mode": "%s", "callsign": %s}' % \
             (self.__verticalRate, time.time(), self.__lat, self.__lon, distance, self.__altitude, self.__groundSpeed, self.__icao24, self.__registration, self.__track, self.__operator, bearing, azimuth, self.__loggedDate, self.__type, self.__manufacturer, self.__model, callsign)
 
 
