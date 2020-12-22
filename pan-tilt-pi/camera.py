@@ -30,8 +30,12 @@ tilt = 0
 def on_message(client, userdata, message):
     command = str(message.payload.decode("utf-8"))
     update = json.loads(command)
+    payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
     
     logging.info(type(update))
+    logging.info(payload)
+    print(update)
+    print(payload)
     logging.info("Bearing: $d" % update["bearing"])
     if (update["bearing"] < 90):
         logging.info("Setting Pan to: $d" % update["bearing"])
