@@ -29,13 +29,16 @@ tilt = 0
 #############################################
 def on_message(client, userdata, message):
     command = str(message.payload.decode("utf-8"))
-    print(message.topic+':'+command)
-    update = json.loads(m_decode)
+    update = json.loads(command)
+    logging.info(update)
     if (update.bearing < 90):
+        logging.info("Setting Pan to: $d" % update.bearing)
         pantilthat.pan(update.bearing)
     if (update.bearing > 270):
+        logging.info("Setting Pan to: $d" % update.bearing)
         pantilthat.pan(update.bearing-360)
     if (update.azimuth < 90):
+        logging.info("Setting Tilt to: $f" % update.azimuth)
         pantilthat.tilt(update.azimuth)
 
 
