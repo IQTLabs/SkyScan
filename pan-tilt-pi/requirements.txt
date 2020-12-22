@@ -2,3 +2,4 @@ coloredlogs==14.0
 paho-mqtt==1.5.0
 python-dateutil==2.8.1
 pantilthat
+smbus
