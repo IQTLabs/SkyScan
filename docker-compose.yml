@@ -13,9 +13,12 @@ services:
   pan-tilt-pi:
     build: ./pan-tilt-pi
     entrypoint: "./camera.py -m mqtt  -t SkyScan"
+    devices:
+      -/dev/i2c-0:/dev/i2c-0
+      -/dev/i2c-1:/dev/i2c-1
     depends_on:
       - mqtt
-
+      
   piaware:
     image: mikenye/piaware:latest
     tty: true
