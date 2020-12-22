@@ -128,7 +128,7 @@ class Observation(object):
             logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
 
             self.__registration = plane['registration'].values[0]
-            self.__type = "" + plane['manufacturername'].values[0] + " " + plane['model'].values[0]
+            self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
             self.__manufacturer = plane['manufacturername'].values[0] 
             self.__model =  plane['model'].values[0] 
             self.__operator = plane['operator'].values[0] 
@@ -175,7 +175,7 @@ class Observation(object):
                 logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
 
                 self.__registration = plane['registration'].values[0]
-                self.__type = "" + plane['manufacturername'].values[0] + " " + plane['model'].values[0]
+                self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
                 self.__manufacturer = plane['manufacturername'].values[0] 
                 self.__model =  plane['model'].values[0] 
                 self.__operator = plane['operator'].values[0] 
