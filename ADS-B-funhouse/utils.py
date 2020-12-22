@@ -21,7 +21,7 @@ def azimuth(distance: float, altitude):
     baseElevation = 0
     ratio = ( altitude - baseElevation) / distance
     a = math.atan(ratio) * (180 /math.pi)
-    return a
+    return round(a)
 
 def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate bearing from lat1/lon2 to lat2/lon2
