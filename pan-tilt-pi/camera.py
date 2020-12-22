@@ -18,9 +18,11 @@ import time
 import re
 import errno
 import paho.mqtt.client as mqtt 
-
+import pantilthat
 
 args = None
+pan = 0
+tilt = 0
 
 #############################################
 ##         MQTT Callback Function          ##
@@ -28,11 +30,20 @@ args = None
 def on_message(client, userdata, message):
     command = str(message.payload.decode("utf-8"))
     print(message.topic+':'+command)
+    update = json.loads(m_decode)
+    if (update.bearing < 90):
+        pantilthat.pan(update.bearing)
+    if (update.bearing > 270):
+        pantilthat.pan(update.bearing-360)
+    if (update.azimuth < 90):
+        pantilthat.tilt(update.azimuth)
+
 
 def main():
     global args
     global logging
-    global planes
+    global pan
+    global tilt
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
 
     parser.add_argument('-b', '--bearing', help="What bearing is the font of the PI pointed at (0-360)", default=0)
@@ -60,7 +71,10 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
-
+    pantilthat.pan(pan)
+    pantilthat.tilt(tilt)
+        # Sleep for a bit so we're not hammering the HAT with updates
+    time.sleep(0.005)
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+args.mqtt_topic+"'")
     client = mqtt.Client("pan-tilt-pi-camera") #create new instance
 
