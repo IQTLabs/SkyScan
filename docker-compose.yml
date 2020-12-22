@@ -5,12 +5,16 @@ services:
   funhouse:
     build: ./ADS-B-funhouse
     entrypoint: "./flighttracker.py -H piaware -m mqtt  -l ${LAT} -L ${LONG} --prox SkyScan"
-
     volumes:
       - ./data:/app/data
+    depends_on:
+      - mqtt
+
   pan-tilt-pi:
     build: ./pan-tilt-pi
     entrypoint: "./camera.py -m mqtt  -t SkyScan"
+    depends_on:
+      - mqtt
 
   piaware:
     image: mikenye/piaware:latest
