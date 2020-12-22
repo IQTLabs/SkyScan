@@ -47,12 +47,13 @@ def setPan(bearing):
     global pan
     camera_bearing = args.bearing
     diff_heading = getHeadingDiff(camera_bearing, bearing)
-    logging.info("Heading Diff $d for Bearing $d "% (pan, bearing))
+    logging.info("Heading Diff %d for Bearing %d "% (pan, bearing))
+    
     if diff_heading  > -90 and diff_heading < 90:
         if abs(pan - diff_heading) > 2:
             pan = diff_heading
             pantilthat.pan(diff_heading)
-            logging.info("Setting Pan to: $d"%pan)
+            logging.info("Setting Pan to: %d"%pan)
 
 def setTilt(azimuth):
     global tilt
@@ -60,15 +61,17 @@ def setTilt(azimuth):
         if abs(tilt-azimuth) > 2:
             tilt = azimuth
             pantilthat.tilt(tilt)
-            logging.info("Setting Tilt to: $d"%azimuth)
+            logging.info("Setting Tilt to: %d"%azimuth)
 
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
 def on_message(client, userdata, message):
     command = str(message.payload.decode("utf-8"))
+    #rint(command)
     try:
         update = json.loads(command)
+        print(update)
         #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
     except JSONDecodeError as e:
     # do whatever you want
@@ -80,7 +83,8 @@ def on_message(client, userdata, message):
         print(e)
     except:
         print("Caught it!")
-    logging.info("Bearing: %d Azimuth: $d"% (bearing,azimuth))
+    
+    logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
     setTilt(update["azimuth"])
     setPan(update["bearing"])
 
