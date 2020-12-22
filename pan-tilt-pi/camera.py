@@ -47,7 +47,7 @@ def setPan(bearing):
     global pan
     camera_bearing = args.bearing
     diff_heading = getHeadingDiff(camera_bearing, bearing)
-    logging.info("Heading Diff $d for Bearing $d "%pan, bearing)
+    logging.info("Heading Diff $d for Bearing $d "% (pan, bearing))
     if diff_heading  > -90 and diff_heading < 90:
         if abs(pan - diff_heading) > 2:
             pan = diff_heading
@@ -80,7 +80,7 @@ def on_message(client, userdata, message):
         print(e)
     except:
         print("Caught it!")
-    logging.info("Bearing: %d Azimuth: $d"%bearing,azimuth)
+    logging.info("Bearing: %d Azimuth: $d"% (bearing,azimuth))
     setTilt(update["azimuth"])
     setPan(update["bearing"])
 
