@@ -70,7 +70,7 @@ def moveCamera():
     global actualTilt
     while True:
         if actualTilt != tilt:
-            if actualTilt < tile:
+            if actualTilt < tilt:
                 actualTilt += 1
             else:
                 actualTilt -= 1
