@@ -87,7 +87,7 @@ def moveCamera():
         pantilthat.tilt(actualTilt)
         pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
-        time.sleep(0.1)
+        time.sleep(0.5)
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
@@ -110,7 +110,7 @@ def on_message(client, userdata, message):
     
     #logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
     bearingGood = setPan(update["bearing"])
-    setTilt(update["azimuth"])
+    #setTilt(update["azimuth"])
 
 
 def main():
