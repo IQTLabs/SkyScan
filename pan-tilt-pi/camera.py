@@ -49,7 +49,7 @@ def setPan(bearing):
     global pan
     camera_bearing = args.bearing
     diff_heading = getHeadingDiff(camera_bearing, bearing)
-    logging.info("Heading Diff %d for Bearing %d "% (pan, bearing))
+    logging.info("Heading Diff %d for Bearing %d "% (diff_heading, bearing))
     
     if diff_heading  > -90 and diff_heading < 90:
         if abs(pan - diff_heading) > 2:
@@ -84,7 +84,7 @@ def moveCamera():
         pantilthat.tilt(actualTilt)
         pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
-        time.sleep(0.05)
+        time.sleep(0.1)
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
