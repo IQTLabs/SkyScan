@@ -58,6 +58,7 @@ def setPan(bearing):
     
             pan = diff_heading
             logging.info("Setting Pan to: %d"%pan)
+            pantilthat.pan(pan)
         return True
     return False
 
@@ -86,7 +87,7 @@ def moveCamera():
             else:
                 actualPan -= 1
         #pantilthat.tilt(actualTilt)
-        pantilthat.pan(actualPan)
+        #pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.05)
 #############################################
