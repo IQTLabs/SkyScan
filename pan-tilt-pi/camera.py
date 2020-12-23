@@ -86,7 +86,7 @@ def moveCamera():
                 actualPan += 1
             else:
                 actualPan -= 1
-        pantilthat.tilt(actualTilt)
+        pantilthat.tilt(actualTilt * -1 + 20)
         # Turns out that negative numbers mean to move the right and positive numbers mean move to the left... 
         # I think this is backwards, I am going to switch it, so here I am going to multiply by -1
         pantilthat.pan(actualPan * -1)
