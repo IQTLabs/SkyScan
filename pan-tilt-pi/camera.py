@@ -58,7 +58,7 @@ def setPan(bearing):
     
             pan = diff_heading
             logging.info("Setting Pan to: %d"%pan)
-            pantilthat.pan(pan)
+            
         return True
     return False
 
@@ -86,8 +86,10 @@ def moveCamera():
                 actualPan += 1
             else:
                 actualPan -= 1
-        #pantilthat.tilt(actualTilt)
-        #pantilthat.pan(actualPan)
+        pantilthat.tilt(actualTilt)
+        # Turns out that negative numbers mean to move the right and positive numbers mean move to the left... 
+        # I think this is backwards, I am going to switch it, so here I am going to multiply by -1
+        pantilthat.pan(actualPan * -1)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.05)
 #############################################
@@ -112,7 +114,7 @@ def on_message(client, userdata, message):
     
     #logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
     bearingGood = setPan(update["bearing"])
-    #setTilt(update["azimuth"])
+    setTilt(update["azimuth"])
 
 
 def main():
