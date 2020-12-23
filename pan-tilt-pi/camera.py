@@ -19,7 +19,7 @@ import re
 import errno
 import paho.mqtt.client as mqtt 
 from json.decoder import JSONDecodeError
-import pantilthat
+#import pantilthat
 
 args = None
 pan = 0
@@ -30,6 +30,8 @@ actualTilt = 0
 # https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
 
 # The camera hat takes bearings between -90 and 90. 
+# h1 is the target heading
+# h2 is the heading the camera is pointed at
 def getHeadingDiff(h1, h2):
     if h1 > 360 or h1 < 0 or h2 > 360 or h2 < 0:
         raise Exception("out of range")
@@ -41,21 +43,22 @@ def getHeadingDiff(h1, h2):
     elif absDiff < 180:
         return diff
     elif h2 > h1:
-        return absDiff - 360
-    else:
         return 360 - absDiff
+    else:
+        return absDiff - 360
 
 def setPan(bearing):
     global pan
     camera_bearing = args.bearing
-    diff_heading = getHeadingDiff(camera_bearing, bearing)
-    logging.info("Heading Diff %d for Bearing %d "% (diff_heading, bearing))
+    diff_heading = getHeadingDiff(bearing, camera_bearing)
+    logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, bearing, camera_bearing))
     
     if diff_heading  > -90 and diff_heading < 90:
         if abs(pan - diff_heading) > 2:
             pan = diff_heading
-            
             logging.info("Setting Pan to: %d"%pan)
+        return True
+    return False
 
 def setTilt(azimuth):
     global tilt
@@ -81,8 +84,8 @@ def moveCamera():
                 actualPan += 1
             else:
                 actualPan -= 1
-        pantilthat.tilt(actualTilt)
-        pantilthat.pan(actualPan)
+        #pantilthat.tilt(actualTilt)
+        #pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.1)
 #############################################
@@ -106,8 +109,9 @@ def on_message(client, userdata, message):
         print("Caught it!")
     
     #logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
+    bearingGood = setPan(update["bearing"])
     setTilt(update["azimuth"])
-    setPan(update["bearing"])
+
 
 def main():
     global args
@@ -141,8 +145,8 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
-    pantilthat.pan(pan)
-    pantilthat.tilt(tilt)
+    #pantilthat.pan(pan)
+    #pantilthat.tilt(tilt)
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
