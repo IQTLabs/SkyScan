@@ -74,21 +74,21 @@ def moveCamera():
     global actualTilt
     while True:
         if actualTilt != tilt:
-            logging.info("Moving Tilt to: %d"%actualTilt)
+            logging.info("Moving Tilt to: %d Goal: %d"%(actualTilt, tilt))
             if actualTilt < tilt:
                 actualTilt += 1
             else:
                 actualTilt -= 1
         if actualPan != pan:
-            logging.info("Moving Pan to: %d"%actualPan)
+            logging.info("Moving Pan to: %d Goal: %d"%(actualPan, pan))
             if actualPan < pan:
                 actualPan += 1
             else:
                 actualPan -= 1
-        pantilthat.tilt(actualTilt)
+        #pantilthat.tilt(actualTilt)
         pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
-        time.sleep(0.5)
+        time.sleep(0.05)
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
