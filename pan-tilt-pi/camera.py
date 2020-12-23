@@ -19,7 +19,7 @@ import re
 import errno
 import paho.mqtt.client as mqtt 
 from json.decoder import JSONDecodeError
-#import pantilthat
+import pantilthat
 
 args = None
 pan = 0
@@ -84,8 +84,8 @@ def moveCamera():
                 actualPan += 1
             else:
                 actualPan -= 1
-        #pantilthat.tilt(actualTilt)
-        #pantilthat.pan(actualPan)
+        pantilthat.tilt(actualTilt)
+        pantilthat.pan(actualPan)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.1)
 #############################################
@@ -145,8 +145,8 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
-    #pantilthat.pan(pan)
-    #pantilthat.tilt(tilt)
+    pantilthat.pan(pan)
+    pantilthat.tilt(tilt)
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
