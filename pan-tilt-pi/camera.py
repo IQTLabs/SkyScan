@@ -51,10 +51,11 @@ def setPan(bearing):
     global pan
     camera_bearing = args.bearing
     diff_heading = getHeadingDiff(bearing, camera_bearing)
-    logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, bearing, camera_bearing))
     
     if diff_heading  > -90 and diff_heading < 90:
         if abs(pan - diff_heading) > 2:
+            logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, bearing, camera_bearing))
+    
             pan = diff_heading
             logging.info("Setting Pan to: %d"%pan)
         return True
