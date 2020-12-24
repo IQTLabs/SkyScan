@@ -20,12 +20,16 @@ import errno
 import paho.mqtt.client as mqtt 
 from json.decoder import JSONDecodeError
 import pantilthat
+from picamera import PiCamera
+
+camera = PiCamera()
 
 args = None
 pan = 0
 tilt = 0
 actualPan = 0
 actualTilt = 0
+currentPlane=0
 
 # https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
 
@@ -73,6 +77,9 @@ def setTilt(azimuth):
 def moveCamera():
     global actualPan
     global actualTilt
+    global camera
+
+    lockedOn = False
     while True:
         if actualTilt != tilt:
             logging.info("Moving Tilt to: %d Goal: %d"%(actualTilt, tilt))
@@ -80,22 +87,38 @@ def moveCamera():
                 actualTilt += 1
             else:
                 actualTilt -= 1
+            if actualTilt == tilt:
+                lockedOn = True
         if actualPan != pan:
             logging.info("Moving Pan to: %d Goal: %d"%(actualPan, pan))
             if actualPan < pan:
                 actualPan += 1
             else:
                 actualPan -= 1
-        pantilthat.tilt(actualTilt * -1 + 20)
+            if actualPan == pan:
+                lockedOn = True
+
+        if lockedOn:
+            filename = "capture/{}_{}".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), currentPlane)
+            camera.capture("{}.jpeg".format(filename))
+
+
+
         # Turns out that negative numbers mean to move the right and positive numbers mean move to the left... 
         # I think this is backwards, I am going to switch it, so here I am going to multiply by -1
         pantilthat.pan(actualPan * -1)
+
+        # Same thing with the tilt. A negative angle moves the camera head up, a positive value down. Backwards!
+        # Multiplying by -1 again to make it normal. The camera is also off by a little and pointed up a bit, moving it down 20 degrees seems about right
+        pantilthat.tilt(actualTilt * -1 + 20)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.005)
+
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
 def on_message(client, userdata, message):
+    global currentPlane
     command = str(message.payload.decode("utf-8"))
     #rint(command)
     try:
@@ -115,13 +138,15 @@ def on_message(client, userdata, message):
     #logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
     bearingGood = setPan(update["bearing"])
     setTilt(update["azimuth"])
-
+    currentPlane = update["icao24"]
 
 def main():
     global args
     global logging
     global pan
     global tilt
+    global camera
+
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
 
     parser.add_argument('-b', '--bearing', help="What bearing is the font of the PI pointed at (0-360)", default=0)
@@ -151,6 +176,7 @@ def main():
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
     pantilthat.pan(pan)
     pantilthat.tilt(tilt)
+    camera.resolution = (1024, 768)
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
