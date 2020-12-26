@@ -24,6 +24,7 @@ from picamera import PiCamera
 
 camera = PiCamera()
 
+tiltCorrect = 30
 args = None
 pan = 0
 tilt = 0
@@ -111,7 +112,7 @@ def moveCamera():
 
         # Same thing with the tilt. A negative angle moves the camera head up, a positive value down. Backwards!
         # Multiplying by -1 again to make it normal. The camera is also off by a little and pointed up a bit, moving it down 20 degrees seems about right
-        pantilthat.tilt(actualTilt * -1 + 10)
+        pantilthat.tilt(actualTilt * -1 + tiltCorrect)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.005)
 
