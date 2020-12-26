@@ -20,7 +20,8 @@ services:
       - /dev/i2c-1:/dev/i2c-1       
       - "/dev/vchiq:/dev/vchiq" 
     environment: 
-      - LD_LIBRARY_PATH=/opt/vc/lib      
+      - LD_LIBRARY_PATH=/opt/vc/lib
+      - READTHEDOCS=True      
     privileged: true
     depends_on:
       - mqtt
