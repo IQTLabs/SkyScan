@@ -12,9 +12,14 @@ services:
 
   pan-tilt-pi:
     build: ./pan-tilt-pi
-    entrypoint: "./camera.py -m mqtt  -t SkyScan"
+    entrypoint: "./camera.py -m mqtt -t SkyScan"
+    volumes:
+      - /opt/vc:/opt/vc
+      - ./capture:/app/capture
     devices:
-      - /dev/i2c-1:/dev/i2c-1
+      - /dev/i2c-1:/dev/i2c-1       
+      - "/dev/vchiq:/dev/vchiq"     
+    privileged: true
     depends_on:
       - mqtt
       
