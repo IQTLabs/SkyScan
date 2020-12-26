@@ -1,5 +1,8 @@
 FROM python:3
 
+# See https://github.com/waveform80/picamera/issues/578
+ENV READTHEDOCS=True
+
 RUN mkdir -p /app
 WORKDIR /app
 ADD *.txt /app/ 
