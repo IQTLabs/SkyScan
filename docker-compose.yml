@@ -21,7 +21,7 @@ services:
       - "/dev/vchiq:/dev/vchiq" 
     environment: 
       - LD_LIBRARY_PATH=/opt/vc/lib
-      - READTHEDOCS=True      
+      - READTHEDOCS=True      # Gets around RasPi detection error in pip: https://medium.com/swlh/how-to-access-the-raspberry-pi-camera-inside-docker-and-opencv-5fa25e092d91
     privileged: true
     depends_on:
       - mqtt
