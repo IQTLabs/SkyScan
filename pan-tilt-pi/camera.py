@@ -79,8 +79,9 @@ def moveCamera():
     global actualTilt
     global camera
 
-    lockedOn = False
+    
     while True:
+        lockedOn = False
         if actualTilt != tilt:
             logging.info("Moving Tilt to: %d Goal: %d"%(actualTilt, tilt))
             if actualTilt < tilt:
