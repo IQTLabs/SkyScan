@@ -111,7 +111,7 @@ def moveCamera():
 
         # Same thing with the tilt. A negative angle moves the camera head up, a positive value down. Backwards!
         # Multiplying by -1 again to make it normal. The camera is also off by a little and pointed up a bit, moving it down 20 degrees seems about right
-        pantilthat.tilt(actualTilt * -1 + 20)
+        pantilthat.tilt(actualTilt * -1 + 10)
         # Sleep for a bit so we're not hammering the HAT with updates
         time.sleep(0.005)
 
