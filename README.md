@@ -14,3 +14,15 @@ Launch the application using docker-compose:
 ```bash
 docker-compose up
 ```
+
+### Enable Raspi-camera
+
+In the base OS on the Pi make sure the Camera is enabled:
+```bash
+sudo raspi-config
+```
+- Interfacing Options
+- Camera
+- Enable
+
+
