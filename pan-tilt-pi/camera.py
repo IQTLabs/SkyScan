@@ -98,7 +98,7 @@ def moveCamera():
             if actualPan == pan:
                 lockedOn = True
 
-        if lockedOn:
+        if lockedOn == True:
             filename = "capture/{}_{}".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), currentPlane)
             camera.capture("{}.jpeg".format(filename))
 
