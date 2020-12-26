@@ -24,7 +24,7 @@ from picamera import PiCamera
 
 camera = PiCamera()
 
-tiltCorrect = 30
+tiltCorrect = 10
 args = None
 pan = 0
 tilt = 0
