@@ -17,8 +17,8 @@ def deg2rad(deg: float) -> float:
     """
     return deg * (math.pi/180)
 
-def azimuth(distance: float, altitude):
-    baseElevation = 0
+def azimuth(distance: float, altitude, camera_altitude):
+    baseElevation = camera_altitude
     ratio = ( altitude - baseElevation) / distance
     a = math.atan(ratio) * (180 /math.pi)
     return round(a)
