@@ -434,7 +434,7 @@ class FlightTracker(object):
                 # Round off to nearest 100 meters
                 distance = round(distance/100) * 100
                 bearing = utils.bearing(self.__latitude, self.__longitude, lat, lon)
-                azimuth = utils.azimuth(distance * 3.28084, cur.getAltitude()) # we need to convert to feet because the altitude is in feet
+                azimuth = utils.azimuth(distance * 3.28084, cur.getAltitude(), 217) # we need to convert to feet because the altitude is in feet
 
                 # @todo: update altitude
                 # altitude = sbs1["altitude"]
