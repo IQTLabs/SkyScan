@@ -98,3 +98,4 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
     lon2 = math.degrees(lon2)
 
     return (lat2, lon2)
+
