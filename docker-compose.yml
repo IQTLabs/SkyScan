@@ -10,6 +10,15 @@ services:
     depends_on:
       - mqtt
 
+  adsb-mqtt:
+    build: ./adsb-mqtt
+    entrypoint: "./flighttracker.py -H piaware -m mqtt  -t skyscan/planes/json"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mqtt
+      - piaware
+
   pan-tilt-pi:
     build: ./pan-tilt-pi
     entrypoint: "./camera.py -m mqtt -t SkyScan"
@@ -24,7 +33,17 @@ services:
     privileged: true
     depends_on:
       - mqtt
+
+  axis-ptz:
+    build: ./pan-tilt-pi
+    entrypoint: "./camera.py -m mqtt -t SkyScan -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP}"
+    volumes:
+      - ./capture:/app/capture
+    depends_on:
+      - mqtt
       
+
+
   piaware:
     image: mikenye/piaware:latest
     tty: true

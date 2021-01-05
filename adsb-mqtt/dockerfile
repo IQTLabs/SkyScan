@@ -1,0 +1,10 @@
+FROM python:3
+
+RUN mkdir -p /app/mqtt_wrapper/
+WORKDIR /app/
+ADD *.txt /app/ 
+RUN pip3 install -r requirements.txt
+ADD *.py /app/
+ADD mqtt_wrapper /app/mqtt_wrapper/
+
+
