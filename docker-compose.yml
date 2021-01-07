@@ -4,7 +4,7 @@ services:
 
   tracker:
     build: ./tracker
-    entrypoint: "./flighttracker.py -H piaware -m mqtt  -l ${LAT} -L ${LONG}  -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_AZIMUTH} "
+    entrypoint: "./flighttracker.py -H piaware -m mqtt  -l ${LAT} -L ${LONG}  -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_ELEVATION} "
     depends_on:
       - mqtt
 

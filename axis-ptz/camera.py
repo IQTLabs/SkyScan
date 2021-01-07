@@ -19,13 +19,14 @@ import re
 import errno
 import paho.mqtt.client as mqtt 
 from json.decoder import JSONDecodeError
-from sensecam_control import vapix_control
+from sensecam_control import vapix_control,vapix_config
 
 
 
 tiltCorrect = 15
 args = None
 camera = None
+cameraConfig = None
 pan = 0
 tilt = 0
 actualPan = 0
@@ -67,13 +68,13 @@ def setPan(bearing):
         return True
     return False
 
-def setTilt(azimuth):
+def setTilt(elevation):
     global tilt
-    if azimuth < 90:
-        if abs(tilt-azimuth) > 2:
-            tilt = azimuth
+    if elevation < 90:
+        if abs(tilt-elevation) > 2:
+            tilt = elevation
             
-            #logging.info("Setting Tilt to: %d"%azimuth)
+            #logging.info("Setting Tilt to: %d"%elevation)
 
 def moveCamera():
     global actualPan
@@ -88,8 +89,9 @@ def moveCamera():
             actualTilt = tilt
             actualPan = pan
             lockedOn = True
-            camera.absolute_move(pan, tilt, 5000, 50)
-
+            camera.absolute_move(pan, tilt, 9999, 50)
+            time.sleep(0.1)
+            cameraConfig.get_jpeg_request("1920x1080",  camera=1,compression=10)
                 
 
         #if lockedOn == True:
@@ -120,9 +122,9 @@ def on_message(client, userdata, message):
     except:
         print("Caught it!")
     
-    logging.info("{}\tBearing: {} \tAzimuth: {}".format(update["icao24"],update["bearing"],update["azimuth"]))
+    logging.info("{}\tBearing: {} \tElevation: {}".format(update["icao24"],update["bearing"],update["elevation"]))
     bearingGood = setPan(update["bearing"])
-    setTilt(update["azimuth"])
+    setTilt(update["elevation"])
     currentPlane = update["icao24"]
 
 def main():
@@ -131,6 +133,7 @@ def main():
     global pan
     global tilt
     global camera
+    global cameraConfig
 
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
 
@@ -163,6 +166,7 @@ def main():
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
     camera = vapix_control.CameraControl(args.axis_ip, args.axis_username, args.axis_password)
+    cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)

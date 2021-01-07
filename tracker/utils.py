@@ -15,7 +15,7 @@ def deg2rad(deg: float) -> float:
     """
     return deg * (math.pi/180)
 
-def azimuth(distance: float, altitude, camera_altitude):
+def elevation(distance: float, altitude, camera_altitude):
     baseElevation = camera_altitude
     ratio = ( altitude - baseElevation) / distance
     a = math.atan(ratio) * (180 /math.pi)
@@ -82,6 +82,7 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
     """
     age = datetime.utcnow() - utc_start
     age_s = age.total_seconds() + lead_s
+    print(age_s)
 
     R = 6378.1 # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
