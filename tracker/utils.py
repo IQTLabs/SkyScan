@@ -67,7 +67,7 @@ def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
     return d
 
 
-def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, heading: float) -> Tuple[float, float]:
+def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, heading: float, lead_s: float) -> Tuple[float, float]:
     """Calculate travel from lat, lon starting at a certain time with giben speed and heading
 
     Arguments:
@@ -81,7 +81,7 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
         Tuple[float, float] -- The new lat/lon as a tuple
     """
     age = datetime.utcnow() - utc_start
-    age_s = age.total_seconds()
+    age_s = age.total_seconds() + lead_s
 
     R = 6378.1 # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
@@ -98,3 +98,4 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
     lon2 = math.degrees(lon2)
 
     return (lat2, lon2)
+
