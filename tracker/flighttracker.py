@@ -53,7 +53,7 @@ args = None
 camera_latitude = None
 camera_longitude = None
 camera_altitude = None
-min_azimuth = None
+min_elevation = None
 
 # http://stackoverflow.com/questions/1165352/fast-comparison-between-two-python-dictionary
 class DictDiffer(object):
@@ -107,7 +107,7 @@ class Observation(object):
     __image_url = None
     __distance = None
     __bearing = None
-    __azimuth = None
+    __elevation = None
     __planedb_nagged = False  # Used in case the icao24 is unknown and we only want to log this once
 
     def __init__(self, sbs1msg):
@@ -155,7 +155,7 @@ class Observation(object):
         # Round off to nearest 100 meters
         self.__distance = distance = round(distance/100) * 100
         self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        self.__azimuth = utils.azimuth(distance * 3.28084, self.__altitude, camera_altitude) # we need to convert to feet because the altitude is in feet
+        self.__elevation = utils.elevation(distance * 3.28084, self.__altitude, camera_altitude) # we need to convert to feet because the altitude is in feet
 
         # Check if observation was updated
         newData = dict(self.__dict__)
@@ -176,8 +176,8 @@ class Observation(object):
     def isUpdated(self) -> bool:
         return self.__updated
 
-    def getAzimuth(self) -> int:
-        return self.__azimuth
+    def getElevation(self) -> int:
+        return self.__elevation
 
     def getLoggedDate(self) -> datetime:
         return self.__loggedDate
@@ -224,7 +224,7 @@ class Observation(object):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
 
-    def json(self, bearing: int, distance: int, azimuth: int) -> str:
+    def json(self, bearing: int, distance: int, elevation: int) -> str:
         """Return JSON representation of this observation
         
         Arguments:
@@ -245,7 +245,7 @@ class Observation(object):
         else:
             callsign = "\"%s\"" % self.__callsign
 
-        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign, "bearing": bearing, "distance": distance, "azimuth": azimuth}
+        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign, "bearing": bearing, "distance": distance, "elevation": elevation}
         jsonString = json.dumps(planeDict, indent=4, sort_keys=True, default=str)
         return jsonString
 
@@ -326,30 +326,6 @@ class FlightTracker(object):
         self.__tracking_topic = tracking_topic
 
 
-    #############################################
-    ##         MQTT Callback Function          ##
-    #############################################
-    def __on_message(client, userdata, message):
-        global currentPlane
-        command = str(message.payload.decode("utf-8"))
-        #rint(command)
-        try:
-            update = json.loads(command)
-            #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
-        except JSONDecodeError as e:
-        # do whatever you want
-            print(e)
-        except TypeError as e:
-        # do whatever you want in this case
-            print(e)
-        except ValueError as e:
-            print(e)
-        except:
-            print("Caught it!")
-        print("got it")
-        logging.info("{}\tBearing: {} \tAzimuth: {}".format(update["icao24"],update["bearing"],update["azimuth"]))
-
-    
     def __publish_thread(self):
         """
         MQTT publish closest observation every second, more often if the plane is closer
@@ -370,10 +346,10 @@ class FlightTracker(object):
                 # Round off to nearest 100 meters
                 distance = round(distance/100) * 100
                 bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
-                azimuth = utils.azimuth(distance * 3.28084, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
+                elevation = utils.elevation(distance * 3.28084, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
 
                 retain = False
-                self.__client.publish(self.__tracking_topic, cur.json(bearing, distance, azimuth), 0, retain)
+                self.__client.publish(self.__tracking_topic, cur.json(bearing, distance, elevation), 0, retain)
                 logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
 
                 if distance < 3000:
@@ -418,18 +394,18 @@ class FlightTracker(object):
                 self.__observations[icao24].update(m)
                 if self.__observations[icao24].isPresentable():
                     if not self.__tracking_icao24:
-                        if self.__observations[icao24].getAzimuth() != None and self.__observations[icao24].getAzimuth() > min_azimuth:
+                        if self.__observations[icao24].getElevation() != None and self.__observations[icao24].getElevation() > min_elevation:
                             self.__tracking_icao24 = icao24
                             self.updateTrackingDistance()
-                            logging.info("Tracking %s at %d azimuth: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getAzimuth()))
+                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
                     elif self.__tracking_icao24 == icao24:
                         self.updateTrackingDistance()
                     else:
                         distance = utils.coordinate_distance(self.__latitude, self.__longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
-                        if distance < self.__tracking_distance and self.__observations[icao24].getAzimuth() > min_azimuth:
+                        if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
                             self.__tracking_icao24 = icao24
                             self.__tracking_distance = distance
-                            logging.info("Tracking %s at %d azimuth: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getAzimuth()))               
+                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
             time.sleep(0.1)
                               
     def selectNearestObservation(self):
@@ -440,7 +416,7 @@ class FlightTracker(object):
         for icao24 in self.__observations:
             if not self.__observations[icao24].isPresentable():
                 continue
-            if self.__observations[icao24].getAzimuth() < min_azimuth:
+            if self.__observations[icao24].getElevation() < min_elevation:
                 continue
             distance = utils.coordinate_distance(self.__latitude, self.__longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
             if distance < self.__tracking_distance:
@@ -465,7 +441,7 @@ class FlightTracker(object):
                     if icao24 == self.__tracking_icao24:
                         self.__tracking_icao24 = None
                     cleaned.append(icao24)
-                if icao24 == self.__tracking_icao24 and self.__observations[icao24].getAzimuth() < min_azimuth:
+                if icao24 == self.__tracking_icao24 and self.__observations[icao24].getElevation() < min_elevation:
                     logging.info("%s is too low to track" % (icao24))
                     self.__tracking_icao24 = None
             for icao24 in cleaned:
@@ -482,14 +458,14 @@ def main():
     global camera_altitude
     global camera_latitude
     global camera_longitude
-    global min_azimuth
+    global min_elevation
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
 
     parser.add_argument('-l', '--lat', type=float, help="Latitude of camera")
     parser.add_argument('-L', '--lon', type=float, help="Longitude of camera")
     parser.add_argument('-a', '--alt', type=float, help="altitude of camera", default=0)
-    parser.add_argument('-M', '--min-az', type=int, help="minimum azimuth for camera", default=0)
+    parser.add_argument('-M', '--min-elevation', type=int, help="minimum elevation for camera", default=0)
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument('-p', '--mqtt-port', type=int, help="MQTT broker port number (default 1883)", default=1883)
 
@@ -505,7 +481,7 @@ def main():
     camera_longitude = args.lon
     camera_latitude = args.lat
     camera_altitude = args.alt
-    min_azimuth = args.min_az
+    min_elevation = args.min_elevation
     level = logging.DEBUG if args.verbose else logging.INFO
 
     styles = {'critical': {'bold': True, 'color': 'red'}, 'debug': {'color': 'green'}, 'error': {'color': 'red'}, 'info': {'color': 'white'}, 'notice': {'color': 'magenta'}, 'spam': {'color': 'green', 'faint': True}, 'success': {'bold': True, 'color': 'green'}, 'verbose': {'color': 'blue'}, 'warning': {'color': 'yellow'}}

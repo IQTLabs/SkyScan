@@ -375,14 +375,17 @@ class FlightTracker(object):
             try:
                 buffer = self.__dump1090_sock.recv(4096)
             except ConnectionResetError:
+                logging.critical("Connection Reset Error")
                 self.dump1090Close()
                 yield None
             except socket.error:
+                logging.critical("Socket Error")
                 self.dump1090Close()
                 yield None
             buffer = buffer.decode("utf-8")
             buffering = True
             if buffer == "":
+                logging.critical("Buffer Empty")
                 self.dump1090Close()
                 return None
             while buffering:
@@ -393,9 +396,11 @@ class FlightTracker(object):
                     try:
                         more = self.__dump1090_sock.recv(4096)
                     except ConnectionResetError:
+                        logging.critical("Connection Reset Error")
                         self.dump1090Close()
                         yield None
                     except socket.error:
+                        logging.critical("Socket Error")
                         self.dump1090Close()
                         yield None
                     if not more:
@@ -404,6 +409,7 @@ class FlightTracker(object):
                         if not isinstance(more, str):
                             more = more.decode("utf-8")
                         if more == "":
+                            logging.critical("Receive Empty")
                             self.dump1090Close()
                             return None
                         buffer += more

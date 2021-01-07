@@ -67,13 +67,13 @@ def setPan(bearing):
         return True
     return False
 
-def setTilt(azimuth):
+def setTilt(elevation):
     global tilt
-    if azimuth < 90:
-        if abs(tilt-azimuth) > 2:
-            tilt = azimuth
+    if elevation < 90:
+        if abs(tilt-elevation) > 2:
+            tilt = elevation
             
-            logging.info("Setting Tilt to: %d"%azimuth)
+            logging.info("Setting Tilt to: %d"%elevation)
 
 def moveCamera():
     global actualPan
@@ -137,9 +137,9 @@ def on_message(client, userdata, message):
     except:
         print("Caught it!")
     
-    #logging.info("Bearing: {} Azimuth: {}".format(update["bearing"],update["azimuth"]))
+    #logging.info("Bearing: {} Elevation: {}".format(update["bearing"],update["elevation"]))
     bearingGood = setPan(update["bearing"])
-    setTilt(update["azimuth"])
+    setTilt(update["elevation"])
     currentPlane = update["icao24"]
 
 def main():
