@@ -140,7 +140,7 @@ class Observation(object):
 
     def update(self, sbs1msg):
         oldData = dict(self.__dict__)
-        self.__loggedDate = datetime.utcnow()
+        
         if sbs1msg["icao24"]:
             self.__icao24 = sbs1msg["icao24"]
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
@@ -166,7 +166,9 @@ class Observation(object):
             self.__generatedDate = sbs1msg["generatedDate"]
         #if sbs1msg["loggedDate"]:
         #    self.__loggedDate = sbs1msg["loggedDate"]
-
+        
+        if oldData["_Observation__lat"] != self.__lat:
+            self.__loggedDate = datetime.utcnow()
         if self.__planedb_nagged == False and self.__registration == None:
             plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
             
@@ -268,10 +270,9 @@ class Observation(object):
             callsign = "None"
         else:
             callsign = "\"%s\"" % self.__callsign
-
-        
-        return '{"vspeed": %d, "time": %d, "lat": %.5f, "lon": %.5f,  "altitude": %d, "speed": %d, "icao24": "%s", "registration": "%s", "heading": %d, "operator": "%s",   "loggedDate": "%s", "type": "%s", "manufacturer": "%s", "mode": "%s", "callsign": %s}' % \
-            (self.__verticalRate, time.time(), self.__lat, self.__lon,  self.__altitude, self.__groundSpeed, self.__icao24, self.__registration, self.__track, self.__operator,  self.__loggedDate, self.__type, self.__manufacturer, self.__model, callsign)
+        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign}
+        jsonString = json.dumps(planeDict, indent=4, sort_keys=True, default=str)
+        return jsonString
 
 
     def dict(self):
@@ -284,7 +285,7 @@ class Observation(object):
             del d["lastLat"]
         if "_Observation__lastLon" in d:
             del d["lastLon"]
-        d["loggedDate"] = "%s" % (d["_Observation__loggedDate"])
+        #d["loggedDate"] = "%s" % (d["_Observation__loggedDate"])
         return d
 
 
@@ -358,6 +359,7 @@ class FlightTracker(object):
             pass
         self.__dump1090_sock = None
         self.__has_nagged = False
+        logging.critical("Closing dump1090 connection")
 
 
     def dump1090Read(self) -> str:
@@ -399,7 +401,8 @@ class FlightTracker(object):
                     if not more:
                         buffering = False
                     else:
-                        more = more.decode("utf-8")
+                        if not isinstance(more, str):
+                            more = more.decode("utf-8")
                         if more == "":
                             self.dump1090Close()
                             return None
@@ -414,7 +417,7 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
-        self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "adsb-mqtt-%d" % (os.getpid())) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
+        self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "skyscan-adsb-mqtt-%d" % (os.getpid())) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
         #threading.Thread(target = self.__publish_thread, daemon = True).start()
 
         
@@ -468,7 +471,7 @@ def main():
     parser.add_argument('-H', '--dump1090-host', help="dump1090 hostname", default='127.0.0.1')
     parser.add_argument('-P', '--dump1090-port', type=int, help="dump1090 port number (default 30003)", default=30003)
     parser.add_argument('-pdb', '--planedb', dest='pdb_host', help="Plane database host")
-    parser.add_argument('-t', '--mqtt-topic', dest='mqtt_topic', help="MQTT topic", default="/skyscan/planes/json")
+    parser.add_argument('-t', '--mqtt-topic', dest='mqtt_topic', help="MQTT topic", default="skyscan/planes/json")
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
 
     args = parser.parse_args()

@@ -2,11 +2,9 @@ version: '3.7'
 
 services:
 
-  funhouse:
-    build: ./ADS-B-funhouse
-    entrypoint: "./flighttracker.py -H piaware -m mqtt  -l ${LAT} -L ${LONG} --prox SkyScan"
-    volumes:
-      - ./data:/app/data
+  tracker:
+    build: ./tracker
+    entrypoint: "./flighttracker.py -H piaware -m mqtt  -l ${LAT} -L ${LONG}  -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_AZIMUTH} "
     depends_on:
       - mqtt
 
@@ -42,8 +40,6 @@ services:
     depends_on:
       - mqtt
       
-
-
   piaware:
     image: mikenye/piaware:latest
     tty: true
@@ -61,7 +57,8 @@ services:
       - LONG=${LONG}
       - FEEDER_ID=${FEEDER_ID}
       - RECEIVER_TYPE=rtlsdr
-      - DUMP1090_DEVICE=1
+      - DUMP1090_DEVICE=${RTL_DEV}
+
   mqtt:
     build: ./mqtt
     ports:
