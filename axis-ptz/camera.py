@@ -88,7 +88,7 @@ def moveCamera():
             actualTilt = tilt
             actualPan = pan
             lockedOn = True
-            camera.absolute_move(pan, tilt, 1, 50)
+            camera.absolute_move(pan, tilt, 5000, 50)
 
                 
 
