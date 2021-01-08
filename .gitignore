@@ -2,3 +2,4 @@
 .env
 notes.md
 axis-ptz/*.jpg
+axis-ptz/capture/*
