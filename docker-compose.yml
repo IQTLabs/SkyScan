@@ -19,7 +19,7 @@ services:
 
   pan-tilt-pi:
     build: ./pan-tilt-pi
-    entrypoint: "./camera.py -m mqtt -t SkyScan"
+    entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json"
     volumes:
       - /opt/vc:/opt/vc
       - ./capture:/app/capture
@@ -34,7 +34,7 @@ services:
 
   axis-ptz:
     build: ./pan-tilt-pi
-    entrypoint: "./camera.py -m mqtt -t SkyScan -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP}"
+    entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP}"
     volumes:
       - ./capture:/app/capture
     depends_on:
