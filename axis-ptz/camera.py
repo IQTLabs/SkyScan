@@ -223,7 +223,7 @@ def main():
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+args.mqtt_topic+"'")
-    client = mqtt.Client("pan-tilt-pi-camera") #create new instance
+    client = mqtt.Client("skyscan-axis-ptz-camera") #create new instance
 
     client.on_message=on_message #attach function to callback
 

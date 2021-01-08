@@ -33,7 +33,7 @@ services:
       - mqtt
 
   axis-ptz:
-    build: ./pan-tilt-pi
+    build: ./axis-ptz
     entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP}"
     volumes:
       - ./capture:/app/capture
