@@ -16,6 +16,8 @@ import signal
 import random
 import time
 import re
+import requests
+from requests.auth import HTTPDigestAuth
 import errno
 import paho.mqtt.client as mqtt 
 from json.decoder import JSONDecodeError
@@ -31,7 +33,7 @@ pan = 0
 tilt = 0
 actualPan = 0
 actualTilt = 0
-currentPlane=0
+currentPlane=None
 
 # https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
 
@@ -76,6 +78,56 @@ def setTilt(elevation):
             
             #logging.info("Setting Tilt to: %d"%elevation)
 
+ # Copied from VaPix/Sensecam to customize the folder structure for saving pictures          
+def get_jpeg_request():  # 5.2.4.1
+    """
+    The requests specified in the JPEG/MJPG section are supported by those video products
+    that use JPEG and MJPG encoding.
+    Args:
+        resolution: Resolution of the returned image. Check the product’s Release notes.
+        camera: Selects the source camera or the quad stream.
+        square_pixel: Enable/disable square pixel correction. Applies only to video encoders.
+        compression: Adjusts the compression level of the image.
+        clock: Shows/hides the time stamp. (0 = hide, 1 = show)
+        date: Shows/hides the date. (0 = hide, 1 = show)
+        text: Shows/hides the text. (0 = hide, 1 = show)
+        text_string: The text shown in the image, the string must be URL encoded.
+        text_color: The color of the text shown in the image. (black, white)
+        text_background_color: The color of the text background shown in the image.
+        (black, white, transparent, semitransparent)
+        rotation: Rotate the image clockwise.
+        text_position: The position of the string shown in the image. (top, bottom)
+        overlay_image: Enable/disable overlay image.(0 = disable, 1 = enable)
+        overlay_position:The x and y coordinates defining the position of the overlay image.
+        (<int>x<int>)
+    Returns:
+        Success ('image save' and save the image in the file folder) or Failure (Error and
+        description).
+    """
+    payload = {
+        'resolution': "1920x1080",
+        'camera': 1,
+    }
+    url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
+    resp = requests.get(url, auth=HTTPDigestAuth(args.axis_username, args.axis_password),
+                        params=payload)
+
+    if resp.status_code == 200:
+        captureDir = "capture/{}".format(currentPlane["type"])
+        try:
+            os.makedirs(captureDir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise  # This was not a "directory exist" error..
+        filename = "{}/{}_{}.jpg".format(captureDir, currentPlane["icao24"],datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+        
+        with open(filename, 'wb') as var:
+            var.write(resp.content)
+        return str('Image saved')
+
+    text = str(resp)
+    text += str(resp.text)
+    return text
 def moveCamera():
     global actualPan
     global actualTilt
@@ -91,7 +143,7 @@ def moveCamera():
             lockedOn = True
             camera.absolute_move(pan, tilt, 9999, 50)
             time.sleep(0.1)
-            cameraConfig.get_jpeg_request("1920x1080",  camera=1,compression=10)
+            get_jpeg_request()
                 
 
         #if lockedOn == True:
@@ -125,7 +177,7 @@ def on_message(client, userdata, message):
     logging.info("{}\tBearing: {} \tElevation: {}".format(update["icao24"],update["bearing"],update["elevation"]))
     bearingGood = setPan(update["bearing"])
     setTilt(update["elevation"])
-    currentPlane = update["icao24"]
+    currentPlane = update
 
 def main():
     global args
