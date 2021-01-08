@@ -82,7 +82,6 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
     """
     age = datetime.utcnow() - utc_start
     age_s = age.total_seconds() + lead_s
-    print(age_s)
 
     R = 6378.1 # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
