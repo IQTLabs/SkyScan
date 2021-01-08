@@ -10,7 +10,7 @@ services:
 
   adsb-mqtt:
     build: ./adsb-mqtt
-    entrypoint: "./flighttracker.py -H piaware -m mqtt  -t skyscan/planes/json"
+    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
     volumes:
       - ./data:/app/data
     depends_on:
