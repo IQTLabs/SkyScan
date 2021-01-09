@@ -445,7 +445,7 @@ class FlightTracker(object):
                     if self.__observations[icao24].isPresentable() and self.__observations[icao24].isUpdated():
                         retain = False
                         self.__mqtt_bridge.publish(self.__mqtt_topic, self.__observations[icao24].json(), 0, retain)
-                        logging.info("%s alt %5d trk %3d spd %3d %s" % (self.__observations[icao24].getIcao24(), self.__observations[icao24].getAltitude(), self.__observations[icao24].getHeading(), self.__observations[icao24].getGroundSpeed(), self.__observations[icao24].getType()))
+                        #logging.info("%s alt %5d trk %3d spd %3d %s" % (self.__observations[icao24].getIcao24(), self.__observations[icao24].getAltitude(), self.__observations[icao24].getHeading(), self.__observations[icao24].getGroundSpeed(), self.__observations[icao24].getType()))
 
     def cleanObservations(self):
         """Clean observations for planes not seen in a while
@@ -476,7 +476,6 @@ def main():
     parser.add_argument('-p', '--mqtt-port', type=int, help="MQTT broker port number (default 1883)", default=1883)
     parser.add_argument('-H', '--dump1090-host', help="dump1090 hostname", default='127.0.0.1')
     parser.add_argument('-P', '--dump1090-port', type=int, help="dump1090 port number (default 30003)", default=30003)
-    parser.add_argument('-pdb', '--planedb', dest='pdb_host', help="Plane database host")
     parser.add_argument('-t', '--mqtt-topic', dest='mqtt_topic', help="MQTT topic", default="skyscan/planes/json")
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
 
