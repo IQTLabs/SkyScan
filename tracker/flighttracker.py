@@ -370,17 +370,17 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
-        log.info("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
+        print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
         self.__client = mqtt.Client("skyscan-tracker") #create new instance
 
         self.__client.on_message = on_message #attach function to callback
-        log.info("setup MQTT")
+        print("setup MQTT")
         self.__client.connect(self.__mqtt_broker) #connect to broker
-        log.info("connected mqtt")
+        print("connected mqtt")
         self.__client.loop_start() #start the loop
-        log.info("start MQTT")
+        print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
-        log.info("subscribe mqtt")
+        print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
         
