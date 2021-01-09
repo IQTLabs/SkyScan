@@ -341,7 +341,7 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), 0.5)
+                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), 0.25)
                 distance = utils.coordinate_distance(self.__latitude, self.__longitude, lat, lon)
                 # Round off to nearest 100 meters
                 distance = round(distance/100) * 100
