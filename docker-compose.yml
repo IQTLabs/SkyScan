@@ -7,6 +7,7 @@ services:
     entrypoint: "./flighttracker.py -m mqtt  -l ${LAT} -L ${LONG}  -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_ELEVATION} "
     depends_on:
       - mqtt
+    restart: unless-stopped
 
   adsb-mqtt:
     build: ./adsb-mqtt
@@ -16,6 +17,7 @@ services:
     depends_on:
       - mqtt
       - piaware
+    restart: unless-stopped
 
   pan-tilt-pi:
     build: ./pan-tilt-pi
@@ -39,6 +41,7 @@ services:
       - ./capture:/app/capture
     depends_on:
       - mqtt
+    restart: unless-stopped
       
   piaware:
     image: mikenye/piaware:latest
@@ -58,6 +61,7 @@ services:
       - FEEDER_ID=${FEEDER_ID}
       - RECEIVER_TYPE=rtlsdr
       - DUMP1090_DEVICE=${RTL_DEV}
+    restart: unless-stopped
 
   mqtt:
     build: ./mqtt
