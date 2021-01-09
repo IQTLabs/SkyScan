@@ -17,9 +17,12 @@ def deg2rad(deg: float) -> float:
 
 def elevation(distance: float, altitude, camera_altitude):
     baseElevation = camera_altitude
-    ratio = ( altitude - baseElevation) / distance
-    a = math.atan(ratio) * (180 /math.pi)
-    return round(a)
+    if distance > 0:
+        ratio = ( altitude - baseElevation) / distance
+        a = math.atan(ratio) * (180 /math.pi)
+        return round(a)
+    else:
+        return 0
 
 def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate bearing from lat1/lon2 to lat2/lon2
