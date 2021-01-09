@@ -273,14 +273,14 @@ def on_message(client, userdata, message):
         #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
     except JSONDecodeError as e:
     # do whatever you want
-        print("JSONDecode Error: {} ".format(e))
+        log.critical("JSONDecode Error: {} ".format(e))
     except TypeError as e:
     # do whatever you want in this case
-        print("Type Error: {} ".format(e))
+        log.critical("Type Error: {} ".format(e))
     except ValueError as e:
-        print("Value Error: {} ".format(e))
+        log.critical("Value Error: {} ".format(e))
     except:
-        print("Caught it!")
+        log.critical("Caught it!")
     q.put(update) #put messages on queue
    
 class FlightTracker(object):
@@ -370,17 +370,17 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
-        print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
+        log.info("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
         self.__client = mqtt.Client("skyscan-tracker") #create new instance
 
         self.__client.on_message = on_message #attach function to callback
-        print("setup MQTT")
+        log.info("setup MQTT")
         self.__client.connect(self.__mqtt_broker) #connect to broker
-        print("connected mqtt")
+        log.info("connected mqtt")
         self.__client.loop_start() #start the loop
-        print("start MQTT")
+        log.info("start MQTT")
         self.__client.subscribe(self.__plane_topic)
-        print("subscribe mqtt")
+        log.info("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
         
@@ -476,7 +476,7 @@ def main():
     args = parser.parse_args()
 
     if not args.lat and not args.lon:
-        print("You really need to tell me where you are located (--lat and --lon)")
+        log.critical("You really need to tell me where you are located (--lat and --lon)")
         sys.exit(1)
     camera_longitude = args.lon
     camera_latitude = args.lat
