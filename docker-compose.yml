@@ -4,7 +4,7 @@ services:
 
   tracker:
     build: ./tracker
-    entrypoint: "./flighttracker.py -m mqtt  -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_ELEVATION} "
+    entrypoint: "./flighttracker.py -m mqtt  -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
     depends_on:
       - mqtt
     restart: unless-stopped
@@ -36,7 +36,7 @@ services:
 
   axis-ptz:
     build: ./axis-ptz
-    entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP}"
+    entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY}"
     volumes:
       - ./capture:/app/capture
     depends_on:

@@ -53,6 +53,7 @@ args = None
 camera_latitude = None
 camera_longitude = None
 camera_altitude = None
+camera_lead = None
 min_elevation = None
 
 # http://stackoverflow.com/questions/1165352/fast-comparison-between-two-python-dictionary
@@ -341,7 +342,7 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), 0.25)
+                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance = utils.coordinate_distance(self.__latitude, self.__longitude, lat, lon)
                 # Round off to nearest 100 meters
                 distance = round(distance/100) * 100
@@ -458,6 +459,7 @@ def main():
     global camera_altitude
     global camera_latitude
     global camera_longitude
+    global camera_lead
     global min_elevation
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
@@ -465,10 +467,10 @@ def main():
     parser.add_argument('-l', '--lat', type=float, help="Latitude of camera")
     parser.add_argument('-L', '--lon', type=float, help="Longitude of camera")
     parser.add_argument('-a', '--alt', type=float, help="altitude of camera", default=0)
+    parser.add_argument('-c', '--camera-lead', type=float, help="how many seconds ahead of a plane's predicted location should the camera be positioned", default=0.25)
     parser.add_argument('-M', '--min-elevation', type=int, help="minimum elevation for camera", default=0)
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument('-p', '--mqtt-port', type=int, help="MQTT broker port number (default 1883)", default=1883)
-
     parser.add_argument('-P', '--plane-topic', dest='plane_topic', help="MQTT plane topic", default="skyscan/planes/json")
     parser.add_argument('-T', '--tracking-topic', dest='tracking_topic', help="MQTT tracking topic", default="skyscan/tracking/json")
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
@@ -481,6 +483,7 @@ def main():
     camera_longitude = args.lon
     camera_latitude = args.lat
     camera_altitude = args.alt
+    camera_lead = args.camera_lead
     min_elevation = args.min_elevation
     level = logging.DEBUG if args.verbose else logging.INFO
 
