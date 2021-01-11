@@ -29,6 +29,9 @@ tiltCorrect = 15
 args = None
 camera = None
 cameraConfig = None
+cameraZoom = None
+cameraMoveSpeed = None
+cameraDelay = None
 pan = 0
 tilt = 0
 actualPan = 0
@@ -128,6 +131,8 @@ def get_jpeg_request():  # 5.2.4.1
     text = str(resp)
     text += str(resp.text)
     return text
+
+
 def moveCamera():
     global actualPan
     global actualTilt
@@ -185,6 +190,9 @@ def main():
     global pan
     global tilt
     global camera
+    global cameraDelay
+    global cameraMoveSpeed
+    global cameraZoom
     global cameraConfig
 
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
@@ -195,6 +203,9 @@ def main():
     parser.add_argument('-u', '--axis-username', help="Username for the Axis camera", required=True)
     parser.add_argument('-p', '--axis-password', help="Password for the Axis camera", required=True)
     parser.add_argument('-a', '--axis-ip', help="IP address for the Axis camera", required=True)
+    parser.add_argument('-s', '--camera-move-speed', type=int help="The speed at which the Axis will move for Pan/Tilt (0-100)", default=0)
+    parser.add_argument('-d', '--camera-delay', type=float help="How many seconds after issuing a Pan/Tilt command should a picture be taken", default=0.5)
+    parser.add_argument('-z', '--camera-zoom', type=int help="The zoom setting for the camera (0-9999)", defult=9999)
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
 
     args = parser.parse_args()
@@ -218,6 +229,9 @@ def main():
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
     camera = vapix_control.CameraControl(args.axis_ip, args.axis_username, args.axis_password)
+    cameraDelay = args.camera_delay
+    cameraMoveSpeed = args.camera_move_speed
+    cameraZoom = args.camera_zoom
     cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
