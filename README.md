@@ -4,6 +4,7 @@ Automatically photograph planes that fly by!
 Follow allowing as we build, [here](https://iqtlabs.github.io/SkyScan/)
 
 ![Airbus A321](media/a321.jpg)
+*Airbus A321 at 32,000 feet*
 
 ## Overview
 To enable better tracking, most planes broadcast a signal known as [Automatic Dependent Surveillance–Broadcast](https://en.wikipedia.org/wiki/Automatic_Dependent_Surveillance–Broadcast) or ADS-B. This signal is at 1090MHz and can be easily received using a low cost Software Defined Radio (SDR), like the [RTL-SDR](https://learn.adafruit.com/getting-started-with-rtl-sdr-and-sdr-sharp) which repurposes a digital TV chip.
@@ -21,6 +22,7 @@ The project works with the following hardware. It should be easy to extended to 
 
 The different components for this project have been made into Docker containers. This modularity makes it easier to add in new data sources or cameras down the road. We have found containers to work really well on the Pi and the help enforce that you have properly documented all of the software requirements.
 
+````
 +-------------+      +-------------+           +---------------+            +--------------+
 |             |      |             |           |               |            |              |
 |             |      |             |           |               |            |  Axis+PTZ    |
@@ -41,7 +43,7 @@ The different components for this project have been made into Docker containers.
                                 |                    |                     |                  |
                                 +--------------------+                     +------------------+
 
-
+````
 
 Here is a brief overview of each component. There are additional details in the component's subdirectory
 
