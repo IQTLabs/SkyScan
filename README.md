@@ -3,6 +3,8 @@ Automatically photograph planes that fly by!
 -----
 Follow allowing as we build, [here](https://iqtlabs.github.io/SkyScan/)
 
+![Airbus A321](media/a321.jpg)
+
 ## Overview
 To enable better tracking, most planes broadcast a signal known as [Automatic Dependent Surveillance–Broadcast](https://en.wikipedia.org/wiki/Automatic_Dependent_Surveillance–Broadcast) or ADS-B. This signal is at 1090MHz and can be easily received using a low cost Software Defined Radio (SDR), like the [RTL-SDR](https://learn.adafruit.com/getting-started-with-rtl-sdr-and-sdr-sharp) which repurposes a digital TV chip.
 
