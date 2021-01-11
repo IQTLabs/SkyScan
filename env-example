@@ -1,0 +1,14 @@
+TZ="New York" #Local timezone in "TZ database name" format. https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+LAT=38.890022390623265  # Latitude of the camera
+LONG=-77.03513244930217 # Longitude of the camera
+ALT=170                 # Altitude of the camera, in feet above sea level
+MIN_ELEVATION=45        # The minimum elevation for the camera.
+FEEDER_ID=long-api-key-goes-here  # Your FlightAware feeder ID (required)
+AXIS_USERNAME=user          # The username for the Axis camera
+AXIS_PASSWORD=pass          # The Password for the Axis camera
+AXIS_IP=192.168.1.1         # The IP address of the camera
+CAMERA_MOVE_SPEED=50        # The speed at which the Axis will move for Pan/Tilt (0-100)
+CAMERA_DELAY=0.5            # How many seconds after issuing a Pan/Tilt command should a picture be taken
+CAMERA_ZOOM=9999            # The zoom setting for the camera (0-9999)
+CAMERA_LEAD=0.25            # How many seconds ahead of a plane's predicted location should the camera be positioned
+RTL_DEV=1                   # The device ID for the RTL-SDR - set using the rtl_eeprom program
