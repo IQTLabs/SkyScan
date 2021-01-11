@@ -1,0 +1,71 @@
+version: '3.7'
+
+services:
+
+  tracker:
+    build: ./tracker
+    entrypoint: "./flighttracker.py -m mqtt  -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/tracking/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+
+  adsb-mqtt:
+    build: ./adsb-mqtt
+    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mqtt
+      - piaware
+    restart: unless-stopped
+
+  pan-tilt-pi:
+    build: ./pan-tilt-pi
+    entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json"
+    volumes:
+      - /opt/vc:/opt/vc
+      - ./capture:/app/capture
+    devices:
+      - /dev/i2c-1:/dev/i2c-1       
+      - "/dev/vchiq:/dev/vchiq" 
+    environment: 
+      - LD_LIBRARY_PATH=/opt/vc/lib
+    privileged: true
+    depends_on:
+      - mqtt
+
+  axis-ptz:
+    build: ./axis-ptz
+    entrypoint: "./camera.py -m mqtt -t skyscan/tracking/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY}"
+    volumes:
+      - ./capture:/app/capture
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+      
+  piaware:
+    image: mikenye/piaware:latest
+    tty: true
+    container_name: piaware
+    restart: always
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - 8080:80
+      - 30003:30003
+      - 30005:30005
+    environment:
+      - TZ=${TZ}
+      - LAT=${LAT}
+      - LONG=${LONG}
+      - FEEDER_ID=${FEEDER_ID}
+      - RECEIVER_TYPE=rtlsdr
+      - DUMP1090_DEVICE=${RTL_DEV}
+    restart: unless-stopped
+
+  mqtt:
+    build: ./mqtt
+    ports:
+        - "9001:9001"
+        - "1883:1883"
+    restart: unless-stopped
