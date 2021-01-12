@@ -76,7 +76,7 @@ def setPan(bearing):
 def setTilt(elevation):
     global tilt
     if elevation < 90:
-        if abs(tilt-elevation) > 2:
+        if tilt != elevation: #abs(tilt-elevation) > 2:
             tilt = elevation
             
             #logging.info("Setting Tilt to: %d"%elevation)
