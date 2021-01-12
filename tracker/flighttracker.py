@@ -345,7 +345,7 @@ class FlightTracker(object):
                 (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance = utils.coordinate_distance(self.__latitude, self.__longitude, lat, lon)
                 # Round off to nearest 100 meters
-                distance = round(distance/100) * 100
+                #distance = round(distance/100) * 100
                 bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
                 elevation = utils.elevation(distance * 3.28084, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
 
