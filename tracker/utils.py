@@ -20,7 +20,7 @@ def elevation(distance: float, altitude, camera_altitude):
     if distance > 0:
         ratio = ( altitude - baseElevation) / distance
         a = math.atan(ratio) * (180 /math.pi)
-        return round(a)
+        return a
     else:
         return 0
 
