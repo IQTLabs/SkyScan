@@ -203,9 +203,9 @@ def main():
     parser.add_argument('-u', '--axis-username', help="Username for the Axis camera", required=True)
     parser.add_argument('-p', '--axis-password', help="Password for the Axis camera", required=True)
     parser.add_argument('-a', '--axis-ip', help="IP address for the Axis camera", required=True)
-    parser.add_argument('-s', '--camera-move-speed', type=int help="The speed at which the Axis will move for Pan/Tilt (0-100)", default=0)
-    parser.add_argument('-d', '--camera-delay', type=float help="How many seconds after issuing a Pan/Tilt command should a picture be taken", default=0.5)
-    parser.add_argument('-z', '--camera-zoom', type=int help="The zoom setting for the camera (0-9999)", defult=9999)
+    parser.add_argument('-s', '--camera-move-speed', type=int, help="The speed at which the Axis will move for Pan/Tilt (0-100)", default=0)
+    parser.add_argument('-d', '--camera-delay', type=float, help="How many seconds after issuing a Pan/Tilt command should a picture be taken", default=0.5)
+    parser.add_argument('-z', '--camera-zoom', type=int, help="The zoom setting for the camera (0-9999)", defult=9999)
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
 
     args = parser.parse_args()
