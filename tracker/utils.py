@@ -18,7 +18,7 @@ def deg2rad(deg: float) -> float:
 def elevation(distance: float, altitude, camera_altitude):
     baseElevation = camera_altitude
     if distance > 0:
-        ratio = ( altitude - baseElevation) / distance
+        ratio = ( altitude - baseElevation) / float(distance)
         a = math.atan(ratio) * (180 /math.pi)
         return a
     else:
