@@ -30,7 +30,6 @@ def get_project_ontology(project_id: str) -> dict:
                         }
                     }
                 """, {"proj_id": project_id})
-    print(res_str)
     return res_str['project']['ontology']['normalized']
 
 def get_schema_ids(ontology: dict) -> dict:
@@ -113,8 +112,6 @@ def buildImageList(filePath):
                     item = {"file_path": image_path,
                         "external_id": external_id}
                     labelbox_import.append(item)
-                if len(labelbox_import) > 10:
-                    return labelbox_import
     return labelbox_import
 
 
@@ -129,23 +126,20 @@ def importImageList(fileList):
     upload_job = dataset.create_data_rows(fileList)
     print("The image import is: {}".format(upload_job.status))
     annotations = []
-    #updated_data_rows = list(dataset.data_rows())
+    updated_data_rows = list(dataset.data_rows())
     for image in fileList:
-        #data_row = filter(lambda row: row['external_id'] == image["external_id"], updated_data_rows) #
-        
+        #data_row = filter(lambda row: row['external_id'] == image["external_id"], updated_data_rows) #dataset.data_row_for_external_id(image["external_id"])
         plane_id = image["external_id"].split("_")[0]
         plane = planes.loc[planes['icao24'] == plane_id.lower()]
         
         if plane.size == 27:
             print("Adding metadata for plane {} onto image {}".format(plane["icao24"].values[0], image["external_id"]))
-            #uid = None
-            #for row in updated_data_rows:
-            #    if row.external_id == image["external_id"]:
-            #        uid = row.uid
-            #        break
+            uid = None
+            for row in updated_data_rows:
+                if row.external_id == image["external_id"]:
+                    uid = row.uid
+                    break
 
-            data_row = dataset.data_row_for_external_id(image["external_id"])
-            uid = data_row.uid
             #metadata = {"operator": plane["operator"].values[0], "manufacturer": plane["manufacturername"].values[0], "icao24": plane["icao24"].values[0], "model": plane["model"].values[0], "registration": plane["registration"].values[0]}
             #set_metadata(client, data_row.uid, json.dumps(metadata))
             if uid != None:
@@ -229,25 +223,95 @@ def main():
     dataset = datasets[0]
 
     ontology = get_project_ontology(project.uid)
-    print(ontology)
+
     modelSchemaId = next(item for item in ontology["classifications"] if item["name"] == "model")["featureSchemaId"]
     operatorSchemaId = next(item for item in ontology["classifications"] if item["name"] == "operator")["featureSchemaId"]
     manufacturerSchemaId = next(item for item in ontology["classifications"] if item["name"] == "manufacturer")["featureSchemaId"]
     icao24SchemaId = next(item for item in ontology["classifications"] if item["name"] == "icao24")["featureSchemaId"]
-
+    
+    
     print("Working with Dataset {}\n\"{}\"\nID: {} \n".format(dataset.name, dataset.description, dataset.uid))
     data_rows = list(dataset.data_rows())
     print("There are {} rows in the dataset".format(len(data_rows)))
     print("\n\tImporting Images\n---------------------------------") 
-    labelbox_import = buildImageList(file_path)
+    labelbox_import = []
+    for folder, subfolders, files in os.walk(file_path):
+        for file in files:
+            if file.endswith(".jpg"):
 
+                if len(labelbox_import) > 10:
+                    break
+                image_filename = os.path.basename(file)
+                external_id = os.path.splitext(image_filename)[0]
+                image_path = os.path.abspath(os.path.join(folder, file))
+                if any(row.external_id == external_id for row in data_rows):
+                    print("Image already uploaded: {}".format(image_path))
+                else:
+                    item = {"file_path": image_path,
+                        "external_id": external_id}
+                    labelbox_import.append(item)
 
+                if len(labelbox_import) > 10:
+                    break
+
+    print(labelbox_import)
     if len(labelbox_import) > 0:
         print("Found {} images, processing in batches of: {}".format(len(labelbox_import), batch_size))
 
-        for i in range(0, len(labelbox_import), batch_size):
-            chunk = labelbox_import[i:i + batch_size]
-            importImageList(chunk)
+        importName = str(time.time())
+        file_upload_thread_count = 5
+
+        print("Uploading images...")
+        with ThreadPool(file_upload_thread_count) as thread_pool:
+            labelbox_import = thread_pool.map(upload_image, labelbox_import)
+        print("Importing images...")
+        upload_job = dataset.create_data_rows(labelbox_import)
+        print("The image import is: {}".format(upload_job.status))
+        annotations = []
+        updated_data_rows = list(dataset.data_rows())
+        for image in labelbox_import:
+            #data_row = filter(lambda row: row['external_id'] == image["external_id"], updated_data_rows) #dataset.data_row_for_external_id(image["external_id"])
+            plane_id = image["external_id"].split("_")[0]
+            plane = planes.loc[planes['icao24'] == plane_id.lower()]
+            
+            if plane.size == 27:
+                print("Adding metadata for plane {} onto image {}".format(plane["icao24"].values[0], image["external_id"]))
+                uid = None
+                for row in updated_data_rows:
+                    if row.external_id == image["external_id"]:
+                        uid = row.uid
+                        break
+
+                #metadata = {"operator": plane["operator"].values[0], "manufacturer": plane["manufacturername"].values[0], "icao24": plane["icao24"].values[0], "model": plane["model"].values[0], "registration": plane["registration"].values[0]}
+                #set_metadata(client, data_row.uid, json.dumps(metadata))
+                if uid != None:
+                    annotations.append(generateClassification(modelSchemaId, uid, plane["model"].values[0] ))    
+                    annotations.append(generateClassification(manufacturerSchemaId, uid, plane["manufacturername"].values[0] ))    
+                    annotations.append(generateClassification(operatorSchemaId, uid, plane["operator"].values[0] ))    
+                    annotations.append(generateClassification(icao24SchemaId, uid, plane["icao24"].values[0] ))    
+        
+        # from https://labelbox.com/docs/python-api/model-assisted-labeling-python-script
+        print(annotations)
+        print("Importing {} annotations for {} images".format(len(annotations), len(labelbox_import)))
+        try:
+            project.upload_annotations(annotations = annotations, name = importName)
+            upload_job = BulkImportRequest.from_name(client, project_id = project.uid, name = importName)
+            upload_job.wait_until_done()
+        except Exception as e:
+            print(e)
+            print(annotations)
+        print("The annotation import is: {upload_job.state}")
+        print(upload_job)
+        if upload_job.error_file_url:
+            res = requests.get(upload_job.error_file_url)
+            print(res)
+            #errors = ndjson.loads(res.text)
+            #print("\nErrors:")
+            #for error in errors:
+            #    print(
+            #        "An annotation failed to import for "
+            #        f"datarow: {error['dataRow']} due to: "
+            #        f"{error['errors']}")
 
         
 
