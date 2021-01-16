@@ -6,12 +6,12 @@ Add your Labelbox API Key. You will need a Pro or Enterprise account to do the (
 
 ````bash
 source labelbox.env
-```
+````
 
-```bash
+````bash
 python3 create.py
-```
+````
 
-```bash
+````bash
 python3 import.py --filePath=/path/to/files
-```
+````
