@@ -69,6 +69,8 @@ def set_metadata(client: Client, data_row_id: str, metadata: str):
     print(result)
         #return result['project']['ontology']['normalized']
 
+
+
 # from: https://labelbox.com/docs/automation/mal-import-formats
 def generateClassification(schemaId, dataRowId, answer):
     my_uuid = uuid.uuid4()
@@ -113,7 +115,7 @@ def buildImageList(filePath):
                     item = {"file_path": image_path,
                         "external_id": external_id}
                     labelbox_import.append(item)
-                if len(labelbox_import) > 10:
+                if len(labelbox_import) > 9:
                     return labelbox_import
     return labelbox_import
 
@@ -138,14 +140,14 @@ def importImageList(fileList):
         
         if plane.size == 27:
             print("Adding metadata for plane {} onto image {}".format(plane["icao24"].values[0], image["external_id"]))
-            #uid = None
-            #for row in updated_data_rows:
-            #    if row.external_id == image["external_id"]:
-            #        uid = row.uid
-            #        break
+            uid = None
+            for row in updated_data_rows:
+                if row.external_id == image["external_id"]:
+                    uid = row.uid
+                    break
 
-            data_row = dataset.data_row_for_external_id(image["external_id"])
-            uid = data_row.uid
+            #data_row = dataset.data_row_for_external_id(image["external_id"])
+            #uid = data_row.uid
             #metadata = {"operator": plane["operator"].values[0], "manufacturer": plane["manufacturername"].values[0], "icao24": plane["icao24"].values[0], "model": plane["model"].values[0], "registration": plane["registration"].values[0]}
             #set_metadata(client, data_row.uid, json.dumps(metadata))
             if uid != None:
@@ -155,7 +157,7 @@ def importImageList(fileList):
                 annotations.append(generateClassification(icao24SchemaId, uid, plane["icao24"].values[0] ))    
     
     # from https://labelbox.com/docs/python-api/model-assisted-labeling-python-script
-    print(annotations)
+
     print("Importing {} annotations for {} images".format(len(annotations), len(fileList)))
     try:
         project.upload_annotations(annotations = annotations, name = importName)
@@ -165,10 +167,11 @@ def importImageList(fileList):
         print(e)
         print(annotations)
     print("The annotation import is: {upload_job.state}")
-    print(upload_job)
+    print(f'Upload status file: {upload_job.status_file_url}')
+    print(f'Upload error file: {upload_job.error_file_url}')
     if upload_job.error_file_url:
         res = requests.get(upload_job.error_file_url)
-        print(res)
+        print(res.text)
         #errors = ndjson.loads(res.text)
         #print("\nErrors:")
         #for error in errors:
@@ -229,7 +232,6 @@ def main():
     dataset = datasets[0]
 
     ontology = get_project_ontology(project.uid)
-    print(ontology)
     modelSchemaId = next(item for item in ontology["classifications"] if item["name"] == "model")["featureSchemaId"]
     operatorSchemaId = next(item for item in ontology["classifications"] if item["name"] == "operator")["featureSchemaId"]
     manufacturerSchemaId = next(item for item in ontology["classifications"] if item["name"] == "manufacturer")["featureSchemaId"]
@@ -248,8 +250,6 @@ def main():
         for i in range(0, len(labelbox_import), batch_size):
             chunk = labelbox_import[i:i + batch_size]
             importImageList(chunk)
-
-        
 
     else:
         print("No new files to upload")
