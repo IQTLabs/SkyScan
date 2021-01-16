@@ -6,6 +6,36 @@ import os
 
 # from: https://labelbox.com/docs/python-api/model-assisted-labeling-python-script
 
+
+
+def turn_on_model_assisted_labeling(client: Client, project_id: str) -> None:
+    """
+    Turns model assisted labeling on for the given project
+
+    Args:
+        client (Client): The client that is connected via API key
+        project_id (str): The id of the project
+    Returns:
+        None
+
+    """
+    client.execute("""
+         mutation TurnPredictionsOn($proj_id: ID!){
+             project(
+                 where: {id: $proj_id}
+             ){
+                 showPredictionsToLabelers(show:true){
+                     id
+                     showingPredictionsToLabelers
+                 }
+             }
+         }
+     """, {"proj_id": project_id})
+
+
+
+
+
 print("Connecting to Labelbox...")
 client = Client(os.environ.get("LABELBOX_API_KEY"))
 
@@ -51,6 +81,10 @@ ontology = {
 }
 new_project.setup(new_project_frontend, ontology)
 new_project.datasets.connect(new_dataset)
+
+print("Turning on Model Assisted Labeling..")
+turn_on_model_assisted_labeling(client = client, project_id = new_project.uid)
+
 
 print("\n\tSetup Complete!\n--------------------------")
 print(f"The project id is: {new_project.uid}")
