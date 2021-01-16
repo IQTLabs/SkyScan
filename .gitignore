@@ -3,3 +3,4 @@
 notes.md
 axis-ptz/*.jpg
 axis-ptz/capture/*
+labelbox-import/labelbox.env
