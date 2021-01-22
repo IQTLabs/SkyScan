@@ -29,7 +29,6 @@ import json
 import sys
 import os
 import logging
-import logging
 import coloredlogs
 import calendar
 from datetime import datetime, timedelta
@@ -267,7 +266,9 @@ class Observation(object):
 
 
 def on_message(client, userdata, message):
-
+    global camera_altitude
+    global camera_latitude
+    global camera_longitude
     command = str(message.payload.decode("utf-8"))
     # Assumes you will only be getting JSON on your subscribed messages
     try:
@@ -284,6 +285,9 @@ def on_message(client, userdata, message):
         q.put(update) #put messages on queue
     elif message.topic == "/egi/":
         logging.info(update)
+        camera_longitude = float(update["long"])
+        camera_latitude = float(update["lat"])
+        camera_altitude = float(update["alt"])
     else:
         logging.info("Topic not processed: " + message.topic)
    

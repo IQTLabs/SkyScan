@@ -2,7 +2,7 @@ FROM debian
 
 RUN apt update && \
     apt install -y python3 python3-pip && \
-    pip3 install paho-mqtt
+    pip3 install paho-mqtt coloredlogs
 
 RUN mkdir -p /app/
 WORKDIR /app
