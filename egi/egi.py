@@ -22,7 +22,7 @@ coloredlogs.install(level=level, fmt='%(asctime)s.%(msecs)03d \033[0;90m%(leveln
 ##                Initialize Variables               ##
 #######################################################
 config = {}
-config['Local'] = ["127.0.0.1", "/egi/", "Local MQTT Bus"]
+config['Local'] = ["127.0.0.1", "skyscan/egi", "Local MQTT Bus"]  # updated based on naming convention here: https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/
 timeTrigger = 0
 timeHeartbeat = 0
 ID = str(random.randint(1,100001))
@@ -73,7 +73,7 @@ clientLocal.on_disconnect = on_disconnect
 clientLocal.connect(broker_address) #connect to broker
 clientLocal.loop_start() #start the loop
 #clientLocal.subscribe(local_topic+"/#") #config/#")
-#clientLocal.publish(local_topic+"/registration","EGI-"+ID+" Registration")
+clientLocal.publish(local_topic+"/registration","EGI-"+ID+" Registration")
 
 #############################################
 ##                Main Loop                ##
