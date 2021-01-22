@@ -44,6 +44,7 @@ from json.decoder import JSONDecodeError
 import pandas as pd
 from queue import Queue
 
+ID = str(random.randint(1,100001))
 
 # Clean out observations this often
 OBSERVATION_CLEAN_INTERVAL = 30
@@ -283,7 +284,7 @@ def on_message(client, userdata, message):
         log.critical("onMessage - Caught it!")
     if message.topic == plane_topic:
         q.put(update) #put messages on queue
-    elif message.topic == "/egi/":
+    elif message.topic == "skyscan/egi":
         logging.info(update)
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
@@ -332,7 +333,11 @@ class FlightTracker(object):
         """
         MQTT publish closest observation every second, more often if the plane is closer
         """
+        timeHeartbeat = 0
         while True:
+            if timeHeartbeat < time.mktime(time.gmtime()):
+                timeHeartbeat = time.mktime(time.gmtime()) + 10
+                self.__client.publish("Heartbeat", "skyscan-tracker-" +ID+" Heartbeat", 0, retain)
             if not self.__tracking_icao24:
                 time.sleep(1)
             else:
@@ -373,7 +378,7 @@ class FlightTracker(object):
         """Run the flight tracker.
         """
         print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
-        self.__client = mqtt.Client("skyscan-tracker") #create new instance
+        self.__client = mqtt.Client("skyscan-tracker-" + ID) #create new instance
 
         self.__client.on_message = on_message #attach function to callback
         print("setup MQTT")

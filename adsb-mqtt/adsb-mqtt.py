@@ -43,6 +43,9 @@ import utils
 import mqtt_wrapper
 import pandas as pd
 
+
+ID = str(random.randint(1,100001))
+
 # Clean out observations this often
 OBSERVATION_CLEAN_INTERVAL = 30
 # Socket read timeout
@@ -423,11 +426,15 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
-        self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "skyscan-adsb-mqtt-%d" % (os.getpid())) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
+        timeHeartbeat = 0
+        self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "skyscan-adsb-mqtt-%d" % (ID)) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
         #threading.Thread(target = self.__publish_thread, daemon = True).start()
 
         
         while True:
+            if timeHeartbeat < time.mktime(time.gmtime()):
+                timeHeartbeat = time.mktime(time.gmtime()) + 10
+                self.__mqtt_bridge.publish("Heartbeat", "EGI-"+ID+" Heartbeat", 0, retain)
             if not self.dump1090Connect():
                 continue
             for data in self.dump1090Read():
@@ -446,6 +453,7 @@ class FlightTracker(object):
                         retain = False
                         self.__mqtt_bridge.publish(self.__mqtt_topic, self.__observations[icao24].json(), 0, retain)
                         #logging.info("%s alt %5d trk %3d spd %3d %s" % (self.__observations[icao24].getIcao24(), self.__observations[icao24].getAltitude(), self.__observations[icao24].getHeading(), self.__observations[icao24].getGroundSpeed(), self.__observations[icao24].getType()))
+            time.sleep(0.01)
 
     def cleanObservations(self):
         """Clean observations for planes not seen in a while
