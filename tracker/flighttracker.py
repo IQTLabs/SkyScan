@@ -283,7 +283,9 @@ def on_message(client, userdata, message):
     if message.topic == plane_topic:
         q.put(update) #put messages on queue
     elif message.topic == "/egi/":
-        print(update)
+        logging.info(update)
+    else:
+        logging.info("Topic not processed: " + message.topic)
    
 class FlightTracker(object):
     __mqtt_broker: str = ""
