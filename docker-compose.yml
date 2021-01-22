@@ -69,3 +69,15 @@ services:
         - "9001:9001"
         - "1883:1883"
     restart: unless-stopped
+
+  egi:
+    build: ./egi
+    entrypoint: "/app/egi.py -m mqtt"
+    environment:
+      - LAT=${LAT}
+      - LONG=${LONG}
+      - ALT=${ALT}
+      - ROLL=${ROLL}
+      - PITCH=${PITCH}
+      - YAW=${YAW}
+    restart: unless-stopped
