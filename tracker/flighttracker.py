@@ -503,7 +503,7 @@ def main():
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
 
 
-    tracker = FlightTracker( args.mqtt_host, args.lat, args.lon, args.alt, args.plane_topic, args.tracking_topic,  mqtt_port = args.mqtt_port)
+    tracker = FlightTracker( args.mqtt_host, args.plane_topic, args.tracking_topic,  mqtt_port = args.mqtt_port)
     tracker.run()  # Never returns
 
 
