@@ -115,8 +115,6 @@ def buildImageList(filePath):
                     item = {"file_path": image_path,
                         "external_id": external_id}
                     labelbox_import.append(item)
-                if len(labelbox_import) > 9:
-                    return labelbox_import
     return labelbox_import
 
 
@@ -131,10 +129,8 @@ def importImageList(fileList):
     upload_job = dataset.create_data_rows(fileList)
     print("The image import is: {}".format(upload_job.status))
     annotations = []
-    #updated_data_rows = list(dataset.data_rows())
+    updated_data_rows = list(dataset.data_rows())
     for image in fileList:
-        #data_row = filter(lambda row: row['external_id'] == image["external_id"], updated_data_rows) #
-        
         plane_id = image["external_id"].split("_")[0]
         plane = planes.loc[planes['icao24'] == plane_id.lower()]
         
@@ -207,7 +203,7 @@ def main():
     print("Printing table")
     print(planes)
     print("Connecting to LabelBox......\n")
-    batch_size = 10
+    batch_size = 1000
     client = Client(os.environ.get("LABELBOX_API_KEY"))
     projectName = os.environ.get("LABELBOX_PROJECT_NAME")
     datasetName = os.environ.get("LABELBOX_DATASET_NAME")
