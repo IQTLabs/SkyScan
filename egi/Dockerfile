@@ -4,13 +4,6 @@ RUN apt update && \
     apt install -y python3 python3-pip && \
     pip3 install paho-mqtt
 
-ENV LAT 1
-ENV LONG 3
-ENV ALT 3
-ENV ROLL 7
-ENV PITCH 4
-ENV YAW 2
-
 RUN mkdir -p /app/
 WORKDIR /app
 ADD *.py /app/
