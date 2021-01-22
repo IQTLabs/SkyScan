@@ -75,5 +75,6 @@ while Active:
         clientLocal.publish(local_topic+"/Heartbeat","EGI-"+ID+" Heartbeat")
     if timeTrigger < time.mktime(time.gmtime()):
         timeTrigger = time.mktime(time.gmtime()) + 10
+        print("sending message: " + state)
         clientLocal.publish(local_topic,state)
-    time.sleep(0.001)
+    time.sleep(0.1)
