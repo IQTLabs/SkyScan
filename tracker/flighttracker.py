@@ -266,7 +266,10 @@ class Observation(object):
 
 
 def on_message(client, userdata, message):
-    global currentPlane
+    print(message.topic)
+    if message.topic != "/egi/":
+    
+    
     command = str(message.payload.decode("utf-8"))
     #rint(command)
     try:
@@ -381,6 +384,7 @@ class FlightTracker(object):
         self.__client.loop_start() #start the loop
         print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
+        self.__client.subscribe("/egi/")
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
