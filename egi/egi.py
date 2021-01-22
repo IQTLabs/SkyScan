@@ -6,8 +6,17 @@ import random
 import json
 import os
 import argparse
+import logging
+import coloredlogs
 
 Active = True
+styles = {'critical': {'bold': True, 'color': 'red'}, 'debug': {'color': 'green'}, 'error': {'color': 'red'}, 'info': {'color': 'white'}, 'notice': {'color': 'magenta'}, 'spam': {'color': 'green', 'faint': True}, 'success': {'bold': True, 'color': 'green'}, 'verbose': {'color': 'blue'}, 'warning': {'color': 'yellow'}}
+level = logging.INFO 
+coloredlogs.install(level=level, fmt='%(asctime)s.%(msecs)03d \033[0;90m%(levelname)-8s '
+                    ''
+                    '\033[0;36m%(filename)-18s%(lineno)3d\033[00m '
+                    '%(message)s',
+                    level_styles = styles)
 
 #######################################################
 ##                Initialize Variables               ##
@@ -42,9 +51,9 @@ args = parser.parse_args()
 #######################################################
 def on_message_local(client, userdata, message):
     payload = str(message.payload.decode("utf-8"))
-    print('Message Received: ' + message.topic + ' | ' + payload)
+    logging.info('Message Received: ' + message.topic + ' | ' + payload)
     #if message.topic == local_topic+"/OFF":
-    #    print("Turning Lamp OFF")
+    #    logging.info("Turning Lamp OFF")
     
 def on_disconnect(client, userdata, rc):
     global Active
@@ -57,24 +66,23 @@ Unit = 'Local'
 broker_address=config[Unit][0]
 broker_address=args.mqtt_host
 local_topic= config[Unit][1]
-print("connecting to MQTT broker at "+broker_address+", channel '"+local_topic+"'")
+logging.info("connecting to MQTT broker at "+broker_address+", channel '"+local_topic+"'")
 clientLocal = mqtt.Client("EGI-"+ID) #create new instance
 clientLocal.on_message = on_message_local #attach function to callback
 clientLocal.on_disconnect = on_disconnect
 clientLocal.connect(broker_address) #connect to broker
 clientLocal.loop_start() #start the loop
-clientLocal.subscribe(local_topic+"/#") #config/#")
-clientLocal.publish(local_topic+"/registration","EGI-"+ID+" Registration")
+#clientLocal.subscribe(local_topic+"/#") #config/#")
+#clientLocal.publish(local_topic+"/registration","EGI-"+ID+" Registration")
 
 #############################################
 ##                Main Loop                ##
 #############################################
 while Active:
-    if timeHeartbeat < time.mktime(time.gmtime()):
-        timeHeartbeat = time.mktime(time.gmtime()) + 10
-        clientLocal.publish(local_topic+"/Heartbeat","EGI-"+ID+" Heartbeat")
+    #if timeHeartbeat < time.mktime(time.gmtime()):
+    #    timeHeartbeat = time.mktime(time.gmtime()) + 10
+    #    clientLocal.publish(local_topic+"Heartbeat","EGI-"+ID+" Heartbeat")
     if timeTrigger < time.mktime(time.gmtime()):
         timeTrigger = time.mktime(time.gmtime()) + 10
-        print("sending message: " + state)
         clientLocal.publish(local_topic,state)
     time.sleep(0.1)
