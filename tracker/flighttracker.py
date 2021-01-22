@@ -267,22 +267,24 @@ class Observation(object):
 
 def on_message(client, userdata, message):
     global currentPlane
-    command = str(message.payload.decode("utf-8"))
-    #rint(command)
-    try:
-        update = json.loads(command)
-        #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
-    except JSONDecodeError as e:
-    # do whatever you want
-        log.critical("JSONDecode Error: {} ".format(e))
-    except TypeError as e:
-    # do whatever you want in this case
-        log.critical("Type Error: {} ".format(e))
-    except ValueError as e:
-        log.critical("Value Error: {} ".format(e))
-    except:
-        log.critical("Caught it!")
-    q.put(update) #put messages on queue
+    print(message.topic)
+    if message.topic != "/egi/":
+        command = str(message.payload.decode("utf-8"))
+        #rint(command)
+        try:
+            update = json.loads(command)
+            #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
+        except JSONDecodeError as e:
+        # do whatever you want
+            log.critical("JSONDecode Error: {} ".format(e))
+        except TypeError as e:
+        # do whatever you want in this case
+            log.critical("Type Error: {} ".format(e))
+        except ValueError as e:
+            log.critical("Value Error: {} ".format(e))
+        except:
+            log.critical("Caught it!")
+        q.put(update) #put messages on queue
    
 class FlightTracker(object):
     __mqtt_broker: str = ""
@@ -381,6 +383,7 @@ class FlightTracker(object):
         self.__client.loop_start() #start the loop
         print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
+        self.__client.subscribe("/egi/")
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
