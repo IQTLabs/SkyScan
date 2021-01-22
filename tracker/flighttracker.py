@@ -51,6 +51,7 @@ OBSERVATION_CLEAN_INTERVAL = 30
 q=Queue() # Good writeup of how to pass messages from MQTT into classes, here: http://www.steves-internet-guide.com/mqtt-python-callbacks/
 args = None
 camera_latitude = None
+plant_topic = None # the onMessage function needs to be outside the Class and it needs to get the Plane Topic, so it prob needs to be a global
 camera_longitude = None
 camera_altitude = None
 camera_lead = None
@@ -266,34 +267,29 @@ class Observation(object):
 
 
 def on_message(client, userdata, message):
-    global currentPlane
-    print(message.topic)
-    if message.topic != "/egi/":
-        command = str(message.payload.decode("utf-8"))
-        #rint(command)
-        try:
-            update = json.loads(command)
-            #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
-        except JSONDecodeError as e:
-        # do whatever you want
-            log.critical("JSONDecode Error: {} ".format(e))
-        except TypeError as e:
-        # do whatever you want in this case
-            log.critical("Type Error: {} ".format(e))
-        except ValueError as e:
-            log.critical("Value Error: {} ".format(e))
-        except:
-            log.critical("Caught it!")
+
+    command = str(message.payload.decode("utf-8"))
+    # Assumes you will only be getting JSON on your subscribed messages
+    try:
+        update = json.loads(command)
+    except JSONDecodeError as e:
+        log.critical("onMessage - JSONDecode Error: {} ".format(e))
+    except TypeError as e:
+        log.critical("onMessage - Type Error: {} ".format(e))
+    except ValueError as e:
+        log.critical("onMessage - Value Error: {} ".format(e))
+    except:
+        log.critical("onMessage - Caught it!")
+    if message.topic == plane_topic:
         q.put(update) #put messages on queue
+    elif message.topic == "/egi/":
+        print(update)
    
 class FlightTracker(object):
     __mqtt_broker: str = ""
     __mqtt_port: int = 0
     __plane_topic: str = None
     __tracking_topic: str = None
-    __latitude: float = 0
-    __longitude: float = 0
-    __altitude: float = 0
     __client = None
     __observations: Dict[str, str] = {}
     __tracking_icao24: str = None
@@ -301,7 +297,7 @@ class FlightTracker(object):
     __next_clean: datetime = None
     __has_nagged: bool = False
 
-    def __init__(self,  mqtt_broker: str, latitude: float, longitude: float, altitude: float, plane_topic: str, tracking_topic: str, mqtt_port: int = 1883, ):
+    def __init__(self,  mqtt_broker: str, plane_topic: str, tracking_topic: str, mqtt_port: int = 1883, ):
         """Initialize the flight tracker
 
         Arguments:
@@ -319,9 +315,6 @@ class FlightTracker(object):
 
         self.__mqtt_broker = mqtt_broker
         self.__mqtt_port = mqtt_port
-        self.__latitude = latitude
-        self.__longitude = longitude
-        self.__altitude = altitude
         self.__sock = None
         self.__observations = {}
         self.__next_clean = datetime.utcnow() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL)
@@ -345,7 +338,7 @@ class FlightTracker(object):
                     continue
 
                 (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
-                distance = utils.coordinate_distance(self.__latitude, self.__longitude, lat, lon)
+                distance = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
                 bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
@@ -367,7 +360,7 @@ class FlightTracker(object):
         """Update distance to aircraft being tracked
         """
         cur = self.__observations[self.__tracking_icao24]
-        self.__tracking_distance = utils.coordinate_distance(self.__latitude, self.__longitude, cur.getLat(), cur.getLon())
+        self.__tracking_distance = utils.coordinate_distance(camera_latitude, camera_longitude, cur.getLat(), cur.getLon())
 
 
     def run(self):
@@ -405,7 +398,7 @@ class FlightTracker(object):
                     elif self.__tracking_icao24 == icao24:
                         self.updateTrackingDistance()
                     else:
-                        distance = utils.coordinate_distance(self.__latitude, self.__longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
+                        distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
                         if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
                             self.__tracking_icao24 = icao24
                             self.__tracking_distance = distance
@@ -422,7 +415,7 @@ class FlightTracker(object):
                 continue
             if self.__observations[icao24].getElevation() < min_elevation:
                 continue
-            distance = utils.coordinate_distance(self.__latitude, self.__longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
+            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
             if distance < self.__tracking_distance:
                 self.__tracking_icao24 = icao24
                 self.__tracking_distance = distance
@@ -463,6 +456,7 @@ def main():
     global camera_latitude
     global camera_longitude
     global camera_lead
+    global plane_topic
     global min_elevation
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
@@ -486,6 +480,7 @@ def main():
     camera_longitude = args.lon
     camera_latitude = args.lat
     camera_altitude = args.alt
+    plane_topic = args.plane_topic
     camera_lead = args.camera_lead
     min_elevation = args.min_elevation
     level = logging.DEBUG if args.verbose else logging.INFO
