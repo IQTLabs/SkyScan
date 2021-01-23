@@ -429,12 +429,12 @@ class FlightTracker(object):
         timeHeartbeat = 0
         self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "skyscan-adsb-mqtt-%s" % (ID)) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
         #threading.Thread(target = self.__publish_thread, daemon = True).start()
-
+        self.__mqtt_bridge.publish("skyscan/registration", "skyscan-adsb-mqtt-"+ID+" Registration", 0, False)
         
         while True:
             if timeHeartbeat < time.mktime(time.gmtime()):
                 timeHeartbeat = time.mktime(time.gmtime()) + 10
-                self.__mqtt_bridge.publish("Heartbeat", "EGI-"+ID+" Heartbeat", 0, False)
+                self.__mqtt_bridge.publish("skyscan/heartbeat", "skyscan-adsb-mqtt-"+ID+" Heartbeat", 0, False)
             if not self.dump1090Connect():
                 continue
             for data in self.dump1090Read():
