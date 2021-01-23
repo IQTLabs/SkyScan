@@ -427,7 +427,7 @@ class FlightTracker(object):
         """Run the flight tracker.
         """
         timeHeartbeat = 0
-        self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "skyscan-adsb-mqtt-%d" % (ID)) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
+        self.__mqtt_bridge = mqtt_wrapper.bridge(host = self.__mqtt_broker, port = self.__mqtt_port, client_id = "skyscan-adsb-mqtt-%s" % (ID)) # TOOD: , user_id = args.mqtt_user, password = args.mqtt_password)
         #threading.Thread(target = self.__publish_thread, daemon = True).start()
 
         
