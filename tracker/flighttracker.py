@@ -388,7 +388,7 @@ class FlightTracker(object):
         print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
         self.__client.subscribe("skyscan/egi")
-        slef.__client.publish("skyscan/registration", "skyscan-tracker-"+ID+" Registration", 0, False)
+        self.__client.publish("skyscan/registration", "skyscan-tracker-"+ID+" Registration", 0, False)
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
