@@ -387,7 +387,7 @@ class FlightTracker(object):
         self.__client.loop_start() #start the loop
         print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
-        self.__client.subscribe("/egi/")
+        self.__client.subscribe("skyscan/egi")
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
