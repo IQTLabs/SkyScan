@@ -80,4 +80,6 @@ services:
       - ROLL=${ROLL}
       - PITCH=${PITCH}
       - YAW=${YAW}
+    depends_on:
+      - mqtt
     restart: unless-stopped
