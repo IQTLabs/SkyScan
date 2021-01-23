@@ -82,6 +82,7 @@ while Active:
     #if timeHeartbeat < time.mktime(time.gmtime()):
     #    timeHeartbeat = time.mktime(time.gmtime()) + 10
     #    clientLocal.publish(local_topic+"Heartbeat","EGI-"+ID+" Heartbeat")
+    logging.info("Publishing " + state + " to " + local_topic)
     if timeTrigger < time.mktime(time.gmtime()):
         timeTrigger = time.mktime(time.gmtime()) + 10
         clientLocal.publish(local_topic,state)
