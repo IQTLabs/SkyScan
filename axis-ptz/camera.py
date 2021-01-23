@@ -252,7 +252,7 @@ def main():
     while True:
         if timeHeartbeat < time.mktime(time.gmtime()):
             timeHeartbeat = time.mktime(time.gmtime()) + 10
-            client.publish("Heartbeat", "skyscan-axis-ptz-camera-"+ID+" Heartbeat", 0, retain)
+            client.publish("Heartbeat", "skyscan-axis-ptz-camera-"+ID+" Heartbeat", 0, False)
         time.sleep(0.1)
 
 
