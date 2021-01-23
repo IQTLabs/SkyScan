@@ -337,7 +337,7 @@ class FlightTracker(object):
         while True:
             if timeHeartbeat < time.mktime(time.gmtime()):
                 timeHeartbeat = time.mktime(time.gmtime()) + 10
-                self.__client.publish("Heartbeat", "skyscan-tracker-" +ID+" Heartbeat", 0, retain)
+                self.__client.publish("Heartbeat", "skyscan-tracker-" +ID+" Heartbeat", 0, False)
             if not self.__tracking_icao24:
                 time.sleep(1)
             else:

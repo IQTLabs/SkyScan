@@ -434,7 +434,7 @@ class FlightTracker(object):
         while True:
             if timeHeartbeat < time.mktime(time.gmtime()):
                 timeHeartbeat = time.mktime(time.gmtime()) + 10
-                self.__mqtt_bridge.publish("Heartbeat", "EGI-"+ID+" Heartbeat", 0, retain)
+                self.__mqtt_bridge.publish("Heartbeat", "EGI-"+ID+" Heartbeat", 0, False)
             if not self.dump1090Connect():
                 continue
             for data in self.dump1090Read():
