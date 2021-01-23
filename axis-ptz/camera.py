@@ -245,6 +245,8 @@ def main():
     client.connect(args.mqtt_host) #connect to broker
     client.loop_start() #start the loop
     client.subscribe(args.mqtt_topic+"/#")
+    client.publish("skyscan/registration", "skyscan-axis-ptz-camera-"+ID+" Registration", 0, False)
+
     #############################################
     ##                Main Loop                ##
     #############################################
@@ -252,7 +254,7 @@ def main():
     while True:
         if timeHeartbeat < time.mktime(time.gmtime()):
             timeHeartbeat = time.mktime(time.gmtime()) + 10
-            client.publish("Heartbeat", "skyscan-axis-ptz-camera-"+ID+" Heartbeat", 0, False)
+            client.publish("skyscan/heartbeat", "skyscan-axis-ptz-camera-"+ID+" Heartbeat", 0, False)
         time.sleep(0.1)
 
 

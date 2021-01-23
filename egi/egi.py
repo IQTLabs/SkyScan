@@ -73,7 +73,7 @@ clientLocal.on_disconnect = on_disconnect
 clientLocal.connect(broker_address) #connect to broker
 clientLocal.loop_start() #start the loop
 #clientLocal.subscribe(local_topic+"/#") #config/#")
-clientLocal.publish(local_topic+"/registration","EGI-"+ID+" Registration")
+clientLocal.publish("skyscan/registration","EGI-"+ID+" Registration")
 
 #############################################
 ##                Main Loop                ##
