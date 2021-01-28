@@ -4,3 +4,9 @@ notes.md
 axis-ptz/*.jpg
 axis-ptz/capture/*
 labelbox-import/labelbox.env
+.ipynb
+voxel51-import/export
+voxel51-import/media
+voxel51-import/.ipynb_checkpoints
+voxel51-import/*.json
+*.env
