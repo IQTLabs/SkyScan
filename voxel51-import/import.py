@@ -10,39 +10,6 @@ from multiprocessing.dummy import Pool as ThreadPool
 import pandas as pd
 
 
-
-
-
-# from: https://labelbox.com/docs/automation/mal-import-formats
-def generateClassification(schemaId, dataRowId, answer):
-    my_uuid = uuid.uuid4()
-
-    # you will get an Annotation Import error if there is a nan for an answer. better to pass in a none string instead.
-    if isinstance(answer, str) == False:
-        answer = "none"
-    item = { "schemaId":schemaId,
-            "uuid": str(my_uuid),
-            "dataRow": {
-                "id": dataRowId
-            },
-            "answer": answer }
-    return item
-
-def upload_image(item):
-    
-    while True:
-        try:
-            image_url = client.upload_file(item["file_path"])
-        except Exception as e:
-            print("Exception uploading {} \n{}".format(item["file_path"],e))
-            continue
-        break
-
-    new_item = {"row_data": image_url, "external_id": item["external_id"]}
-    return new_item
-
-
-
 def buildImageList(filePath):
     labelbox_import = []
     for folder, subfolders, files in os.walk(filePath):

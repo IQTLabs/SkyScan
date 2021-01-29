@@ -8,5 +8,7 @@ labelbox-import/labelbox.env
 voxel51-import/export
 voxel51-import/media
 voxel51-import/.ipynb_checkpoints
+voxel51-import/notebooks/.ipynb_checkpoints
+*-checkpoint.ipynb
 voxel51-import/*.json
 *.env
