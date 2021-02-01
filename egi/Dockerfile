@@ -1,13 +1,15 @@
 FROM debian
 
 RUN apt update && \
-    apt install -y python3 python3-pip && \
-    pip3 install paho-mqtt coloredlogs
+    apt install -y python3 python3-pip gpsd-clients gpsd
 
 RUN mkdir -p /app/
 WORKDIR /app
+ADD *.txt /app/ 
+RUN pip3 install -r requirements.txt
 ADD *.py /app/
 
-#ENTRYPOINT python3 /tmp/egi.py
+ENTRYPOINT sh -c "gpsd /dev/ttyACM0 -F /var/run/gpsd.sock && bash"
 
-#docker run -d --restart unless-stopped --network=host -v /home/pi/:/tmp/ --name lamp docker-registry.iqt.org/mission-capabilities/rpi-stats-reporting/lamp-control
+#docker run -it --device=/dev/ttyACM0 skyscan_egi
+#python3 egi_mqtt.py -h
