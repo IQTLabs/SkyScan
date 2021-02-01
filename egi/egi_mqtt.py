@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
  
+from gps import *
 import paho.mqtt.client as mqtt #import the client1
 import time
 import random
@@ -17,33 +18,39 @@ coloredlogs.install(level=level, fmt='%(asctime)s.%(msecs)03d \033[0;90m%(leveln
                     '\033[0;36m%(filename)-18s%(lineno)3d\033[00m '
                     '%(message)s',
                     level_styles = styles)
+logging.info("Initializing EGI")
 
 #######################################################
 ##                Initialize Variables               ##
 #######################################################
 config = {}
 config['Local'] = ["127.0.0.1", "skyscan/egi", "Local MQTT Bus"]  # updated based on naming convention here: https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/
-timeTrigger = 0
+timeTrigger = time.mktime(time.gmtime()) + 10
 timeHeartbeat = 0
 ID = str(random.randint(1,100001))
-
-LLA = [ os.environ['LAT'], os.environ['LONG'], os.environ['ALT'] ]
-RPY = [ os.environ['ROLL'], os.environ['PITCH'], os.environ['YAW'] ]
-
-state = {}
-state['lat'] = LLA[0]
-state['long'] = LLA[1]
-state['alt'] = LLA[2]
-state['roll'] = RPY[0]
-state['pitch'] = RPY[1]
-state['yaw'] = RPY[2]
-state=json.dumps(state)
+gpsd = gps(mode=WATCH_ENABLE|WATCH_NEWSTYLE) 
+LLA = [38.9510808,-77.3841834,130.1337]
+RPY = [0,0,0]
 
 parser = argparse.ArgumentParser(description='An MQTT based camera controller')
-
 parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
-
+parser.add_argument('-l', '--latitude', help="Latitude (decimal degrees)", default=LLA[0])
+parser.add_argument('-L', '--longitude', help="Longitude (decimal degrees)", default=LLA[1])
+parser.add_argument('-a', '--altitude', help="Altitude (meters)", default=LLA[2])
+parser.add_argument('-r', '--roll', help="Roll Angle of Camera (degrees)", default=RPY[0])
+parser.add_argument('-p', '--pitch', help="Pitch Angle of Camera (degrees)", default=RPY[1])
+parser.add_argument('-y', '--yaw', help="Yaw Angle of Camera (degrees from True North)", default=RPY[2])
 args = parser.parse_args()
+
+state = {}
+state['time'] = time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+state['lat'] = float(args.latitude)
+state['long'] = float(args.longitude)
+state['alt'] = float(args.altitude)
+state['roll'] = float(args.roll)
+state['pitch'] = float(args.pitch)
+state['yaw'] = float(args.yaw)
+logging.info("Initial State Array: " + str(state))
 
 
 #######################################################
@@ -52,8 +59,6 @@ args = parser.parse_args()
 def on_message_local(client, userdata, message):
     payload = str(message.payload.decode("utf-8"))
     logging.info('Message Received: ' + message.topic + ' | ' + payload)
-    #if message.topic == local_topic+"/OFF":
-    #    logging.info("Turning Lamp OFF")
     
 def on_disconnect(client, userdata, rc):
     global Active
@@ -72,17 +77,20 @@ clientLocal.on_message = on_message_local #attach function to callback
 clientLocal.on_disconnect = on_disconnect
 clientLocal.connect(broker_address) #connect to broker
 clientLocal.loop_start() #start the loop
-#clientLocal.subscribe(local_topic+"/#") #config/#")
 clientLocal.publish("skyscan/registration","EGI-"+ID+" Registration")
 
 #############################################
 ##                Main Loop                ##
 #############################################
 while Active:
-    #if timeHeartbeat < time.mktime(time.gmtime()):
-    #    timeHeartbeat = time.mktime(time.gmtime()) + 10
-    #    clientLocal.publish(local_topic+"Heartbeat","EGI-"+ID+" Heartbeat")
     if timeTrigger < time.mktime(time.gmtime()):
         timeTrigger = time.mktime(time.gmtime()) + 10
-        clientLocal.publish(local_topic,state)
-    time.sleep(0.1)
+        clientLocal.publish(local_topic,json.dumps(state))
+
+    report = gpsd.next() #
+    if report['class'] == 'TPV':
+        state['time'] = getattr(report,'time',time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()))
+        state['lat'] = getattr(report,'lat',LLA[0])
+        state['long'] = getattr(report,'lon',LLA[1])
+        state['alt'] = getattr(report,'alt',LLA[2])
+    time.sleep(0.01)
