@@ -15,3 +15,4 @@ CAMERA_DELAY=0.5            # How many seconds after issuing a Pan/Tilt command 
 CAMERA_ZOOM=9999            # The zoom setting for the camera (0-9999)
 CAMERA_LEAD=0.25            # How many seconds ahead of a plane's predicted location should the camera be positioned
 RTL_DEV=1                   # The device ID for the RTL-SDR - set using the rtl_eeprom program
+GPS_SERIAL=/dev/ttyACM0     # GPS module serial port
