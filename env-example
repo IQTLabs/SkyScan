@@ -1,7 +1,7 @@
 TZ="New York" #Local timezone in "TZ database name" format. https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 LAT=38.890022390623265  # Latitude of the camera
 LONG=-77.03513244930217 # Longitude of the camera
-ALT=170                 # Altitude of the camera, in feet above sea level
+ALT=170                 # Altitude of the camera, this should be in METERS above sea level
 ROLL=0                  # Roll Angle of Camera Mount from Inertial
 PITCH=0                 # Pitch Angle of Camera Mount from Inertial
 YAW=0                   # Yaw Angle of Camera Mount from Inertial
