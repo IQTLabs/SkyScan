@@ -24,7 +24,7 @@ from json.decoder import JSONDecodeError
 from sensecam_control import vapix_control,vapix_config
 
 
-
+ID = str(random.randint(1,100001))
 tiltCorrect = 15
 args = None
 camera = None
@@ -238,17 +238,23 @@ def main():
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+args.mqtt_topic+"'")
-    client = mqtt.Client("skyscan-axis-ptz-camera") #create new instance
+    client = mqtt.Client("skyscan-axis-ptz-camera-" + ID) #create new instance
 
     client.on_message=on_message #attach function to callback
 
     client.connect(args.mqtt_host) #connect to broker
     client.loop_start() #start the loop
     client.subscribe(args.mqtt_topic+"/#")
+    client.publish("skyscan/registration", "skyscan-axis-ptz-camera-"+ID+" Registration", 0, False)
+
     #############################################
     ##                Main Loop                ##
     #############################################
+    timeHeartbeat = 0
     while True:
+        if timeHeartbeat < time.mktime(time.gmtime()):
+            timeHeartbeat = time.mktime(time.gmtime()) + 10
+            client.publish("skyscan/heartbeat", "skyscan-axis-ptz-camera-"+ID+" Heartbeat", 0, False)
         time.sleep(0.1)
 
 
