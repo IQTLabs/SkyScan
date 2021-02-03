@@ -29,7 +29,6 @@ import json
 import sys
 import os
 import logging
-import logging
 import coloredlogs
 import calendar
 from datetime import datetime, timedelta
@@ -45,6 +44,7 @@ from json.decoder import JSONDecodeError
 import pandas as pd
 from queue import Queue
 
+ID = str(random.randint(1,100001))
 
 # Clean out observations this often
 OBSERVATION_CLEAN_INTERVAL = 30
@@ -267,7 +267,9 @@ class Observation(object):
 
 
 def on_message(client, userdata, message):
-
+    global camera_altitude
+    global camera_latitude
+    global camera_longitude
     command = str(message.payload.decode("utf-8"))
     # Assumes you will only be getting JSON on your subscribed messages
     try:
@@ -282,8 +284,13 @@ def on_message(client, userdata, message):
         log.critical("onMessage - Caught it!")
     if message.topic == plane_topic:
         q.put(update) #put messages on queue
-    elif message.topic == "/egi/":
-        print(update)
+    elif message.topic == "skyscan/egi":
+        logging.info(update)
+        camera_longitude = float(update["long"])
+        camera_latitude = float(update["lat"])
+        camera_altitude = float(update["alt"])
+    else:
+        logging.info("Topic not processed: " + message.topic)
    
 class FlightTracker(object):
     __mqtt_broker: str = ""
@@ -326,7 +333,11 @@ class FlightTracker(object):
         """
         MQTT publish closest observation every second, more often if the plane is closer
         """
+        timeHeartbeat = 0
         while True:
+            if timeHeartbeat < time.mktime(time.gmtime()):
+                timeHeartbeat = time.mktime(time.gmtime()) + 10
+                self.__client.publish("skyscan/heartbeat", "skyscan-tracker-" +ID+" Heartbeat", 0, False)
             if not self.__tracking_icao24:
                 time.sleep(1)
             else:
@@ -367,7 +378,7 @@ class FlightTracker(object):
         """Run the flight tracker.
         """
         print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
-        self.__client = mqtt.Client("skyscan-tracker") #create new instance
+        self.__client = mqtt.Client("skyscan-tracker-" + ID) #create new instance
 
         self.__client.on_message = on_message #attach function to callback
         print("setup MQTT")
@@ -376,7 +387,8 @@ class FlightTracker(object):
         self.__client.loop_start() #start the loop
         print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
-        self.__client.subscribe("/egi/")
+        self.__client.subscribe("skyscan/egi")
+        self.__client.publish("skyscan/registration", "skyscan-tracker-"+ID+" Registration", 0, False)
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
