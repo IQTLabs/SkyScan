@@ -152,12 +152,12 @@ class Observation(object):
         if sbs1msg["type"]:
             self.__type = sbs1msg["type"]   
 
-
+        # Calculates the distance from the cameras location to the airplane. The output is in METERS!
         distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        # Round off to nearest 100 meters
-        self.__distance = distance = round(distance/100) * 100
+        #Not sure we want to... commented out for now -> Round off to nearest 100 meters
+        self.__distance = distance = distance #round(distance/100) * 100
         self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        self.__elevation = utils.elevation(distance * 3.28084, self.__altitude, camera_altitude) # we need to convert to feet because the altitude is in feet
+        self.__elevation = utils.elevation(distance, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
 
         # Check if observation was updated
         newData = dict(self.__dict__)
@@ -475,7 +475,7 @@ def main():
 
     parser.add_argument('-l', '--lat', type=float, help="Latitude of camera")
     parser.add_argument('-L', '--lon', type=float, help="Longitude of camera")
-    parser.add_argument('-a', '--alt', type=float, help="altitude of camera", default=0)
+    parser.add_argument('-a', '--alt', type=float, help="altitude of camera in METERS!", default=0)
     parser.add_argument('-c', '--camera-lead', type=float, help="how many seconds ahead of a plane's predicted location should the camera be positioned", default=0.25)
     parser.add_argument('-M', '--min-elevation', type=int, help="minimum elevation for camera", default=0)
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
@@ -491,7 +491,7 @@ def main():
         sys.exit(1)
     camera_longitude = args.lon
     camera_latitude = args.lat
-    camera_altitude = args.alt
+    camera_altitude = args.alt # Altitude is in METERS
     plane_topic = args.plane_topic
     camera_lead = args.camera_lead
     min_elevation = args.min_elevation
