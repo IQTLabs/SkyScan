@@ -8,10 +8,10 @@ sudo docker build -t plane-jupyter .
 
 ````
 sudo docker run --name  plane-jupyter \
--v $PWD/dataset:/tf/dataset \
+-v $PWD/model-export:/tf/model-export \
+-v $PWD/dataset-export:/tf/dataset-export \
 -v $PWD/notebooks:/tf/notebooks \
 -v $PWD/testing:/tf/testing \
--v $PWD/export:/tf/export \
 -v $PWD/fiftyone-db:/root/.fiftyone \
 -v $PWD/models:/tf/models \
 -v $PWD/training:/tf/training --gpus all \
@@ -40,7 +40,10 @@ tensorboard --logdir=/tf/training/ --bind_all
 If you goto **port 6006** of the machine where the container is running in a browser, the Tensorboard app should pop up.
 
 
-## TF 1
+## Edge-TPU Models
+The TF 2 Object Detection API doesn't seem to be able to generate models that can be compiled to run on the Edge TPU / Coral. 
+https://github.com/tensorflow/models/issues/8935
+
 
 
 
