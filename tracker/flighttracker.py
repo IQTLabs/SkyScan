@@ -353,7 +353,7 @@ class FlightTracker(object):
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
                 bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
-                elevation = utils.elevation(distance * 3.28084, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
+                elevation = utils.elevation(distance, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
 
                 retain = False
                 self.__client.publish(self.__tracking_topic, cur.json(bearing, distance, elevation), 0, retain)

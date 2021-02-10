@@ -146,7 +146,7 @@ def moveCamera():
             actualTilt = tilt
             actualPan = pan
             lockedOn = True
-            camera.absolute_move(pan, tilt, 9999, 50)
+            camera.absolute_move(pan, cameraZoom, cameraMoveSpeed)
             time.sleep(0.3)
             get_jpeg_request()
                 
