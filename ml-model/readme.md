@@ -23,6 +23,7 @@ sudo docker run --name  plane-jupyter \
 -v $PWD/dataset-export:/tf/dataset-export \
 -v $PWD/notebooks:/tf/notebooks \
 -v $PWD/testing:/tf/testing \
+-v $PWD/media:/tf/media \
 -v $PWD/fiftyone-db:/root/.fiftyone \
 -v $PWD/models:/tf/models \
 -v $PWD/training:/tf/training --gpus all \
@@ -74,6 +75,7 @@ If you wish to access the running version of the container and poke around on th
 sudo docker exec -it plane-jupyter  /bin/bash
 ````
 
+
 ### Tensorboard
 If you wish to monitor the progress of a model being trained, Tensorboard provides a nice visualization of different metrics. To launch it, use the command above to attach to the running container and then run the following:
 ````
@@ -81,6 +83,13 @@ tensorboard --logdir=/tf/training/ --bind_all
 ````
 If you goto **port 6006** of the machine where the container is running in a browser, the Tensorboard app should pop up.
 
+````
+python object_detection/model_main_tf2.py \
+    --pipeline_config_path=/tf/models/research/deploy/pipeline_file.config  \
+    --model_dir=/tf/training/d0_plane_detect \
+    --checkpoint_dir=/tf/training/d0_plane_detect \
+    --alsologtostderr
+````
 
 ## Edge-TPU Models
 The TF 2 Object Detection API may not be able to generate models that can be compiled to run on the Edge TPU / Coral. 
