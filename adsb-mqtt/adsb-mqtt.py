@@ -380,11 +380,11 @@ class FlightTracker(object):
             except ConnectionResetError:
                 logging.critical("Connection Reset Error")
                 self.dump1090Close()
-                yield None
+                return None
             except socket.error:
                 logging.critical("Socket Error")
                 self.dump1090Close()
-                yield None
+                return None
             buffer = buffer.decode("utf-8")
             buffering = True
             if buffer == "":
@@ -401,11 +401,11 @@ class FlightTracker(object):
                     except ConnectionResetError:
                         logging.critical("Connection Reset Error")
                         self.dump1090Close()
-                        yield None
+                        return None
                     except socket.error:
                         logging.critical("Socket Error")
                         self.dump1090Close()
-                        yield None
+                        return None
                     if not more:
                         buffering = False
                     else:
@@ -419,7 +419,7 @@ class FlightTracker(object):
             if buffer:
                 yield buffer
         except socket.timeout:
-            yield None
+            return None
 
 
 
