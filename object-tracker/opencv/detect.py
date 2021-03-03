@@ -250,6 +250,7 @@ def object_to_follow( objs, labels, trdata, trackerFlag):
                 best_score = obj_score
 
                 obj_id = int(obj[5].item())
+                print("x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y0))
                 follow_x = x0 + ((x1 - x0)/2)
                 follow_y = y0 + ((y1 - y0)/2)
     else:
@@ -261,6 +262,8 @@ def object_to_follow( objs, labels, trdata, trackerFlag):
                 best_score = obj_score
 
                 obj_id = int(obj[5].item())
+                print("x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y0))
+                
                 follow_x = x0 + ((x1 - x0)/2)
                 follow_y = y0 + ((y1 - y0)/2)
     return follow_x, follow_y
