@@ -212,6 +212,8 @@ def on_message(client, userdata, message):
         bearingGood = setPan(update["bearing"])
         setTilt(update["elevation"])
         currentPlane = update
+    else:
+        logging.info("Message: {} Object: {} Flight: {}".format(message.topic, object_topic, flight_topic)
 
 def main():
     global args
