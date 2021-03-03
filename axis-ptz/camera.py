@@ -202,8 +202,9 @@ def on_message(client, userdata, message):
         print(e)
     except:
         print("Caught it!")
-    print(message.topic)
+    
     if message.topic == object_topic:
+        logging.info("Got Object Topic")
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
@@ -222,6 +223,8 @@ def main():
     global cameraMoveSpeed
     global cameraZoom
     global cameraConfig
+    global flight_topic
+    global object_topic
 
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
 
