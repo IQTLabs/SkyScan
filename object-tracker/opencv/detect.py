@@ -163,7 +163,12 @@ def main():
         cap = cv2.VideoCapture(args.netsrc)    
         
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 0)
+    timeHeartbeat = 0
     while cap.isOpened():
+        if timeHeartbeat < time.mktime(time.gmtime()):
+            timeHeartbeat = time.mktime(time.gmtime()) + 10
+            mqtt_bridge.publish("skyscan/heartbeat", "skyscan-object-tracker-" +ID+" Heartbeat", 0, False)
+        start_time = time.monotonic()
         ret, frame = cap.read()
         if not ret: 
             if args.videosrc=='file':
@@ -211,7 +216,6 @@ def main():
         cv2_im = append_objs_to_img(cv2_im,  detections, labels, trdata, trackerFlag)
         follow_x, follow_y = object_to_follow(detections, labels, trdata, trackerFlag)
         if args.display == 'True':
-            cv2_im = cv2.rectangle(cv2_im, (775, 440), (779, 445), (255, 255, 0), 2)
             cv2.imshow('frame', cv2_im)
         
         if follow_x != None:
@@ -222,7 +226,8 @@ def main():
                 "y": follow_y
             }
             follow_json = json.dumps(follow)
-            print("x: {} y:{}".format(follow_x,follow_y))
+            end_time = time.monotonic()
+            print("x: {} y:{} Inference: {:.2f} ms".format(follow_x,follow_y, (end_time - start_time) * 1000))
             mqtt_bridge.publish(mqtt_topic, follow_json, 0, False)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -251,7 +256,7 @@ def object_to_follow( objs, labels, trdata, trackerFlag):
                 best_score = obj_score
 
                 obj_id = int(obj[5].item())
-                print("Tracking - x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
+                #print("Tracking - x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
                 follow_x = x0 + ((x1 - x0)/2)
                 follow_y = y0 + ((y1 - y0)/2)
     else:
@@ -263,7 +268,7 @@ def object_to_follow( objs, labels, trdata, trackerFlag):
                 best_score = obj_score
 
                 obj_id = int(obj[5].item())
-                print("Detect - x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
+                #print("Detect - x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
                 
                 follow_x = x0 + ((x1 - x0)/2)
                 follow_y = y0 + ((y1 - y0)/2)
