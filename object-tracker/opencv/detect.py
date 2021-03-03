@@ -87,8 +87,8 @@ def main():
     global mqtt_bridge
     global mqtt_topic
 
-    camera_width=1920
-    camera_height=1080
+    camera_width=1280
+    camera_height=720
 
     default_model_dir = '../models'
     default_model = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
