@@ -239,7 +239,7 @@ def main():
         if follow_x != None:
             follow_x = int(follow_x * (camera_height/height))
             follow_y = int(follow_y * (camera_width/width))
-            coordinates = processCoordinates(follow_x, follow_y)
+            coordinates = motionControl(follow_x, follow_y)
             follow = {
                 "x": coordinates[0],
                 "y": coordinates[1]
