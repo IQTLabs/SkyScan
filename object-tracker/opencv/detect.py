@@ -83,6 +83,21 @@ def detectCoralDevBoard():
   return False
 
 
+Resolution = [1280.0, 720.0]    #pixels
+Signage = [1.0, -1.0]
+GainX = 0.2
+GainY = 0.2
+
+def processCoordinates(x,y):
+    targetCoordinates = [x,y]
+    targetCoordinates[0] = float(targetCoordinates[0])/(Resolution[0]/2.0)*Signage[0]  # Convert X coordinate to be distance from frame center
+    targetCoordinates[1] = float(targetCoordinates[1])/(Resolution[1]/2.0)*Signage[1]  # Convert Y coordinate to be distance from frame center
+    targetCoordinates[0]*=GainX  # Apply Control Gain in X direction
+    targetCoordinates[1]*=GainY  # Apply Control Gain in Y direction
+    targetCoordinates[0] = int(targetCoordinates[0]*(Resolution[0]/2.0)) * Signage[0]
+    targetCoordinates[1] = int(targetCoordinates[1]*(Resolution[0]/2.0)) * Signage[1]
+    return targetCoordinates
+
 def main():
     global mot_tracker
     global mqtt_bridge
@@ -222,13 +237,14 @@ def main():
         if follow_x != None:
             follow_x = int(follow_x * (camera_height/height))
             follow_y = int(follow_y * (camera_width/width))
+            coordinates = processCoordinates(follow_x, follow_y)
             follow = {
-                "x": follow_x,
-                "y": follow_y
+                "x": coordinates[0],
+                "y": coordinates[1]
             }
             follow_json = json.dumps(follow)
             end_time = time.monotonic()
-            print("x: {} y:{} Inference: {:.2f} ms".format(follow_x,follow_y, (end_time - start_time) * 1000))
+            print("x: {} y:{} new_x: {} new_y: {} Inference: {:.2f} ms".format(follow_x,follow_y, coordinates[0], coordinates[1],(end_time - start_time) * 1000))
             mqtt_bridge.publish(mqtt_topic, follow_json, 0, False)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
