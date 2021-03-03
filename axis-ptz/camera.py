@@ -227,7 +227,7 @@ def main():
     parser.add_argument('-b', '--bearing', help="What bearing is the font of the PI pointed at (0-360)", default=0)
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument('-t', '--mqtt-flight-topic', help="MQTT topic to subscribe to", default="skyscan/flight/json")
-    parser.add_argument('-t', '--mqtt-object-topic', help="MQTT topic to subscribe to", default="skyscan/object/json")
+    parser.add_argument( '--mqtt-object-topic', help="MQTT topic to subscribe to", default="skyscan/object/json")
     parser.add_argument('-u', '--axis-username', help="Username for the Axis camera", required=True)
     parser.add_argument('-p', '--axis-password', help="Password for the Axis camera", required=True)
     parser.add_argument('-a', '--axis-ip', help="IP address for the Axis camera", required=True)
@@ -265,12 +265,13 @@ def main():
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
+    flight_topic=args.mqtt_flight_topic
+    object_topic = args.mqtt_object_topic
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+flight_topic+"'")
     client = mqtt.Client("skyscan-axis-ptz-camera-" + ID) #create new instance
 
     client.on_message=on_message #attach function to callback
-    flight_topic=args.mqtt_flight_topic
-    object_topic = args.mqtt_object_topic
+
     client.connect(args.mqtt_host) #connect to broker
     client.loop_start() #start the loop
     client.subscribe(flight_topic+"/#")
