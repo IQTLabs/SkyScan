@@ -202,6 +202,7 @@ def on_message(client, userdata, message):
         print(e)
     except:
         print("Caught it!")
+    print(message.topic)
     if message.topic == object_topic:
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
