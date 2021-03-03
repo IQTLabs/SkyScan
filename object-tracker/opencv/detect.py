@@ -113,7 +113,7 @@ def main():
     parser.add_argument('--modelInt8', help="Model expects input tensors to be Int8, not UInt8", default='False', choices=['True', 'False'])
     parser.add_argument( '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument( '--mqtt-port', type=int, help="MQTT broker port number (default 1883)", default=1883)
-    parser.add_argument( '--mqtt-topic', dest='object_topic', help="MQTT Object Tracking topic", default="skyscan/object/json")
+    parser.add_argument( '--mqtt-topic', dest='mqtt_topic', help="MQTT Object Tracking topic", default="skyscan/object/json")
 
     args = parser.parse_args()
     
