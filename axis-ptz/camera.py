@@ -174,7 +174,7 @@ def moveCamera():
                 #camera.center_move(actualX, actualY, cameraMoveSpeed)
                 pan_tilt = str(actualX) + "," + str(actualY)
                 camera._camera_command({'center': pan_tilt, 'speed': cameraMoveSpeed, 'imagewidth': '1280', 'imageheight': '720'})
-
+                time.sleep(cameraDelay)
         #if lockedOn == True:
         #    filename = "capture/{}_{}".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), currentPlane)
         #    camera.capture("{}.jpeg".format(filename))
