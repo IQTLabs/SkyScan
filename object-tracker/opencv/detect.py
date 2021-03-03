@@ -216,6 +216,7 @@ def main():
                 "y": follow_y
             }
             follow_json = json.dumps(follow)
+            print("x: {} y:{}".format(follow_x,follow_y))
             mqtt_bridge.publish(mqtt_topic, follow_json, 0, False)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
