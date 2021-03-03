@@ -214,8 +214,8 @@ def main():
             cv2.imshow('frame', cv2_im)
         
         if follow_x != None:
-            follow_x = follow_x * (camera_height/height)
-            follow_y = follow_y * (camera_width/width)
+            follow_x = int(follow_x * (camera_height/height))
+            follow_y = int(follow_y * (camera_width/width))
             follow = {
                 "x": follow_x,
                 "y": follow_y
