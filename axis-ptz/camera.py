@@ -32,11 +32,18 @@ cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
 cameraDelay = None
+object_topic = None
+flight_topic = None
 pan = 0
 tilt = 0
 actualPan = 0
 actualTilt = 0
+follow_x = 0
+follow_y = 0
+actualX = 0
+actualY = 0
 currentPlane=None
+object_timeout=0
 
 # https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
 
@@ -57,6 +64,14 @@ def getHeadingDiff(h1, h2):
         return 360 - absDiff
     else:
         return absDiff - 360
+
+def setXY(x,y):
+    global follow_x
+    global follow_y
+
+    follow_x = int(x)
+    follow_y = int(y)
+    
 
 def setPan(bearing):
     global pan
@@ -136,20 +151,27 @@ def get_jpeg_request():  # 5.2.4.1
 def moveCamera():
     global actualPan
     global actualTilt
+    global actualX
+    global actualY
     global camera
 
     
     while True:
         lockedOn = False
-        if actualTilt != tilt or actualPan != pan:
-            logging.info("Moving camera to Tilt: %d  & Pan: %d"%(tilt, pan))
-            actualTilt = tilt
-            actualPan = pan
-            lockedOn = True
-            camera.absolute_move(pan, tilt, cameraZoom, cameraMoveSpeed)
-            time.sleep(0.3)
-            get_jpeg_request()
-                
+        if (object_timeout < time.mktime(time.gmtime())):
+            if actualTilt != tilt or actualPan != pan:
+                logging.info("Moving camera to Tilt: %d  & Pan: %d"%(tilt, pan))
+                actualTilt = tilt
+                actualPan = pan
+                lockedOn = True
+                camera.absolute_move(pan, tilt, cameraZoom, cameraMoveSpeed)
+                time.sleep(cameraDelay)
+                get_jpeg_request()
+        else:
+            if actualX != follow_x or actualY != follow_y:
+                actualX = follow_x
+                actualY = follow_y
+                camera.center_move(actualX, actualY, cameraMoveSpeed)
 
         #if lockedOn == True:
         #    filename = "capture/{}_{}".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), currentPlane)
@@ -163,6 +185,8 @@ def moveCamera():
 #############################################
 def on_message(client, userdata, message):
     global currentPlane
+    global object_timeout
+
     command = str(message.payload.decode("utf-8"))
     #rint(command)
     try:
@@ -178,11 +202,14 @@ def on_message(client, userdata, message):
         print(e)
     except:
         print("Caught it!")
-    
-    logging.info("{}\tBearing: {} \tElevation: {}".format(update["icao24"],update["bearing"],update["elevation"]))
-    bearingGood = setPan(update["bearing"])
-    setTilt(update["elevation"])
-    currentPlane = update
+    if message.topic == object_topic:
+        setXY(update["x"], update["y"])
+        object_timeout = time.mktime(time.gmtime()) + 5
+    elif message.topic == flight_topic:
+        logging.info("{}\tBearing: {} \tElevation: {}".format(update["icao24"],update["bearing"],update["elevation"]))
+        bearingGood = setPan(update["bearing"])
+        setTilt(update["elevation"])
+        currentPlane = update
 
 def main():
     global args
@@ -199,7 +226,8 @@ def main():
 
     parser.add_argument('-b', '--bearing', help="What bearing is the font of the PI pointed at (0-360)", default=0)
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
-    parser.add_argument('-t', '--mqtt-topic', help="MQTT topic to subscribe to", default="SkyScan")
+    parser.add_argument('-t', '--mqtt-flight-topic', help="MQTT topic to subscribe to", default="skyscan/flight/json")
+    parser.add_argument('-t', '--mqtt-object-topic', help="MQTT topic to subscribe to", default="skyscan/object/json")
     parser.add_argument('-u', '--axis-username', help="Username for the Axis camera", required=True)
     parser.add_argument('-p', '--axis-password', help="Password for the Axis camera", required=True)
     parser.add_argument('-a', '--axis-ip', help="IP address for the Axis camera", required=True)
@@ -237,14 +265,16 @@ def main():
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
-    print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+args.mqtt_topic+"'")
+    print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+flight_topic+"'")
     client = mqtt.Client("skyscan-axis-ptz-camera-" + ID) #create new instance
 
     client.on_message=on_message #attach function to callback
-
+    flight_topic=args.mqtt_flight_topic
+    object_topic = args.mqtt_object_topic
     client.connect(args.mqtt_host) #connect to broker
     client.loop_start() #start the loop
-    client.subscribe(args.mqtt_topic+"/#")
+    client.subscribe(flight_topic+"/#")
+    client.subscribe(object_topic+"/#")
     client.publish("skyscan/registration", "skyscan-axis-ptz-camera-"+ID+" Registration", 0, False)
 
     #############################################
