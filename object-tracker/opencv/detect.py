@@ -211,6 +211,7 @@ def main():
         cv2_im = append_objs_to_img(cv2_im,  detections, labels, trdata, trackerFlag)
         follow_x, follow_y = object_to_follow(detections, labels, trdata, trackerFlag)
         if args.display == 'True':
+            cv2_im = cv2.rectangle(cv2_im, (775, 440), (779, 445), (255, 255, 0), 2)
             cv2.imshow('frame', cv2_im)
         
         if follow_x != None:
@@ -250,7 +251,7 @@ def object_to_follow( objs, labels, trdata, trackerFlag):
                 best_score = obj_score
 
                 obj_id = int(obj[5].item())
-                print("x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
+                print("Tracking - x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
                 follow_x = x0 + ((x1 - x0)/2)
                 follow_y = y0 + ((y1 - y0)/2)
     else:
@@ -262,7 +263,7 @@ def object_to_follow( objs, labels, trdata, trackerFlag):
                 best_score = obj_score
 
                 obj_id = int(obj[5].item())
-                print("x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
+                print("Detect - x0: {} y0: {} x1: {} y1: {}".format(x0,y0,x1,y1))
                 
                 follow_x = x0 + ((x1 - x0)/2)
                 follow_y = y0 + ((y1 - y0)/2)
