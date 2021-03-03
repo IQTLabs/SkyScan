@@ -88,15 +88,17 @@ Signage = [1.0, -1.0]
 GainX = 0.2
 GainY = 0.2
 
-def processCoordinates(x,y):
+def motionControl(x,y):
     targetCoordinates = [x,y]
-    targetCoordinates[0] = float(targetCoordinates[0])/(Resolution[0]/2.0)*Signage[0]  # Convert X coordinate to be distance from frame center
-    targetCoordinates[1] = float(targetCoordinates[1])/(Resolution[1]/2.0)*Signage[1]  # Convert Y coordinate to be distance from frame center
+    targetCoordinates[0] = (float(targetCoordinates[0]) - (Resolution[0]/2.0))*Signage[0]  # X: Convert frame coordinate to center coordinate
+    targetCoordinates[1] = (float(targetCoordinates[1]) - (Resolution[1]/2.0))*Signage[1]  # Y: Convert frame coordinate to center coordinate
     targetCoordinates[0]*=GainX  # Apply Control Gain in X direction
     targetCoordinates[1]*=GainY  # Apply Control Gain in Y direction
-    targetCoordinates[0] = int(targetCoordinates[0]*(Resolution[0]/2.0)) * Signage[0]
-    targetCoordinates[1] = int(targetCoordinates[1]*(Resolution[0]/2.0)) * Signage[1]
+
+    targetCoordinates[0] = (float(targetCoordinates[0]) + (Resolution[0]/2.0))*Signage[0]  # X: Convert center coordinate to frame coordinate
+    targetCoordinates[1] = (float(targetCoordinates[1]) - (Resolution[1]/2.0))*Signage[1]  # Y: Convert center coordinate to frame coordinate
     return targetCoordinates
+
 
 def main():
     global mot_tracker
