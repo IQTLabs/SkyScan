@@ -87,6 +87,9 @@ def main():
     global mqtt_bridge
     global mqtt_topic
 
+    camera_width=1920
+    camera_height=1080
+
     default_model_dir = '../models'
     default_model = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     default_labels = 'coco_labels.txt'
@@ -211,6 +214,8 @@ def main():
             cv2.imshow('frame', cv2_im)
         
         if follow_x != None:
+            follow_x = follow_x * (camera_height/height)
+            follow_y = follow_y * (camera_width/width)
             follow = {
                 "x": follow_x,
                 "y": follow_y
