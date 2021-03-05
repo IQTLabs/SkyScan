@@ -85,8 +85,8 @@ def detectCoralDevBoard():
 
 Resolution = [1280.0, 720.0]    #pixels
 Signage = [1.0, -1.0]
-GainX = 0.2
-GainY = 0.2
+GainX = 0.5
+GainY = 0.5
 
 def motionControl(x,y):
     targetCoordinates = [x,y]
