@@ -216,8 +216,8 @@ def moveCamera():
                 lockedOn = True
                 camera.absolute_move(pan, tilt, cameraZoom, cameraMoveSpeed)
                 time.sleep(cameraDelay)
-                #get_jpeg_request()
-                get_bmp_request()
+                get_jpeg_request()
+                #get_bmp_request()
         else:
             if actualX != follow_x or actualY != follow_y:
                 actualX = follow_x
