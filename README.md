@@ -82,4 +82,12 @@ sudo raspi-config
 - Camera
 - Enable
 
+### Testing with pytest
+
+To run tests with pytest, run:
+
+```bash
+pytest
+```
+
 
