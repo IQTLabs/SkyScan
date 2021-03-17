@@ -296,7 +296,7 @@ class FlightTracker(object):
     __mqtt_broker: str = ""
     __mqtt_port: int = 0
     __plane_topic: str = None
-    __tracking_topic: str = None
+    __flight_topic: str = None
     __client = None
     __observations: Dict[str, str] = {}
     __tracking_icao24: str = None
@@ -304,7 +304,7 @@ class FlightTracker(object):
     __next_clean: datetime = None
     __has_nagged: bool = False
 
-    def __init__(self,  mqtt_broker: str, plane_topic: str, tracking_topic: str, mqtt_port: int = 1883, ):
+    def __init__(self,  mqtt_broker: str, plane_topic: str, flight_topic: str, mqtt_port: int = 1883, ):
         """Initialize the flight tracker
 
         Arguments:
@@ -313,7 +313,7 @@ class FlightTracker(object):
             latitude {float} -- Latitude of receiver
             longitude {float} -- Longitude of receiver
             plane_topic {str} -- MQTT topic for plane reports
-            tracking_topic {str} -- MQTT topic for current tracking report
+            flight_topic {str} -- MQTT topic for current tracking report
 
         Keyword Arguments:
             dump1090_port {int} -- Override the dump1090 raw port (default: {30003})
@@ -326,7 +326,7 @@ class FlightTracker(object):
         self.__observations = {}
         self.__next_clean = datetime.utcnow() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL)
         self.__plane_topic = plane_topic
-        self.__tracking_topic = tracking_topic
+        self.__flight_topic = flight_topic
 
 
     def __publish_thread(self):
@@ -356,7 +356,7 @@ class FlightTracker(object):
                 elevation = utils.elevation(distance, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
 
                 retain = False
-                self.__client.publish(self.__tracking_topic, cur.json(bearing, distance, elevation), 0, retain)
+                self.__client.publish(self.__flight_topic, cur.json(bearing, distance, elevation), 0, retain)
                 logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
 
                 if distance < 3000:
@@ -377,7 +377,7 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
-        print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__tracking_topic)
+        print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__flight_topic)
         self.__client = mqtt.Client("skyscan-tracker-" + ID) #create new instance
 
         self.__client.on_message = on_message #attach function to callback
@@ -481,7 +481,7 @@ def main():
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument('-p', '--mqtt-port', type=int, help="MQTT broker port number (default 1883)", default=1883)
     parser.add_argument('-P', '--plane-topic', dest='plane_topic', help="MQTT plane topic", default="skyscan/planes/json")
-    parser.add_argument('-T', '--tracking-topic', dest='tracking_topic', help="MQTT tracking topic", default="skyscan/tracking/json")
+    parser.add_argument('-T', '--flight-topic', dest='flight_topic', help="MQTT flight tracking topic", default="skyscan/flight/json")
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
 
     args = parser.parse_args()
@@ -515,7 +515,7 @@ def main():
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
 
 
-    tracker = FlightTracker( args.mqtt_host, args.plane_topic, args.tracking_topic,  mqtt_port = args.mqtt_port)
+    tracker = FlightTracker( args.mqtt_host, args.plane_topic, args.flight_topic,  mqtt_port = args.mqtt_port)
     tracker.run()  # Never returns
 
 
