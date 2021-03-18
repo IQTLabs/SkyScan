@@ -1,3 +1,16 @@
+# Plane Tracker
+
+This container takes in a RTSP video feed, use the Google Coral Accelerator to detect a plane and then generates an MQTT message steering the camera to the center of the detected bounding box.
+
+Things to do:
+- describe how to config the Axis camera feed. You need to an MJPEG feed. An MP4 based feed has too much latency.
+- Need to make this into a container
+
+
+
+
+
+
 # Edge TPU Object Tracker Example
 
 This repo contains a collection of examples that use camera streams

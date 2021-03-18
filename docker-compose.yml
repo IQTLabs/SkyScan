@@ -19,20 +19,20 @@ services:
       - piaware
     restart: unless-stopped
 
-  pan-tilt-pi:
-    build: ./pan-tilt-pi
-    entrypoint: "./camera.py -m mqtt -t skyscan/flight/json"
-    volumes:
-      - /opt/vc:/opt/vc
-      - ./capture:/app/capture
-    devices:
-      - /dev/i2c-1:/dev/i2c-1       
-      - "/dev/vchiq:/dev/vchiq" 
-    environment: 
-      - LD_LIBRARY_PATH=/opt/vc/lib
-    privileged: true
-    depends_on:
-      - mqtt
+#  pan-tilt-pi:
+#    build: ./pan-tilt-pi
+#    entrypoint: "./camera.py -m mqtt -t skyscan/flight/json"
+#    volumes:
+#      - /opt/vc:/opt/vc
+#      - ./capture:/app/capture
+#    devices:
+#      - /dev/i2c-1:/dev/i2c-1       
+#      - "/dev/vchiq:/dev/vchiq" 
+#    environment: 
+#      - LD_LIBRARY_PATH=/opt/vc/lib
+#    privileged: true
+#    depends_on:
+#      - mqtt
 
   axis-ptz:
     build: ./axis-ptz
