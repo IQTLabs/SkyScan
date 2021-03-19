@@ -353,9 +353,9 @@ def main():
 
     client.connect(args.mqtt_host) #connect to broker
     client.loop_start() #start the loop
-    client.subscribe(flight_topic+"/#")
-    client.subscribe(object_topic+"/#")
-    client.subscribe(config_topic+"/#")
+    client.subscribe(flight_topic)
+    client.subscribe(object_topic)
+    client.subscribe(config_topic)
     client.publish("skyscan/registration", "skyscan-axis-ptz-camera-"+ID+" Registration", 0, False)
 
     #############################################
