@@ -284,6 +284,7 @@ def on_message(client, userdata, message):
         currentPlane = update
     elif message.topic == config_topic:
         update_config(update)
+        logging.info("Config Message: {}".format(update))
     else:
         logging.info("Message: {} Object: {} Flight: {}".format(message.topic, object_topic, flight_topic))
 
