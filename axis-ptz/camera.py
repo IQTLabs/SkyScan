@@ -34,6 +34,7 @@ cameraMoveSpeed = None
 cameraDelay = None
 object_topic = None
 flight_topic = None
+config_topic = "skyscan/config/json"
 pan = 0
 tilt = 0
 actualPan = 0
@@ -233,6 +234,22 @@ def moveCamera():
         # Sleep for a bit so we're not hammering the camera withupdates
         time.sleep(0.005)
 
+
+def update_config(config):
+    global cameraZoom
+    global cameraMoveSpeed
+    global cameraDelay
+
+    if "cameraZoom" in config:
+        cameraZoom = int(config["cameraZoom"])
+        logging.info("Setting Camera Zoom to: {}".format(cameraZoom))
+    if "cameraDelay" in config:
+        cameraDelay = float(config["cameraDelay"])
+        logging.info("Setting Camera Delay to: {}".format(cameraDelay))
+    if "cameraMoveSpeed" in config:
+        cameraMoveSpeed = int("cameraMoveSpeed")
+        logging.info("Setting Camera Move Speed to: {}".format(cameraMoveSpeed))
+
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
@@ -265,6 +282,7 @@ def on_message(client, userdata, message):
         bearingGood = setPan(update["bearing"])
         setTilt(update["elevation"])
         currentPlane = update
+    elif message.topic = 
     else:
         logging.info("Message: {} Object: {} Flight: {}".format(message.topic, object_topic, flight_topic))
 
