@@ -316,8 +316,11 @@ class FlightTracker(object):
     __tracking_distance: int = 999999999
     __next_clean: datetime = None
     __has_nagged: bool = False
+    __dump1090_host: str = ""
+    __dump1090_port: int = 0
+    __dump1090_sock: socket.socket = None
 
-    def __init__(self,  mqtt_broker: str, plane_topic: str, flight_topic: str, mqtt_port: int = 1883, ):
+    def __init__(self, dump1090_host: str, mqtt_broker: str, plane_topic: str, flight_topic: str, dump1090_port: int = 30003, mqtt_port: int = 1883, ):
         """Initialize the flight tracker
 
         Arguments:
@@ -332,7 +335,8 @@ class FlightTracker(object):
             dump1090_port {int} -- Override the dump1090 raw port (default: {30003})
             mqtt_port {int} -- Override the MQTT default port (default: {1883})
         """
-
+        self.__dump1090_host = dump1090_host
+        self.__dump1090_port = dump1090_port
         self.__mqtt_broker = mqtt_broker
         self.__mqtt_port = mqtt_port
         self.__sock = None
@@ -385,6 +389,103 @@ class FlightTracker(object):
         """
         cur = self.__observations[self.__tracking_icao24]
         self.__tracking_distance = utils.coordinate_distance(camera_latitude, camera_longitude, cur.getLat(), cur.getLon())
+
+    def dump1090Connect(self) -> bool:
+        """If not connected, connect to the dump1090 host
+
+        Returns:
+            bool -- True if we are connected
+        """
+        if self.__dump1090_sock == None:
+            try:
+                if not self.__has_nagged:
+                    logging.info("Connecting to dump1090")
+                self.__dump1090_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.__dump1090_sock.connect((self.__dump1090_host, self.__dump1090_port))
+                logging.info("ADSB connected")
+                self.__dump1090_sock.settimeout(DUMP1090_SOCKET_TIMEOUT)
+                self.__has_nagged = False
+                return True
+            except socket.error as e:
+                if not self.__has_nagged:
+                    logging.critical("Failed to connect to ADSB receiver on %s:%s, retrying : %s" % (self.__dump1090_host, self.__dump1090_port, e))
+                    self.__has_nagged = True
+                self.__dump1090_sock = None
+                time.sleep(5)
+            return False
+        else:
+            return True
+
+
+    def dump1090Close(self):
+        """Close connection to dump1090 host.
+        """
+        try:
+            self.__dump1090_sock.close()
+        except socket.error:
+            pass
+        self.__dump1090_sock = None
+        self.__has_nagged = False
+        logging.critical("Closing dump1090 connection")
+
+
+    def dump1090Read(self) -> str:
+        """Read a line from the dump1090 host. If the host went down, close the socket and return None
+
+        Returns:
+            str -- An SBS1 message or None if disconnected or timeout
+
+        Yields:
+            str -- An SBS1 message or None if disconnected or timeout
+        """
+        try:
+            try:
+                buffer = self.__dump1090_sock.recv(4096)
+            except ConnectionResetError:
+                logging.critical("Connection Reset Error")
+                self.dump1090Close()
+                return None
+            except socket.error:
+                logging.critical("Socket Error")
+                self.dump1090Close()
+                return None
+            buffer = buffer.decode("utf-8")
+            buffering = True
+            if buffer == "":
+                logging.critical("Buffer Empty")
+                self.dump1090Close()
+                return None
+            while buffering:
+                if "\n" in buffer:
+                    (line, buffer) = buffer.split("\r\n", 1)
+                    yield line
+                else:
+                    try:
+                        more = self.__dump1090_sock.recv(4096)
+                    except ConnectionResetError:
+                        logging.critical("Connection Reset Error")
+                        self.dump1090Close()
+                        return None
+                    except socket.error:
+                        logging.critical("Socket Error")
+                        self.dump1090Close()
+                        return None
+                    if not more:
+                        buffering = False
+                    else:
+                        if not isinstance(more, str):
+                            more = more.decode("utf-8")
+                        if more == "":
+                            logging.critical("Receive Empty")
+                            self.dump1090Close()
+                            return None
+                        buffer += more
+            if buffer:
+                yield buffer
+        except socket.timeout:
+            return None
+
+
 
 
     def run(self):
@@ -503,7 +604,9 @@ def main():
     parser.add_argument('-P', '--plane-topic', dest='plane_topic', help="MQTT plane topic", default="skyscan/planes/json")
     parser.add_argument('-T', '--flight-topic', dest='flight_topic', help="MQTT flight tracking topic", default="skyscan/flight/json")
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
-
+    parser.add_argument('-H', '--dump1090-host', help="dump1090 hostname", default='127.0.0.1')
+    parser.add_argument('--dump1090-port', type=int, help="dump1090 port number (default 30003)", default=30003)
+ 
     args = parser.parse_args()
 
     if not args.lat and not args.lon:
@@ -535,7 +638,7 @@ def main():
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
 
 
-    tracker = FlightTracker( args.mqtt_host, args.plane_topic, args.flight_topic,  mqtt_port = args.mqtt_port)
+    tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
     tracker.run()  # Never returns
 
 
