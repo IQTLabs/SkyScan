@@ -274,7 +274,7 @@ def update_config(config):
         logging.info("Setting Camera Lead to: {}".format(camera_lead))
     if "minElevation" in config:
         min_elevation = int(config["minElevation"])
-        logging.info("Setting Min. Elevation to: {}".format(minElevation))
+        logging.info("Setting Min. Elevation to: {}".format(min_elevation))
 
 def on_message(client, userdata, message):
     global camera_altitude
