@@ -175,8 +175,8 @@ class Observation(object):
             self.__verticalRate = sbs1msg["verticalRate"]
         if not self.__verticalRate:
             self.__verticalRate = 0
-        if sbs1msg["loggedDate"]:
-            self.__loggedDate = datetime.strptime(sbs1msg["loggedDate"], '%Y-%m-%d %H:%M:%S.%f')
+        #if sbs1msg["loggedDate"]:
+        #    self.__loggedDate = datetime.strptime(sbs1msg["loggedDate"], '%Y-%m-%d %H:%M:%S.%f')
         #if sbs1msg["generatedDate"]:
         #    self.__generatedDate = sbs1msg["generatedDate"]
         #if sbs1msg["loggedDate"]:
