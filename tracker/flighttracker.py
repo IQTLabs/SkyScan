@@ -538,7 +538,6 @@ class FlightTracker(object):
         print("connected mqtt")
         self.__client.loop_start() #start the loop
         print("start MQTT")
-        self.__client.subscribe(self.__plane_topic)
         self.__client.subscribe("skyscan/egi")
         self.__client.subscribe(config_topic)
         self.__client.publish("skyscan/registration", "skyscan-tracker-"+ID+" Registration", 0, False)
