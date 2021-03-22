@@ -115,6 +115,39 @@ class Observation(object):
 
     def __init__(self, sbs1msg):
         logging.info("%s appeared" % sbs1msg["icao24"])
+        self.__icao24 = sbs1msg["icao24"]
+        self.__loggedDate = datetime.utcnow()  # sbs1msg["loggedDate"]
+        self.__callsign = sbs1msg["callsign"]
+        self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
+        self.__altitudeTime = datetime.utcnow()
+        self.__groundSpeed = sbs1msg["groundSpeed"]
+        self.__track = sbs1msg["track"]
+        self.__lat = sbs1msg["lat"]
+        self.__lon = sbs1msg["lon"]
+        self.__latLonTime = datetime.utcnow()
+        self.__verticalRate = sbs1msg["verticalRate"]
+        self.__operator = None
+        self.__registration = None
+        self.__type = None
+        self.__model = None
+        self.__manufacturer = None
+        self.__updated = True
+        plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
+        
+        if plane.size == 27:
+            logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+
+            self.__registration = plane['registration'].values[0]
+            self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
+            self.__manufacturer = plane['manufacturername'].values[0] 
+            self.__model =  plane['model'].values[0] 
+            self.__operator = plane['operator'].values[0] 
+        else:
+            if not self.__planedb_nagged:
+                self.__planedb_nagged = True
+                logging.error("icao24 %s not found in the database" % (self.__icao24))
+                logging.error(plane)
+
     
     def update(self, sbs1msg):
         oldData = dict(self.__dict__)
@@ -142,16 +175,22 @@ class Observation(object):
             self.__verticalRate = 0
         if sbs1msg["loggedDate"]:
             self.__loggedDate = datetime.strptime(sbs1msg["loggedDate"], '%Y-%m-%d %H:%M:%S.%f')
-        if sbs1msg["registration"]:
-            self.__registration = sbs1msg["registration"]
-        if sbs1msg["manufacturer"]:
-            self.__manufacturer = sbs1msg["manufacturer"]
-        if sbs1msg["model"]:
-            self.__model = sbs1msg["model"]
-        if sbs1msg["operator"]:
-            self.__operator = sbs1msg["operator"]       
-        if sbs1msg["type"]:
-            self.__type = sbs1msg["type"]   
+ 
+        if self.__planedb_nagged == False and self.__registration == None:
+            plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
+            
+            if plane.size == 27:
+                logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+
+                self.__registration = plane['registration'].values[0]
+                self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
+                self.__manufacturer = plane['manufacturername'].values[0] 
+                self.__model =  plane['model'].values[0] 
+                self.__operator = plane['operator'].values[0] 
+            else:
+                if not self.__planedb_nagged:
+                    self.__planedb_nagged = True
+                    logging.error("icao24 %s not found in the database" % (self.__icao24))
 
         # Calculates the distance from the cameras location to the airplane. The output is in METERS!
         distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
@@ -292,9 +331,8 @@ def on_message(client, userdata, message):
         log.critical("onMessage - Value Error: {} ".format(e))
     except:
         log.critical("onMessage - Caught it!")
-    if message.topic == plane_topic:
-        q.put(update) #put messages on queue
-    elif message.topic == "skyscan/egi":
+
+    if message.topic == "skyscan/egi":
         logging.info(update)
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
@@ -591,6 +629,7 @@ def main():
     global camera_lead
     global plane_topic
     global min_elevation
+    global planes
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
 
@@ -636,7 +675,9 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
-
+    planes = pd.read_csv("/app/data/aircraftDatabase.csv") #,index_col='icao24')
+    logging.info("Printing table")
+    logging.info(planes)
 
     tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
     tracker.run()  # Never returns
