@@ -77,13 +77,13 @@ def setXY(x,y):
 
 def setPan(bearing):
     global pan
-    diff_heading = getHeadingDiff(bearing, cameraBearing)
+    #diff_heading = getHeadingDiff(bearing, cameraBearing)
     
 
-    if pan != diff_heading: #bearing #abs(pan - diff_heading) > 2: #only update the pan if there has been a big change
+    if pan != bearing: #bearing #abs(pan - diff_heading) > 2: #only update the pan if there has been a big change
         #logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, bearing, cameraBearing))
 
-        pan = diff_heading #bearing
+        pan = bearing
         #logging.info("Setting Pan to: %d"%pan)
             
         return True
