@@ -267,11 +267,14 @@ class Observation(object):
 
 def update_config(config):
     global camera_lead
+    global min_elevation
 
     if "cameraLead" in config:
         camera_lead = float(config["cameraLead"])
         logging.info("Setting Camera Lead to: {}".format(camera_lead))
-
+    if "minElevation" in config:
+        min_elevation = int(config["minElevation"])
+        logging.info("Setting Min. Elevation to: {}".format(minElevation))
 
 def on_message(client, userdata, message):
     global camera_altitude
