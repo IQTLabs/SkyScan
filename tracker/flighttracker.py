@@ -408,28 +408,34 @@ class FlightTracker(object):
 
         
         while True:
-            while not q.empty():
-                m = q.get()
-                icao24 = m["icao24"]
+            if not self.dump1090Connect():
+                continue
+            for data in self.dump1090Read():
+                if data is None:
+                    continue
                 self.cleanObservations()
-                if icao24 not in self.__observations:
-                    self.__observations[icao24] = Observation(m)
-                self.__observations[icao24].update(m)
-                if self.__observations[icao24].isPresentable():
-                    if not self.__tracking_icao24:
-                        if self.__observations[icao24].getElevation() != None and self.__observations[icao24].getElevation() > min_elevation:
-                            self.__tracking_icao24 = icao24
+                m = sbs1.parse(data)
+                if m:
+                    icao24 = m["icao24"]
+                    self.cleanObservations()
+                    if icao24 not in self.__observations:
+                        self.__observations[icao24] = Observation(m)
+                    self.__observations[icao24].update(m)
+                    if self.__observations[icao24].isPresentable():
+                        if not self.__tracking_icao24:
+                            if self.__observations[icao24].getElevation() != None and self.__observations[icao24].getElevation() > min_elevation:
+                                self.__tracking_icao24 = icao24
+                                self.updateTrackingDistance()
+                                logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+                        elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
-                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
-                    elif self.__tracking_icao24 == icao24:
-                        self.updateTrackingDistance()
-                    else:
-                        distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
-                        if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
-                            self.__tracking_icao24 = icao24
-                            self.__tracking_distance = distance
-                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
-            time.sleep(0.1)
+                        else:
+                            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
+                            if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
+                                self.__tracking_icao24 = icao24
+                                self.__tracking_distance = distance
+                                logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
+            time.sleep(0.01)
                               
     def selectNearestObservation(self):
         """Select nearest presentable aircraft
