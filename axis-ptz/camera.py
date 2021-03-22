@@ -83,7 +83,7 @@ def setPan(bearing):
     if pan != bearing: #abs(pan - diff_heading) > 2: #only update the pan if there has been a big change
         logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, bearing, camera_bearing))
 
-        pan = bearing #diff_heading
+        pan = diff_heading #bearing
         #logging.info("Setting Pan to: %d"%pan)
             
         return True
