@@ -229,7 +229,8 @@ class Observation(object):
 
     def getLoggedDate(self) -> datetime:
         return self.__loggedDate
-
+    def getLatLonTime(self) -> datetime:
+        return self.__latLonTime
     def getGroundSpeed(self) -> float:
         return self.__groundSpeed
 
@@ -409,7 +410,7 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
+                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
