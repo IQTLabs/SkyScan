@@ -32,6 +32,7 @@ cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
 cameraDelay = None
+cameraBearing = 0
 object_topic = None
 flight_topic = None
 config_topic = "skyscan/config/json"
@@ -76,8 +77,7 @@ def setXY(x,y):
 
 def setPan(bearing):
     global pan
-    camera_bearing = args.bearing
-    diff_heading = getHeadingDiff(bearing, camera_bearing)
+    diff_heading = getHeadingDiff(bearing, cameraBearing)
     
 
     if pan != bearing: #abs(pan - diff_heading) > 2: #only update the pan if there has been a big change
@@ -239,6 +239,7 @@ def update_config(config):
     global cameraZoom
     global cameraMoveSpeed
     global cameraDelay
+    global cameraBearing
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -247,9 +248,11 @@ def update_config(config):
         cameraDelay = float(config["cameraDelay"])
         logging.info("Setting Camera Delay to: {}".format(cameraDelay))
     if "cameraMoveSpeed" in config:
-        cameraMoveSpeed = int("cameraMoveSpeed")
+        cameraMoveSpeed = int(config["cameraMoveSpeed"])
         logging.info("Setting Camera Move Speed to: {}".format(cameraMoveSpeed))
-
+    if "cameraBearing" in config:
+        cameraBearing = float(config["cameraBearing"])
+        logging.info("Setting Bearing Correction to: {}".format(cameraBearing))
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
@@ -297,6 +300,7 @@ def main():
     global cameraDelay
     global cameraMoveSpeed
     global cameraZoom
+    global cameraBearing
     global cameraConfig
     global flight_topic
     global object_topic
@@ -339,6 +343,7 @@ def main():
     cameraDelay = args.camera_delay
     cameraMoveSpeed = args.camera_move_speed
     cameraZoom = args.camera_zoom
+    cameraBearing = args.camera_bearing
     cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
     threading.Thread(target = moveCamera, daemon = True).start()
