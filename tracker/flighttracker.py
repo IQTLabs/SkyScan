@@ -153,7 +153,7 @@ class Observation(object):
     
     def update(self, sbs1msg):
         oldData = dict(self.__dict__)
-        #self.__loggedDate = datetime.utcnow()
+        self.__loggedDate = datetime.utcnow()
         if sbs1msg["icao24"]:
             self.__icao24 = sbs1msg["icao24"]
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
@@ -177,7 +177,11 @@ class Observation(object):
             self.__verticalRate = 0
         if sbs1msg["loggedDate"]:
             self.__loggedDate = datetime.strptime(sbs1msg["loggedDate"], '%Y-%m-%d %H:%M:%S.%f')
- 
+        #if sbs1msg["generatedDate"]:
+        #    self.__generatedDate = sbs1msg["generatedDate"]
+        #if sbs1msg["loggedDate"]:
+        #    self.__loggedDate = sbs1msg["loggedDate"]
+
         if self.__planedb_nagged == False and self.__registration == None:
             plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
             
