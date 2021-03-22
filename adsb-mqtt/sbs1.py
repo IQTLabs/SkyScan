@@ -9,6 +9,7 @@ project by John Wiseman (github.com/wiseman/node-sbs1)
 from typing import *
 from datetime import datetime
 import logging
+import re
 try:
     import dateutil.parser
 except ImportError as e:
@@ -124,7 +125,8 @@ def __parseInt(array: List, index: int):
     """Parse int at given index in array
     Return int value or None if index is out of bounds or type casting failed"""
     try:
-        return int(array[index])
+        numbers = re.findall('[0-9]+', array[index])[0]        
+        return int(numbers)
     except ValueError as e:
         return None
     except TypeError as e:
