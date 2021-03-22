@@ -5,19 +5,21 @@ services:
   tracker:
     build: ./tracker
     entrypoint: "./flighttracker.py -m mqtt  -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
-    depends_on:
-      - mqtt
-    restart: unless-stopped
-
-  adsb-mqtt:
-    build: ./adsb-mqtt
-    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
     volumes:
       - ./data:/app/data
     depends_on:
       - mqtt
-      - piaware
     restart: unless-stopped
+
+#  adsb-mqtt:
+#    build: ./adsb-mqtt
+#    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
+#    volumes:
+#      - ./data:/app/data
+#    depends_on:
+#      - mqtt
+#      - piaware
+#    restart: unless-stopped
 
 #  pan-tilt-pi:
 #    build: ./pan-tilt-pi
