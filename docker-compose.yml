@@ -63,6 +63,24 @@ services:
       - DUMP1090_DEVICE=${RTL_DEV}
     restart: unless-stopped
 
+  tar1090:
+    image: mikenye/tar1090:latest
+    tty: true
+    container_name: tar1090
+    restart: always
+    environment:
+      - TZ=${TZ}
+      - BEASTHOST=piaware
+      - MLATHOST=piaware
+      - LAT=${LAT}
+      - LONG=${LONG}
+    networks:
+      - adsbnet
+    ports:
+      - 8078:80
+    tmpfs:
+      - /run:exec,size=64M
+      - /var/log
   mqtt:
     build: ./mqtt
     ports:
