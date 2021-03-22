@@ -52,6 +52,7 @@ q=Queue() # Good writeup of how to pass messages from MQTT into classes, here: h
 args = None
 camera_latitude = None
 plant_topic = None # the onMessage function needs to be outside the Class and it needs to get the Plane Topic, so it prob needs to be a global
+config_topic = "skyscan/config/json"
 camera_longitude = None
 camera_altitude = None
 camera_lead = None
@@ -264,6 +265,12 @@ class Observation(object):
         #d["loggedDate"] = "%s" % (d["_Observation__loggedDate"])
         return d
 
+def update_config(config):
+    global camera_lead
+
+    if "cameraLead" in config:
+        camera_lead = float(config["cameraLead"])
+        logging.info("Setting Camera Lead to: {}".format(camera_lead))
 
 
 def on_message(client, userdata, message):
@@ -289,6 +296,9 @@ def on_message(client, userdata, message):
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
         camera_altitude = float(update["alt"])
+    elif message.topic == config_topic:
+        update_config(update)
+        logging.info("Config Message: {}".format(update))
     else:
         logging.info("Topic not processed: " + message.topic)
    
@@ -388,6 +398,7 @@ class FlightTracker(object):
         print("start MQTT")
         self.__client.subscribe(self.__plane_topic)
         self.__client.subscribe("skyscan/egi")
+        self.__client.client.subscribe(config_topic)
         self.__client.publish("skyscan/registration", "skyscan-tracker-"+ID+" Registration", 0, False)
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
