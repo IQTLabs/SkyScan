@@ -74,8 +74,6 @@ services:
       - MLATHOST=piaware
       - LAT=${LAT}
       - LONG=${LONG}
-    networks:
-      - adsbnet
     ports:
       - 8078:80
     tmpfs:
