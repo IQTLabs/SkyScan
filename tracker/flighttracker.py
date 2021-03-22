@@ -159,7 +159,7 @@ class Observation(object):
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
             self.__callsign = sbs1msg["callsign"].rstrip()
         if sbs1msg["altitude"]:
-            self.__altitude = sbs1msg["altitude"]
+            self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
             self.__altitudeTime = datetime.utcnow()
         if sbs1msg["groundSpeed"]:
             self.__groundSpeed = sbs1msg["groundSpeed"]
