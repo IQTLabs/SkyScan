@@ -197,13 +197,13 @@ class Observation(object):
                 if not self.__planedb_nagged:
                     self.__planedb_nagged = True
                     logging.error("icao24 %s not found in the database" % (self.__icao24))
-
-        # Calculates the distance from the cameras location to the airplane. The output is in METERS!
-        distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        #Not sure we want to... commented out for now -> Round off to nearest 100 meters
-        self.__distance = distance = distance #round(distance/100) * 100
-        self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        self.__elevation = utils.elevation(distance, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
+        if self.__lat and self.__lon and self.__altitude:
+            # Calculates the distance from the cameras location to the airplane. The output is in METERS!
+            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
+            #Not sure we want to... commented out for now -> Round off to nearest 100 meters
+            self.__distance = distance = distance #round(distance/100) * 100
+            self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
+            self.__elevation = utils.elevation(distance, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
 
         # Check if observation was updated
         newData = dict(self.__dict__)
