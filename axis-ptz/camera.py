@@ -343,7 +343,7 @@ def main():
     cameraDelay = args.camera_delay
     cameraMoveSpeed = args.camera_move_speed
     cameraZoom = args.camera_zoom
-    cameraBearing = args.camera_bearing
+    cameraBearing = args.bearing
     cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
     threading.Thread(target = moveCamera, daemon = True).start()
