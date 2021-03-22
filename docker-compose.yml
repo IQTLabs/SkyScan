@@ -44,7 +44,7 @@ services:
     restart: unless-stopped
       
   piaware:
-    image: mikenye/piaware:latest
+    build: ./piaware
     tty: true
     container_name: piaware
     restart: always
