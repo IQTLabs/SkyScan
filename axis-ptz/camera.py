@@ -125,7 +125,7 @@ def get_jpeg_request():  # 5.2.4.1
     """
     payload = {
         'resolution': "1920x1080",
-        'compression': 5,
+        'compression': 0,
         'camera': 1,
     }
     url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
