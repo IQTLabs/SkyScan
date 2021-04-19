@@ -11,15 +11,15 @@ services:
       - mqtt
     restart: unless-stopped
 
-#  adsb-mqtt:
-#    build: ./adsb-mqtt
-#    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
-#    volumes:
-#      - ./data:/app/data
-#    depends_on:
-#      - mqtt
-#      - piaware
-#    restart: unless-stopped
+  adsb-mqtt:
+    build: ./adsb-mqtt
+    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mqtt
+      - piaware
+    restart: unless-stopped
 
 #  pan-tilt-pi:
 #    build: ./pan-tilt-pi
@@ -49,7 +49,6 @@ services:
     build: ./piaware
     tty: true
     container_name: piaware
-    restart: always
     devices:
       - /dev/bus/usb:/dev/bus/usb
     ports:
@@ -69,7 +68,6 @@ services:
     image: mikenye/tar1090:latest
     tty: true
     container_name: tar1090
-    restart: always
     environment:
       - TZ=${TZ}
       - BEASTHOST=piaware
@@ -81,6 +79,7 @@ services:
     tmpfs:
       - /run:exec,size=64M
       - /var/log
+      
   mqtt:
     build: ./mqtt
     ports:
@@ -88,11 +87,11 @@ services:
         - "1883:1883"
     restart: unless-stopped
 
-  egi:
-    build: ./egi
-    entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
-    devices:
-      - /dev/ttyACM0
-    depends_on:
-      - mqtt
-    restart: unless-stopped
+#  egi:
+#    build: ./egi
+#    entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
+#    devices:
+#      - /dev/ttyACM0
+#    depends_on:
+#      - mqtt
+#    restart: unless-stopped
