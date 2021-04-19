@@ -1,0 +1,8 @@
+{
+    "name": "ADSB to MQTT",
+    "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.devcontainer.yml",],
+    "service": "adsb-mqtt",
+    "shutdownAction": "none",
+    // Open the sub-folder with the source code
+    "workspaceFolder": "/app" //"/workspace/adsb-mqtt"
+  }
