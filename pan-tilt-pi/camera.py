@@ -191,7 +191,7 @@ def main():
 
     client.connect(args.mqtt_host) #connect to broker
     client.loop_start() #start the loop
-    client.subscribe(args.mqtt_topic+"/#")
+    client.subscribe(args.mqtt_topic)
     client.publish("skyscan/registration", "pan-tilt-pi-camera-"+ID+" Registration", 0, False)
     #############################################
     ##                Main Loop                ##
