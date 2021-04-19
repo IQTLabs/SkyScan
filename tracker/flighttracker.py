@@ -48,10 +48,13 @@ ID = str(random.randint(1,100001))
 
 # Clean out observations this often
 OBSERVATION_CLEAN_INTERVAL = 30
+# Socket read timeout
+DUMP1090_SOCKET_TIMEOUT = 60
 q=Queue() # Good writeup of how to pass messages from MQTT into classes, here: http://www.steves-internet-guide.com/mqtt-python-callbacks/
 args = None
 camera_latitude = None
 plant_topic = None # the onMessage function needs to be outside the Class and it needs to get the Plane Topic, so it prob needs to be a global
+config_topic = "skyscan/config/json"
 camera_longitude = None
 camera_altitude = None
 camera_lead = None
@@ -114,16 +117,49 @@ class Observation(object):
 
     def __init__(self, sbs1msg):
         logging.info("%s appeared" % sbs1msg["icao24"])
+        self.__icao24 = sbs1msg["icao24"]
+        self.__loggedDate = datetime.utcnow()  # sbs1msg["loggedDate"]
+        self.__callsign = sbs1msg["callsign"]
+        self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
+        self.__altitudeTime = datetime.utcnow()
+        self.__groundSpeed = sbs1msg["groundSpeed"]
+        self.__track = sbs1msg["track"]
+        self.__lat = sbs1msg["lat"]
+        self.__lon = sbs1msg["lon"]
+        self.__latLonTime = datetime.utcnow()
+        self.__verticalRate = sbs1msg["verticalRate"]
+        self.__operator = None
+        self.__registration = None
+        self.__type = None
+        self.__model = None
+        self.__manufacturer = None
+        self.__updated = True
+        plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
+        
+        if plane.size == 27:
+            logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+
+            self.__registration = plane['registration'].values[0]
+            self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
+            self.__manufacturer = plane['manufacturername'].values[0] 
+            self.__model =  plane['model'].values[0] 
+            self.__operator = plane['operator'].values[0] 
+        else:
+            if not self.__planedb_nagged:
+                self.__planedb_nagged = True
+                logging.error("icao24 %s not found in the database" % (self.__icao24))
+                logging.error(plane)
+
     
     def update(self, sbs1msg):
         oldData = dict(self.__dict__)
-        #self.__loggedDate = datetime.utcnow()
+        self.__loggedDate = datetime.utcnow()
         if sbs1msg["icao24"]:
             self.__icao24 = sbs1msg["icao24"]
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
             self.__callsign = sbs1msg["callsign"].rstrip()
         if sbs1msg["altitude"]:
-            self.__altitude = sbs1msg["altitude"]
+            self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
             self.__altitudeTime = datetime.utcnow()
         if sbs1msg["groundSpeed"]:
             self.__groundSpeed = sbs1msg["groundSpeed"]
@@ -139,25 +175,35 @@ class Observation(object):
             self.__verticalRate = sbs1msg["verticalRate"]
         if not self.__verticalRate:
             self.__verticalRate = 0
-        if sbs1msg["loggedDate"]:
-            self.__loggedDate = datetime.strptime(sbs1msg["loggedDate"], '%Y-%m-%d %H:%M:%S.%f')
-        if sbs1msg["registration"]:
-            self.__registration = sbs1msg["registration"]
-        if sbs1msg["manufacturer"]:
-            self.__manufacturer = sbs1msg["manufacturer"]
-        if sbs1msg["model"]:
-            self.__model = sbs1msg["model"]
-        if sbs1msg["operator"]:
-            self.__operator = sbs1msg["operator"]       
-        if sbs1msg["type"]:
-            self.__type = sbs1msg["type"]   
+        #if sbs1msg["loggedDate"]:
+        #    self.__loggedDate = datetime.strptime(sbs1msg["loggedDate"], '%Y-%m-%d %H:%M:%S.%f')
+        #if sbs1msg["generatedDate"]:
+        #    self.__generatedDate = sbs1msg["generatedDate"]
+        #if sbs1msg["loggedDate"]:
+        #    self.__loggedDate = sbs1msg["loggedDate"]
 
-        # Calculates the distance from the cameras location to the airplane. The output is in METERS!
-        distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        #Not sure we want to... commented out for now -> Round off to nearest 100 meters
-        self.__distance = distance = distance #round(distance/100) * 100
-        self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
-        self.__elevation = utils.elevation(distance, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
+        if self.__planedb_nagged == False and self.__registration == None:
+            plane = planes.loc[planes['icao24'] == self.__icao24.lower()]
+            
+            if plane.size == 27:
+                logging.info("{} {} {} {} {}".format(plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+
+                self.__registration = plane['registration'].values[0]
+                self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
+                self.__manufacturer = plane['manufacturername'].values[0] 
+                self.__model =  plane['model'].values[0] 
+                self.__operator = plane['operator'].values[0] 
+            else:
+                if not self.__planedb_nagged:
+                    self.__planedb_nagged = True
+                    logging.error("icao24 %s not found in the database" % (self.__icao24))
+        if self.__lat and self.__lon and self.__altitude:
+            # Calculates the distance from the cameras location to the airplane. The output is in METERS!
+            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
+            #Not sure we want to... commented out for now -> Round off to nearest 100 meters
+            self.__distance = distance = distance #round(distance/100) * 100
+            self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
+            self.__elevation = utils.elevation(distance, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
 
         # Check if observation was updated
         newData = dict(self.__dict__)
@@ -183,7 +229,8 @@ class Observation(object):
 
     def getLoggedDate(self) -> datetime:
         return self.__loggedDate
-
+    def getLatLonTime(self) -> datetime:
+        return self.__latLonTime
     def getGroundSpeed(self) -> float:
         return self.__groundSpeed
 
@@ -264,7 +311,16 @@ class Observation(object):
         #d["loggedDate"] = "%s" % (d["_Observation__loggedDate"])
         return d
 
+def update_config(config):
+    global camera_lead
+    global min_elevation
 
+    if "cameraLead" in config:
+        camera_lead = float(config["cameraLead"])
+        logging.info("Setting Camera Lead to: {}".format(camera_lead))
+    if "minElevation" in config:
+        min_elevation = int(config["minElevation"])
+        logging.info("Setting Min. Elevation to: {}".format(min_elevation))
 
 def on_message(client, userdata, message):
     global camera_altitude
@@ -282,13 +338,15 @@ def on_message(client, userdata, message):
         log.critical("onMessage - Value Error: {} ".format(e))
     except:
         log.critical("onMessage - Caught it!")
-    if message.topic == plane_topic:
-        q.put(update) #put messages on queue
-    elif message.topic == "skyscan/egi":
+
+    if message.topic == "skyscan/egi":
         logging.info(update)
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
         camera_altitude = float(update["alt"])
+    elif message.topic == config_topic:
+        update_config(update)
+        logging.info("Config Message: {}".format(update))
     else:
         logging.info("Topic not processed: " + message.topic)
    
@@ -303,8 +361,11 @@ class FlightTracker(object):
     __tracking_distance: int = 999999999
     __next_clean: datetime = None
     __has_nagged: bool = False
+    __dump1090_host: str = ""
+    __dump1090_port: int = 0
+    __dump1090_sock: socket.socket = None
 
-    def __init__(self,  mqtt_broker: str, plane_topic: str, flight_topic: str, mqtt_port: int = 1883, ):
+    def __init__(self, dump1090_host: str, mqtt_broker: str, plane_topic: str, flight_topic: str, dump1090_port: int = 30003, mqtt_port: int = 1883, ):
         """Initialize the flight tracker
 
         Arguments:
@@ -319,7 +380,8 @@ class FlightTracker(object):
             dump1090_port {int} -- Override the dump1090 raw port (default: {30003})
             mqtt_port {int} -- Override the MQTT default port (default: {1883})
         """
-
+        self.__dump1090_host = dump1090_host
+        self.__dump1090_port = dump1090_port
         self.__mqtt_broker = mqtt_broker
         self.__mqtt_port = mqtt_port
         self.__sock = None
@@ -348,7 +410,7 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLoggedDate(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
+                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
@@ -373,6 +435,103 @@ class FlightTracker(object):
         cur = self.__observations[self.__tracking_icao24]
         self.__tracking_distance = utils.coordinate_distance(camera_latitude, camera_longitude, cur.getLat(), cur.getLon())
 
+    def dump1090Connect(self) -> bool:
+        """If not connected, connect to the dump1090 host
+
+        Returns:
+            bool -- True if we are connected
+        """
+        if self.__dump1090_sock == None:
+            try:
+                if not self.__has_nagged:
+                    logging.info("Connecting to dump1090")
+                self.__dump1090_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.__dump1090_sock.connect((self.__dump1090_host, self.__dump1090_port))
+                logging.info("ADSB connected")
+                self.__dump1090_sock.settimeout(DUMP1090_SOCKET_TIMEOUT)
+                self.__has_nagged = False
+                return True
+            except socket.error as e:
+                if not self.__has_nagged:
+                    logging.critical("Failed to connect to ADSB receiver on %s:%s, retrying : %s" % (self.__dump1090_host, self.__dump1090_port, e))
+                    self.__has_nagged = True
+                self.__dump1090_sock = None
+                time.sleep(5)
+            return False
+        else:
+            return True
+
+
+    def dump1090Close(self):
+        """Close connection to dump1090 host.
+        """
+        try:
+            self.__dump1090_sock.close()
+        except socket.error:
+            pass
+        self.__dump1090_sock = None
+        self.__has_nagged = False
+        logging.critical("Closing dump1090 connection")
+
+
+    def dump1090Read(self) -> str:
+        """Read a line from the dump1090 host. If the host went down, close the socket and return None
+
+        Returns:
+            str -- An SBS1 message or None if disconnected or timeout
+
+        Yields:
+            str -- An SBS1 message or None if disconnected or timeout
+        """
+        try:
+            try:
+                buffer = self.__dump1090_sock.recv(4096)
+            except ConnectionResetError:
+                logging.critical("Connection Reset Error")
+                self.dump1090Close()
+                return None
+            except socket.error:
+                logging.critical("Socket Error")
+                self.dump1090Close()
+                return None
+            buffer = buffer.decode("utf-8")
+            buffering = True
+            if buffer == "":
+                logging.critical("Buffer Empty")
+                self.dump1090Close()
+                return None
+            while buffering:
+                if "\n" in buffer:
+                    (line, buffer) = buffer.split("\r\n", 1)
+                    yield line
+                else:
+                    try:
+                        more = self.__dump1090_sock.recv(4096)
+                    except ConnectionResetError:
+                        logging.critical("Connection Reset Error")
+                        self.dump1090Close()
+                        return None
+                    except socket.error:
+                        logging.critical("Socket Error")
+                        self.dump1090Close()
+                        return None
+                    if not more:
+                        buffering = False
+                    else:
+                        if not isinstance(more, str):
+                            more = more.decode("utf-8")
+                        if more == "":
+                            logging.critical("Receive Empty")
+                            self.dump1090Close()
+                            return None
+                        buffer += more
+            if buffer:
+                yield buffer
+        except socket.timeout:
+            return None
+
+
+
 
     def run(self):
         """Run the flight tracker.
@@ -386,36 +545,42 @@ class FlightTracker(object):
         print("connected mqtt")
         self.__client.loop_start() #start the loop
         print("start MQTT")
-        self.__client.subscribe(self.__plane_topic)
         self.__client.subscribe("skyscan/egi")
+        self.__client.subscribe(config_topic)
         self.__client.publish("skyscan/registration", "skyscan-tracker-"+ID+" Registration", 0, False)
         print("subscribe mqtt")
         threading.Thread(target = self.__publish_thread, daemon = True).start()
 
         
         while True:
-            while not q.empty():
-                m = q.get()
-                icao24 = m["icao24"]
+            if not self.dump1090Connect():
+                continue
+            for data in self.dump1090Read():
+                if data is None:
+                    continue
                 self.cleanObservations()
-                if icao24 not in self.__observations:
-                    self.__observations[icao24] = Observation(m)
-                self.__observations[icao24].update(m)
-                if self.__observations[icao24].isPresentable():
-                    if not self.__tracking_icao24:
-                        if self.__observations[icao24].getElevation() != None and self.__observations[icao24].getElevation() > min_elevation:
-                            self.__tracking_icao24 = icao24
+                m = sbs1.parse(data)
+                if m:
+                    icao24 = m["icao24"]
+                    self.cleanObservations()
+                    if icao24 not in self.__observations:
+                        self.__observations[icao24] = Observation(m)
+                    self.__observations[icao24].update(m)
+                    if self.__observations[icao24].isPresentable():
+                        if not self.__tracking_icao24:
+                            if self.__observations[icao24].getElevation() != None and self.__observations[icao24].getElevation() > min_elevation:
+                                self.__tracking_icao24 = icao24
+                                self.updateTrackingDistance()
+                                logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+                        elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
-                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
-                    elif self.__tracking_icao24 == icao24:
-                        self.updateTrackingDistance()
-                    else:
-                        distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
-                        if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
-                            self.__tracking_icao24 = icao24
-                            self.__tracking_distance = distance
-                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
-            time.sleep(0.1)
+                        else:
+                            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
+                            if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
+                                self.__tracking_icao24 = icao24
+                                self.__tracking_distance = distance
+                                logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
+            time.sleep(0.01)
                               
     def selectNearestObservation(self):
         """Select nearest presentable aircraft
@@ -470,6 +635,7 @@ def main():
     global camera_lead
     global plane_topic
     global min_elevation
+    global planes
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
 
@@ -483,7 +649,9 @@ def main():
     parser.add_argument('-P', '--plane-topic', dest='plane_topic', help="MQTT plane topic", default="skyscan/planes/json")
     parser.add_argument('-T', '--flight-topic', dest='flight_topic', help="MQTT flight tracking topic", default="skyscan/flight/json")
     parser.add_argument('-v', '--verbose',  action="store_true", help="Verbose output")
-
+    parser.add_argument('-H', '--dump1090-host', help="dump1090 hostname", default='127.0.0.1')
+    parser.add_argument('--dump1090-port', type=int, help="dump1090 port number (default 30003)", default=30003)
+ 
     args = parser.parse_args()
 
     if not args.lat and not args.lon:
@@ -513,9 +681,11 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
+    planes = pd.read_csv("/app/data/aircraftDatabase.csv") #,index_col='icao24')
+    logging.info("Printing table")
+    logging.info(planes)
 
-
-    tracker = FlightTracker( args.mqtt_host, args.plane_topic, args.flight_topic,  mqtt_port = args.mqtt_port)
+    tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
     tracker.run()  # Never returns
 
 
