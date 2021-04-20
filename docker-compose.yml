@@ -6,7 +6,7 @@ services:
     build: ./tracker
     command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
     volumes:
-      - ./data:/app/data
+      - ./data:/data
     depends_on:
       - mqtt
     restart: unless-stopped
@@ -15,7 +15,7 @@ services:
     build: ./adsb-mqtt
     command: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
     volumes:
-      - ./data:/app/data
+      - ./data:/data
     depends_on:
       - mqtt
       - piaware
