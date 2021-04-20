@@ -4,5 +4,5 @@
     "service": "tracker",
     "shutdownAction": "none",
     // Open the sub-folder with the source code
-    "workspaceFolder":  "/app", //"/workspace/tracker",
+    "workspaceFolder":  "/workspace", //"/workspace/tracker",
 }

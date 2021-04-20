@@ -681,7 +681,7 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
-    planes = pd.read_csv("/app/data/aircraftDatabase.csv") #,index_col='icao24')
+    planes = pd.read_csv("/data/aircraftDatabase.csv") #,index_col='icao24')
     logging.info("Printing table")
     logging.info(planes)
 

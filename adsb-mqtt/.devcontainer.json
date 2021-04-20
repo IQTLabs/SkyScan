@@ -4,5 +4,5 @@
     "service": "adsb-mqtt",
     "shutdownAction": "none",
     // Open the sub-folder with the source code
-    "workspaceFolder": "/app" //"/workspace/adsb-mqtt"
+    "workspaceFolder": "/workspace" //"/workspace/adsb-mqtt"
   }
