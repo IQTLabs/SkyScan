@@ -4,4 +4,5 @@ services:
   tracker:
     command: /bin/sh -c "while sleep 1000; do :; done"
     volumes:
-      - /home/pi/Projects/SkyScan:/app:cached # Additional bind mount
+      - /home/pi/Projects/SkyScan/tracker:/app:cached # Additional bind mount
+    working_dir: /app

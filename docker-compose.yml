@@ -4,7 +4,7 @@ services:
 
   tracker:
     build: ./tracker
-    entrypoint: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
+    command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
     volumes:
       - ./data:/app/data
     depends_on:
@@ -13,7 +13,7 @@ services:
 
   adsb-mqtt:
     build: ./adsb-mqtt
-    entrypoint: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
+    command: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
     volumes:
       - ./data:/app/data
     depends_on:
@@ -38,7 +38,7 @@ services:
 
   axis-ptz:
     build: ./axis-ptz
-    entrypoint: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY}"
+    command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY}"
     volumes:
       - ./capture:/app/capture
     depends_on:
