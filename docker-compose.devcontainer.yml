@@ -1,15 +1,15 @@
 version: '3.7'
 
 services:
-  tracker:
-    volumes:
-        - /home/pi/Projects/SkyScan/tracker:/app:cached # Additional bind mount
-    #command: /bin/sh -c "while sleep 1000; do :; done"
-  adsb-mqtt:
-    volumes:
-        - /home/pi/Projects/SkyScan/adsb-mqtt:/app:cached # Additional bind mount
-    #command: /bin/sh -c "while sleep 1000; do :; done"
-  axis-ptz:
-    volumes:
-        - /home/pi/Projects/SkyScan/axis-ptz:/app:cached # Additional bind mount
+#  tracker:
+#    volumes:
+#        - /home/pi/Projects/SkyScan/tracker:/app:cached # Additional bind mount
+#    #command: /bin/sh -c "while sleep 1000; do :; done"
+#  adsb-mqtt:
+#    volumes:
+#        - /home/pi/Projects/SkyScan/adsb-mqtt:/app:cached # Additional bind mount
+#    #command: /bin/sh -c "while sleep 1000; do :; done"
+#  axis-ptz:
+#    volumes:
+#        - /home/pi/Projects/SkyScan/axis-ptz:/app:cached # Additional bind mount
     #command: /bin/sh -c "while sleep 1000; do :; done"

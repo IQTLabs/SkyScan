@@ -1,6 +1,6 @@
 {
     "name": "Axis PTZ Camera Controller",
-    "dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml",],
+    "dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml","./docker-compose.axis-ptz.devcontainer.yml"],
     "service": "axis-ptz",
     "shutdownAction": "none",
     // Open the sub-folder with the source code

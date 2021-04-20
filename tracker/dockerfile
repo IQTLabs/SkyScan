@@ -6,5 +6,5 @@ ADD *.txt /app/
 RUN pip3 install -r requirements.txt
 ADD *.py /app/
 ADD mqtt_wrapper /app/mqtt_wrapper/
-CMD ./flighttracker.py -H 192.168.1.218 -m broker.hivemq.com  -t skyscan
+#CMD ./flighttracker.py -H 192.168.1.218 -m broker.hivemq.com  -t skyscan
 

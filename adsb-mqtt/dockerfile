@@ -6,5 +6,5 @@ ADD *.txt /app/
 RUN pip3 install -r requirements.txt
 ADD *.py /app/
 ADD mqtt_wrapper /app/mqtt_wrapper/
-CMD ./adsb-mqtt.py -H 192.168.1.218 -m 192.168.1.218  -t skyscan/planes/json
+#CMD ./adsb-mqtt.py -H 192.168.1.218 -m 192.168.1.218  -t skyscan/planes/json
 
