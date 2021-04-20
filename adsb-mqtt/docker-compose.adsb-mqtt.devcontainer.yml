@@ -3,3 +3,6 @@ version: '3.7'
 services:
   adsb-mqtt:
     command: /bin/sh -c "while sleep 1000; do :; done"
+    volumes:
+      - /home/pi/Projects/SkyScan/adsb-mqtt:/app:cached # Additional bind mount
+    working_dir: /app

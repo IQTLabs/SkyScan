@@ -3,3 +3,6 @@ version: '3.7'
 services:
   axis-ptz:
     command: /bin/sh -c "while sleep 1000; do :; done"
+    volumes:
+      - /home/pi/Projects/SkyScan/axis-ptz:/app:cached # Additional bind mount
+    working_dir: /app
