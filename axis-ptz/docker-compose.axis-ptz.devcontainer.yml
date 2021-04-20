@@ -5,5 +5,4 @@ services:
     command: /bin/sh -c "while sleep 1000; do :; done"
     volumes:
       - /home/pi/Projects/SkyScan/axis-ptz:/workspace:cached # Additional bind mount
-      - /home/pi/Projects/SkyScan/data:/data:cached 
     working_dir: /workspace
