@@ -87,11 +87,11 @@ services:
         - "1883:1883"
     restart: unless-stopped
 
-#  egi:
-#    build: ./egi
-#    entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
-#    devices:
-#      - /dev/ttyACM0
-#    depends_on:
-#      - mqtt
-#    restart: unless-stopped
+  egi:
+    build: ./egi
+    entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
+    devices:
+      - /dev/ttyACM0
+    depends_on:
+      - mqtt
+    restart: unless-stopped
