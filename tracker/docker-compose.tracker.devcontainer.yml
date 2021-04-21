@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  tracker:
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    volumes:
+      - /home/pi/Projects/SkyScan/tracker:/workspace:cached # Additional bind mount
+      - /home/pi/Projects/SkyScan/data:/data:cached # Additional bind mount
+    working_dir: /workspace
+    env_file: .env
+    
