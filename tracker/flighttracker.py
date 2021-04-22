@@ -59,6 +59,10 @@ camera_longitude = None
 camera_altitude = None
 camera_lead = None
 min_elevation = None
+min_altitude = None
+max_altitude = None
+min_distance = None
+max_distance = None
 
 # http://stackoverflow.com/questions/1165352/fast-comparison-between-two-python-dictionary
 class DictDiffer(object):
@@ -199,12 +203,13 @@ class Observation(object):
                     logging.error("icao24 %s not found in the database" % (self.__icao24))
         if self.__lat and self.__lon and self.__altitude:
             # Calculates the distance from the cameras location to the airplane. The output is in METERS!
-            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__lat, self.__lon)
+            distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, self.__lat, self.__lon, self.__altitude)
+            distance2d = utils.coordinate_distance(camera_latitude, camera_longitude,  self.__lat, self.__lon )
+            
             #Not sure we want to... commented out for now -> Round off to nearest 100 meters
-            self.__distance = distance = distance #round(distance/100) * 100
+            self.__distance = distance3d  #round(distance/100) * 100
             self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
-            self.__elevation = utils.elevation(distance, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
-
+            self.__elevation = utils.elevation(distance2d, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
         # Check if observation was updated
         newData = dict(self.__dict__)
         #del oldData["_Observation__loggedDate"]
@@ -411,19 +416,22 @@ class FlightTracker(object):
                     continue
 
                 (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
-                distance = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+                distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, cur.getAltitude())
+                distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+
+        
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
                 bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
-                elevation = utils.elevation(distance, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
+                elevation = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
 
                 retain = False
-                self.__client.publish(self.__flight_topic, cur.json(bearing, distance, elevation), 0, retain)
-                logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
+                self.__client.publish(self.__flight_topic, cur.json(bearing, distance3d, elevation), 0, retain)
+                logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
 
-                if distance < 3000:
+                if distance3d < 3000:
                     time.sleep(0.25)
-                elif distance < 6000:
+                elif distance3d < 6000:
                     time.sleep(0.5)
                 else:
                     time.sleep(1)
@@ -433,7 +441,8 @@ class FlightTracker(object):
         """Update distance to aircraft being tracked
         """
         cur = self.__observations[self.__tracking_icao24]
-        self.__tracking_distance = utils.coordinate_distance(camera_latitude, camera_longitude, cur.getLat(), cur.getLon())
+        if cur.getAltitude():
+            self.__tracking_distance = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, cur.getLat(), cur.getLon(), cur.getAltitude())
 
     def dump1090Connect(self) -> bool:
         """If not connected, connect to the dump1090 host
@@ -575,11 +584,12 @@ class FlightTracker(object):
                         elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
                         else:
-                            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
-                            if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
-                                self.__tracking_icao24 = icao24
-                                self.__tracking_distance = distance
-                                logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
+                            if self.__observations[icao24].getAltitude(): 
+                                distance = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon(), self.__observations[icao24].getAltitude() )
+                                if distance < self.__tracking_distance and self.__observations[icao24].getElevation() > min_elevation:
+                                    self.__tracking_icao24 = icao24
+                                    self.__tracking_distance = distance
+                                    logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))               
             time.sleep(0.01)
                               
     def selectNearestObservation(self):
@@ -587,17 +597,19 @@ class FlightTracker(object):
         """
         self.__tracking_icao24 = None
         self.__tracking_distance = 999999999
+        logging.info(len(self.__observations))
         for icao24 in self.__observations:
-            if not self.__observations[icao24].isPresentable():
+             if not self.__observations[icao24].isPresentable():
                 continue
             if self.__observations[icao24].getElevation() < min_elevation:
                 continue
-            distance = utils.coordinate_distance(camera_latitude, camera_longitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon())
+            distance = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, self.__observations[icao24].getLat(), self.__observations[icao24].getLon(), self.__observations[icao24].getAltitude())
+
             if distance < self.__tracking_distance:
                 self.__tracking_icao24 = icao24
                 self.__tracking_distance = distance
         if self.__tracking_icao24 is None:
-            logging.info("Found nothing to track")
+            logging.info("Found nothing to track " + str(self.__tracking_distance))
         else:
             logging.info("Found new tracking %s at %d" % (self.__tracking_icao24, self.__tracking_distance))
 
