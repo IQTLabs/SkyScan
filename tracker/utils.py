@@ -48,6 +48,33 @@ def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
     return bn
 
+def coordinate_distance_3d(lat1: float, lon1: float, alt1: float, lat2: float, lon2: float, alt2: float) -> float:
+    """Calculate distance in meters between the two coordinates
+
+    Arguments:
+        lat1 {float} -- Start latitude
+        lon1 {float} -- Start longitude
+        alt1 {float} -- Start altitude
+        lat2 {float} -- End latitude
+        lon2 {float} -- End longitude
+        alt2 {float} -- End altitude
+
+    Returns:
+        float -- Distance in meters
+    """
+    R = 6371 # Radius of the earth in km
+    dLat = deg2rad(lat2-lat1)
+    dLon = deg2rad(lon2-lon1)
+    a = math.sin(dLat/2) * math.sin(dLat/2) + math.cos(deg2rad(lat1)) * math.cos(deg2rad(lat2)) * math.sin(dLon/2) * math.sin(dLon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = R * c * 1000 #  Distance in m
+    #return d
+    #logging.info("Alt1: " + str(alt1) + " Alt2: " + str(alt2))
+    alt_diff = abs(alt1 - alt2)
+    
+    rtt = ((d**2 + alt_diff**2)**0.5)
+
+    return rtt
 
 def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate distance in meters between the two coordinates
