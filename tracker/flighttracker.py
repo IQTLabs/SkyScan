@@ -172,7 +172,7 @@ class Observation(object):
         if sbs1msg["track"]:
             self.__track = sbs1msg["track"]
         if sbs1msg["onGround"]:
-            self.__onGround = sbs1["onGround"]
+            self.__onGround = sbs1msg["onGround"]
         if sbs1msg["lat"]:
             self.__lat = sbs1msg["lat"]
             self.__latLonTime = datetime.utcnow()
