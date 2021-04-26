@@ -192,6 +192,21 @@ docker-compose build
 This could take a long, long time....
 
 
+## Setup RTL-SDR
+
+The RTL-SDR dongle is used to receive the ADS-B broadcasts. The following command is required:
+
+`sudo nano /etc/modprobe.d/blacklist-rtl2832.conf`
+
+```bash
+# Blacklist RTL2832 so docker container piaware can use the device
+
+blacklist rtl2832
+blacklist dvb_usb_rtl28xxu
+blacklist rtl2832_sdr
+```
+
+
 ## Wrap it up...
 
 Now go back to the readme to finish the config. You will need to get a Flight Aware key.
