@@ -206,6 +206,13 @@ blacklist dvb_usb_rtl28xxu
 blacklist rtl2832_sdr
 ```
 
+And then remove the kernel module from memory, in case it already got loaded:
+
+```bash
+sudo rmmod rtl2832_sdr
+sudo rmmod dvb_usb_rtl28xxu
+sudo rmmod rtl2832
+```
 
 ## Wrap it up...
 
