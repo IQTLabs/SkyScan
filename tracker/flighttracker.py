@@ -662,8 +662,8 @@ class FlightTracker(object):
                     self.__tracking_distance = 999999999
             for icao24 in cleaned:
                 del self.__observations[icao24]
-            if self.__tracking_icao24 is None:
-                self.selectNearestObservation()
+            #if self.__tracking_icao24 is None:
+            self.selectNearestObservation()
 
             self.__next_clean = now + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL)
 
