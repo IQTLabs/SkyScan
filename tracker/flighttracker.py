@@ -605,7 +605,7 @@ class FlightTracker(object):
                 m = sbs1.parse(data)
                 if m:
                     icao24 = m["icao24"]
-                    self.cleanObservations()
+
                     if icao24 not in self.__observations:
                         self.__observations[icao24] = Observation(m)
                     self.__observations[icao24].update(m)
