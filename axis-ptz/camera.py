@@ -31,7 +31,7 @@ cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
 cameraDelay = None
-cameraBearing = 0
+
 
 object_topic = None
 flight_topic = None
@@ -39,13 +39,13 @@ config_topic = "skyscan/config/json"
 
 bearing = 0         # this is an angle
 elevation = 0       # this is an angle
-cameraBearing = 0   # This value is in angles and corrects for the camera not being level
-cameraElevation = 0 # This values is in angles and corrects for the camera not being level
+cameraPan = 0   # This value is in angles and corrects for the camera not being level
+cameraTilt = 0 # This values is in angles and corrects for the camera not being level
 distance3d = 0      # this is in Meters
 planeTrack = 0    # This is the direction that the plane is moving in
 
-actualCameraBearing = 0
-actualCameraElevation = 0
+actualCameraPan = 0
+actualCameraTilt = 0
 follow_x = 0
 follow_y = 0
 actualX = 0
@@ -81,27 +81,27 @@ def setXY(x,y):
     follow_y = int(y)
     
 
-def setBearing(newBearing):
-    global cameraBearing
-    #diff_heading = getHeadingDiff(cameraBearing, cameraBearing)
+def setCameraPan(newPan):
+    global cameraPan
+    #diff_heading = getHeadingDiff(cameraPan, cameraPan)
     
 
-    if newBearing != cameraBearing: #cameraBearing #abs(cameraBearing - diff_heading) > 2: #only update the cameraBearing if there has been a big change
-        #logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, cameraBearing, cameraBearing))
+    if newPan != cameraPan: #cameraPan #abs(cameraPan - diff_heading) > 2: #only update the cameraPan if there has been a big change
+        #logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, cameraPan, cameraPan))
 
-        cameraBearing = newBearing
-        #logging.info("Setting Bearing to: %d"%cameraBearing)
+        cameraPan = newPan
+        #logging.info("Setting Bearing to: %d"%cameraPan)
             
         return True
     return False
 
-def setCameraElevation(newElevation):
-    global cameraElevation
-    if newElevation < 90:
-        if cameraElevation != newElevation: 
-            cameraElevation = newElevation
+def setCameraTilt(newTilt):
+    global cameraTilt
+    if newTilt < 90:
+        if cameraTilt != newTilt: 
+            cameraTilt = newTilt
             
-            #logging.info("Setting Elevation to: %d"%cameraElevation)
+            #logging.info("Setting Elevation to: %d"%cameraTilt)
 
  # Copied from VaPix/Sensecam to customize the folder structure for saving pictures          
 def get_jpeg_request():  # 5.2.4.1
@@ -145,7 +145,8 @@ def get_jpeg_request():  # 5.2.4.1
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}.jpg".format(captureDir, currentPlane["icao24"],datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+        filename = "{}/{}_{}_{}_{}_{}.jpg".format(captureDir,currentPlane["icao24"],int(bearing),int(elevation),int(distance3d),datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    
         
         with open(filename, 'wb') as var:
             var.write(resp.content)
@@ -156,7 +157,6 @@ def get_jpeg_request():  # 5.2.4.1
     return text
 
 
-def getFilename():
 
 
 def get_bmp_request():  # 5.2.4.1
@@ -199,7 +199,7 @@ def get_bmp_request():  # 5.2.4.1
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}.bmp".format(captureDir, currentPlane["icao24"],datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+        filename = "{}/{}_{}_{}_{}_{}.bmp".format(captureDir,currentPlane["icao24"],int(bearing),int(elevation),int(distance3d),datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
         
         with open(filename, 'wb') as var:
             var.write(resp.content)
@@ -210,8 +210,8 @@ def get_bmp_request():  # 5.2.4.1
     return text
 
 def moveCamera():
-    global actualCameraBearing
-    global actualCameraElevation
+    global actualCameraPan
+    global actualCameraTilt
     global actualX
     global actualY
     global camera
@@ -220,12 +220,12 @@ def moveCamera():
     while True:
         lockedOn = False
         if (object_timeout < time.mktime(time.gmtime())):
-            if actualCameraElevation != cameraElevation or actualCameraBearing != cameraBearing:
-                logging.info("Moving camera to Elevation: %d  & Bearing: %d"%(cameraElevation, cameraBearing))
-                actualCameraElevation = cameraElevation
-                actualCameraBearing = cameraBearing
+            if actualCameraTilt != cameraTilt or actualCameraPan != cameraPan:
+                logging.info("Moving camera to Elevation: %d  & Bearing: %d"%(cameraTilt, cameraPan))
+                actualCameraTilt = cameraTilt
+                actualCameraPan = cameraPan
                 lockedOn = True
-                camera.absolute_move(cameraBearing, cameraElevation, cameraZoom, cameraMoveSpeed)
+                camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
                 time.sleep(cameraDelay)
                 get_jpeg_request()
                 #get_bmp_request()
@@ -249,7 +249,7 @@ def update_config(config):
     global cameraZoom
     global cameraMoveSpeed
     global cameraDelay
-    global cameraBearing
+    global cameraPan
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -260,9 +260,7 @@ def update_config(config):
     if "cameraMoveSpeed" in config:
         cameraMoveSpeed = int(config["cameraMoveSpeed"])
         logging.info("Setting Camera Move Speed to: {}".format(cameraMoveSpeed))
-    if "cameraBearing" in config:
-        cameraBearing = float(config["cameraBearing"])
-        logging.info("Setting Bearing Correction to: {}".format(cameraBearing))
+
 
 
 #############################################
@@ -296,12 +294,12 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info("{}\tBearing: {} \tElevation: {}".format(update["icao24"],update["cameraBearing"],update["cameraElevation"]))
+        logging.info("{}\tBearing: {} \tElevation: {} \tCamera Pan: {} \tCamera Tilt: {}".format(update["icao24"],update["bearing"],update["elevation"],update["cameraPan"],update["cameraTilt"]))
         distance3d = update["distance"]
         bearing = update["bearing"]
         elevation = update["elevation"]
-        setBearing(update["cameraBearing"])
-        setCameraElevation(update["cameraElevation"])
+        setCameraPan(update["cameraPan"])
+        setCameraTilt(update["cameraTilt"])
         currentPlane = update
     elif message.topic == config_topic:
         update_config(update)
@@ -316,7 +314,7 @@ def main():
     global cameraDelay
     global cameraMoveSpeed
     global cameraZoom
-    global cameraBearing
+    global cameraPan
     global cameraConfig
     global flight_topic
     global object_topic
