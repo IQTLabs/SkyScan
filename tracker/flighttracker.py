@@ -212,7 +212,7 @@ class Observation(object):
             
             #Not sure we want to... commented out for now -> Round off to nearest 100 meters
             self.__distance = distance3d  #round(distance/100) * 100
-            self.__bearing = utils.bearingFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[self.__lat, self.__lon], self.__track)
+            self.__bearing = utils.bearingFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[self.__lat, self.__lon], heading=self.__track)
             self.__elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=self.__altitude) # Distance and Altitude are both in meters
         # Check if observation was updated
         newData = dict(self.__dict__)
