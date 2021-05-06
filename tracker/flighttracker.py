@@ -212,8 +212,8 @@ class Observation(object):
             
             #Not sure we want to... commented out for now -> Round off to nearest 100 meters
             self.__distance = distance3d  #round(distance/100) * 100
-            self.__bearing = utils.bearing(camera_latitude, camera_longitude, self.__lat, self.__lon)
-            self.__elevation = utils.elevation(distance2d, self.__altitude, camera_altitude) # Distance and Altitude are both in meters
+            self.__bearing = utils.bearingFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[self.__lat, self.__lon], self.__track)
+            self.__elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=self.__altitude) # Distance and Altitude are both in meters
         # Check if observation was updated
         newData = dict(self.__dict__)
         #del oldData["_Observation__loggedDate"]
@@ -312,7 +312,7 @@ class Observation(object):
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
 
-    def json(self, bearing: int, distance: int, elevation: int) -> str:
+    def json(self, bearing: float, elevation: float, cameraPan: float,  cameraTilt: float, distance: int) -> str:
         """Return JSON representation of this observation
         
         Arguments:
@@ -333,7 +333,7 @@ class Observation(object):
         else:
             callsign = "\"%s\"" % self.__callsign
 
-        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign, "bearing": bearing, "distance": distance, "elevation": elevation}
+        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign, "bearing": bearing, "cameraPan": cameraPan, "distance": distance, "elevation": elevation, "cameraTilt": cameraTilt}
         jsonString = json.dumps(planeDict, indent=4, sort_keys=True, default=str)
         return jsonString
 
@@ -456,11 +456,18 @@ class FlightTracker(object):
         
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
-                bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
-                elevation = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
+                bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], cur.getTrack())
+                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=cur.getAltitude()) # we need to convert to feet because the altitude is in feet
+                
+
+
+                # !!!! Mike, replaces these values with the values that have been camera for roll, pitch, yaw
+                cameraTilt = elevation
+                cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
+                
 
                 retain = False
-                self.__client.publish(self.__flight_topic, cur.json(bearing, distance3d, elevation), 0, retain)
+                self.__client.publish(self.__flight_topic, cur.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt), 0, retain)
                 logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
 
                 if distance3d < 3000:
