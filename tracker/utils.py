@@ -15,16 +15,36 @@ def deg2rad(deg: float) -> float:
     """
     return deg * (math.pi/180)
 
-def elevation(distance: float, altitude, camera_altitude):
-    baseElevation = camera_altitude
+def elevation(distance: float, cameraAltitude, airplaneAltitude):
+
     if distance > 0:
-        ratio = ( altitude - baseElevation) / float(distance)
+        ratio = ( airplaneAltitude - cameraAltitude) / float(distance)
         a = math.atan(ratio) * (180 /math.pi)
         return a
     else:
         return 0
 
-def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+def bearingFromCoordinate( cameraPosition, airplanePosition, heading):
+    lat2 = airplanePosition[0]
+    lon2 = airplanePosition[1]
+    
+    lat1 = cameraPosition[0]
+    lon1 = cameraPosition[1]
+    
+    dLon = (lon1 - lon2)
+
+    y = math.sin(dLon*math.pi/180) * math.cos(lat1*math.pi/180)
+    x = math.cos(lat2*math.pi/180) * math.sin(lat1*math.pi/180) - math.sin(lat2*math.pi/180) * math.cos(lat1*math.pi/180) * math.cos(dLon*math.pi/180)
+
+    brng = math.atan2(-y, x)*180/math.pi
+    brng = (brng + 360) % 360
+    brng = 360 - brng
+    brng -= heading
+    brng = (brng + 360) % 360
+    return brng
+
+
+def cameraPanFromCoordinate(airplanePosition, cameraPosition) -> float:
     """Calculate bearing from lat1/lon2 to lat2/lon2
 
     Arguments:
@@ -36,6 +56,12 @@ def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     Returns:
         float -- bearing in degrees
     """
+
+    lat2 = airplanePosition[0]
+    lon2 = airplanePosition[1]
+    
+    lat1 = cameraPosition[0]
+    long1 = cameraPosition[1]
     rlat1 = math.radians(lat1)
     rlat2 = math.radians(lat2)
     rlon1 = math.radians(lon1)
