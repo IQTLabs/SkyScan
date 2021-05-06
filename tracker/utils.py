@@ -25,6 +25,9 @@ def elevation(distance: float, cameraAltitude, airplaneAltitude):
         return 0
 
 def bearingFromCoordinate( cameraPosition, airplanePosition, heading):
+    if heading is None:
+        return -1
+        
     lat2 = airplanePosition[0]
     lon2 = airplanePosition[1]
     
