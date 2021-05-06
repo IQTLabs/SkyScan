@@ -27,7 +27,7 @@ def elevation(distance: float, cameraAltitude, airplaneAltitude):
 def bearingFromCoordinate( cameraPosition, airplanePosition, heading):
     if heading is None:
         return -1
-        
+
     lat2 = airplanePosition[0]
     lon2 = airplanePosition[1]
     
@@ -64,7 +64,8 @@ def cameraPanFromCoordinate(airplanePosition, cameraPosition) -> float:
     lon2 = airplanePosition[1]
     
     lat1 = cameraPosition[0]
-    long1 = cameraPosition[1]
+    lon1 = cameraPosition[1]
+    
     rlat1 = math.radians(lat1)
     rlat2 = math.radians(lat2)
     rlon1 = math.radians(lon1)
