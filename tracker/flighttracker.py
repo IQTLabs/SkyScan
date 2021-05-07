@@ -482,9 +482,14 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
-                distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, cur.getAltitude())
+                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
+                distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
+                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+
+                logging.info("%s: original alt %5d | extrap alt %5d | climb rate %5d" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getGroundSpeed(), cur.getVerticalRate()))
+                logging.info("%s: original lat %5d | new lat %5d | original long %5d | new long %5d | climb rate %3d" % (cur.getIcao24(), latorig, lat, lonorig, lon))
+        
 
                 bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=cur.getTrack())
                 elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=cur.getAltitude()) # we need to convert to feet because the altitude is in feet
@@ -493,6 +498,7 @@ class FlightTracker(object):
                 cameraTilt = elevation
                 cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
                 
+
                 retain = False
                 self.__client.publish(self.__flight_topic, cur.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt), 0, retain)
                 #logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
