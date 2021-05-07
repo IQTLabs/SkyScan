@@ -453,6 +453,7 @@ class FlightTracker(object):
                 distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
                 (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+                logging.info("  ------------------------------------------------- ")
                 logging.info("%s: original alt %5d | extrap alt %5d | climb rate %5d" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getGroundSpeed(), cur.getVerticalRate()))
                 logging.info("%s: original lat %5d | new lat %5d | original long %5d | new long %5d | climb rate %3d" % (cur.getIcao24(), latorig, lat, lonorig, lon))
         
@@ -460,11 +461,14 @@ class FlightTracker(object):
                 #distance = round(distance/100) * 100
                 bearing = utils.bearing(camera_latitude, camera_longitude, lat, lon)
                 elevation = utils.elevation(distance2d, alt, camera_altitude) # we need to convert to feet because the altitude is in feet
+                elevationorig = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
+                logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
 
                 retain = False
                 self.__client.publish(self.__flight_topic, cur.json(bearing, distance3d, elevation), 0, retain)
                 logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
-
+                logging.info("  ------------------------------------------------- ")
+                
                 if distance3d < 3000:
                     time.sleep(0.25)
                 elif distance3d < 6000:
