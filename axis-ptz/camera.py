@@ -7,9 +7,6 @@ import threading
 import json
 import sys
 import os
-import logging
-import logging
-import coloredlogs
 import calendar
 from datetime import datetime, timedelta
 import signal
@@ -23,6 +20,13 @@ import paho.mqtt.client as mqtt
 from json.decoder import JSONDecodeError
 from sensecam_control import vapix_control,vapix_config
 
+import logging
+import coloredlogs
+import logging.config # This gets rid of the annoying log messages from Vapix_Control
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': True,
+})
 
 ID = str(random.randint(1,100001))
 args = None
@@ -293,7 +297,7 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tPan: {} \tTilt: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["cameraPan"]),int(update["cameraTilt"]),update["distance"]))
+        logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tPan: {} \tTilt: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["cameraPan"]),int(update["cameraTilt"]),int(update["distance"])))
         distance3d = update["distance"]
         bearing = update["bearing"]
         elevation = update["elevation"]
