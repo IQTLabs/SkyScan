@@ -353,11 +353,6 @@ class Observation(object):
         Returns:
             str -- JSON string
         """
-        if self.__route is None:
-            route = "None"
-        else:
-            route = "%s" % self.__route
-            route = route.replace("'", "\"")
 
         if self.__callsign is None:
             callsign = "None"
