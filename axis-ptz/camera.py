@@ -221,7 +221,6 @@ def moveCamera():
         lockedOn = False
         if (object_timeout < time.mktime(time.gmtime())):
             if actualCameraTilt != cameraTilt or actualCameraPan != cameraPan:
-                logging.info("Moving camera to Elevation: %d  & Bearing: %d"%(cameraTilt, cameraPan))
                 actualCameraTilt = cameraTilt
                 actualCameraPan = cameraPan
                 lockedOn = True
@@ -294,7 +293,7 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info("{}\tBearing: {} \tElevation: {} \tCamera Pan: {} \tCamera Tilt: {}".format(update["icao24"],update["bearing"],update["elevation"],update["cameraPan"],update["cameraTilt"]))
+        logging.info("{}\t[IMAGE]\tBearing: {} \tElevation: {} \tCamera Pan: {} \tCamera Tilt: {}".format(update["icao24"],update["bearing"],update["elevation"],update["cameraPan"],update["cameraTilt"]))
         distance3d = update["distance"]
         bearing = update["bearing"]
         elevation = update["elevation"]
