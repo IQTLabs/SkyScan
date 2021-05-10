@@ -106,7 +106,6 @@ class Observation(object):
     __planedb_nagged = False  # Used in case the icao24 is unknown and we only want to log this once
 
     def __init__(self, sbs1msg):
-        logging.info("%s appeared" % sbs1msg["icao24"])
         self.__icao24 = sbs1msg["icao24"]
         self.__loggedDate = datetime.utcnow()  # sbs1msg["loggedDate"]
         self.__callsign = sbs1msg["callsign"]
