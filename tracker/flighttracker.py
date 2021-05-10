@@ -661,7 +661,7 @@ class FlightTracker(object):
                         
                         # This plane is trackable, but is not the one being tracked
                         else:
-                            distance = self.__observations[icao24].getDistance
+                            distance = self.__observations[icao24].getDistance()
                             if distance < self.__tracking_distance:
                                 self.__tracking_icao24 = icao24
                                 self.__tracking_distance = distance
