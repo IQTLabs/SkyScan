@@ -9,16 +9,18 @@
 
 ## MQTT Topics and Message Formats
 
+
 ### Topic: "skyscan/heartbeat"
 *Publised by: egi, tracker, axis-ptz containers*
----
+
 This topic is used for clients to periodically publish a string message on the MQTT bus. This helps make sure the connection stays up and does not time out. All MQTT clients should do this.
 
+---
 
 ### Topic: "skyscan/config/json"
 *Published by: Jupyter Notebook*
 *Subscribed by: tracker, axis-ptz containers*
----
+
 The JSON blob has different config values. There are no required fields. The following Keys are used:
 - **cameraZoom** - int value from 0 - 9999
 - **cameraDelay** - float value for the number of seconds to wait after sending the camera move API command, before sending the take picture API command.
@@ -27,10 +29,13 @@ The JSON blob has different config values. There are no required fields. The fol
 - **cameraBearing** - This is a float to correct the cameras heading to help it better align with True North. It can be from -180 to 180. 
 - **minElevation** - The minimum elevation above the horizon which the Tracker will follow an airplane. Int value between 0-90 degrees.
 
+---
+
 ### Topic: "skyscan/egi"
 *Published by: egi container*
 *Subscribed by: tracker container*
----
+
+
 The JSON blob contains current position information, as reported by the GPS unit. Information on how level the camera is also published. This data comes from an IMU unit attached to the camera. If the GPS or IMU is not available, default information from the command line is sent instead.
 - **time** - the time from the GPS, in string format: %Y-%m-%dT%H:%M:%SZ
 - **lat** - latitude from the GPS as a float in decimal degrees
@@ -41,10 +46,13 @@ The JSON blob contains current position information, as reported by the GPS unit
 - **yaw** - yaw of the camera platform in degrees
 - **fix** - the number of satellites the GPS receiver has acquired
 
+---
+
 ### Topic: "skyscan/flight/json"
 *Published by: tracker container*
 *Subscribed by: axis-ptz container*
----
+
+
 The JSON blob contains information about the current plane being tracked, as well as how to position the camera to photograph it. The rate of publication varies based on the distance of the aircraft from the camera.
 
 - **time** - the current time, form the Pi
