@@ -680,9 +680,7 @@ class FlightTracker(object):
             if self.__observations[icao24].getDistance() < self.__tracking_distance:
                 self.__tracking_icao24 = icao24
                 self.__tracking_distance = distance
-        if self.__tracking_icao24 is None:
-            logging.info("Found nothing to track " + str(self.__tracking_distance))
-        else:
+        if self.__tracking_icao24:
             logging.info("{}\t[TRACKING]\tDist: {}\t\t - Selected Nearest Observation".format(self.__tracking_icao24, self.__tracking_distance))
             
 
@@ -695,7 +693,7 @@ class FlightTracker(object):
             for icao24 in self.__observations:
 #                logging.info("[%s] %s -> %s : %s" % (icao24, self.__observations[icao24].getLoggedDate(), self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL), now))
                 if self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL) < now:
-                    logging.info("%s\t[REMOVED]\t - Observation too old" % (icao24))
+                    logging.info("%s\t[REMOVED]\t % (icao24))
                     if icao24 == self.__tracking_icao24:
                         self.__tracking_icao24 = None
                         self.__tracking_distance = 999999999
