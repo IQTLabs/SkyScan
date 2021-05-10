@@ -28,6 +28,7 @@ logging.config.dictConfig({
     'disable_existing_loggers': True,
 })
 logging.getLogger("vapix.log").setLevel(logging.WARNING)
+
 ID = str(random.randint(1,100001))
 args = None
 camera = None
