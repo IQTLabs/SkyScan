@@ -293,7 +293,7 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info("{}\t[IMAGE]\tBearing: {} \tElevation: {} \tCamera Pan: {} \tCamera Tilt: {}".format(update["icao24"],update["bearing"],update["elevation"],update["cameraPan"],update["cameraTilt"]))
+        logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tPan: {} \tTilt: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["cameraPan"]),int(update["cameraTilt"]),update["distance"]))
         distance3d = update["distance"]
         bearing = update["bearing"]
         elevation = update["elevation"]
