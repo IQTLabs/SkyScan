@@ -27,7 +27,7 @@ logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': True,
 })
-logging.getLogger("vapix.log").setLevel(logging.WARNING)
+logging.getLogger("vapix_control.py").setLevel(logging.WARNING)
 
 ID = str(random.randint(1,100001))
 args = None

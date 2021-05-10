@@ -666,6 +666,14 @@ class FlightTracker(object):
                                 self.__tracking_icao24 = icao24
                                 self.__tracking_distance = distance
                                 logging.info("{}\t[TRACKING]\tDist: {}\tElev: {}\t\t - Switched to closer plane".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+                    else:
+                        # If the plane is currently being tracked, but is no longer trackable:
+                        if self.__tracking_icao24 == icao24:
+                            logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
+                            logging.info(self.__observations[icao24].whyTrackable())
+                            self.__tracking_icao24 = None
+                            self.__tracking_distance = 999999999
+                                                  
             time.sleep(0.01)
                               
     def selectNearestObservation(self):
