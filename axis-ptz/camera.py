@@ -28,6 +28,8 @@ logging.config.dictConfig({
     'disable_existing_loggers': True,
 })
 logging.getLogger("vapix_control.py").setLevel(logging.WARNING)
+logging.getLogger("vapix_control").setLevel(logging.WARNING)
+logging.getLogger("sensecam_control").setLevel(logging.WARNING)
 
 ID = str(random.randint(1,100001))
 args = None
