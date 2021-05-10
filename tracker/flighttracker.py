@@ -263,7 +263,7 @@ class Observation(object):
     def isPresentable(self) -> bool:
         return self.__altitude and self.__groundSpeed and self.__track and self.__lat and self.__lon 
 
-    def whyTrackable(self) -> Str:
+    def whyTrackable(self) -> str:
         """ Returns a string explaining why a Plane can or cannot be tracked """
 
         reason = ""
