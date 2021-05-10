@@ -142,7 +142,7 @@ class Observation(object):
         
         if plane.size == 27: # There are 27 columns in CSV file. If it found the plane, it will have 27 keys
             
-            logging.info("{}\t[ADDED]\t{} {} {} {} {}".format(self.__icao24.lower(), plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
+            logging.info("{}\t[ADDED]\t\t{} {} {} {} {}".format(self.__icao24.lower(), plane["registration"].values[0],plane["manufacturername"].values[0], plane["model"].values[0], plane["operator"].values[0], plane["owner"].values[0]))
 
             self.__registration = plane['registration'].values[0]
             self.__type = str(plane['manufacturername'].values[0]) + " " + str(plane['model'].values[0])
@@ -152,8 +152,8 @@ class Observation(object):
         else:
             if not self.__planedb_nagged:
                 self.__planedb_nagged = True
-                logging.error("icao24 %s not found in the database" % (self.__icao24))
-                logging.error(plane)
+                logging.error("%s\t Not found in the database" % (self.__icao24))
+                
 
     
     def update(self, sbs1msg):
@@ -653,8 +653,8 @@ class FlightTracker(object):
                         if not self.__tracking_icao24:
                             self.__tracking_icao24 = icao24
                             self.updateTrackingDistance()
-                            logging.info("Tracking %s at %d elevation: %d" % (self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
-                        
+                            logging.info("{}\t[TRACKING]\tDist: {}\tElev: {}\t\t".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+          
                         # if this is the plane being tracked, update the tracking distance
                         elif self.__tracking_icao24 == icao24:
                             self.updateTrackingDistance()
@@ -693,7 +693,7 @@ class FlightTracker(object):
             for icao24 in self.__observations:
 #                logging.info("[%s] %s -> %s : %s" % (icao24, self.__observations[icao24].getLoggedDate(), self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL), now))
                 if self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL) < now:
-                    logging.info("%s\t[REMOVED]\t % (icao24))
+                    logging.info("%s\t[REMOVED]\t" % (icao24))
                     if icao24 == self.__tracking_icao24:
                         self.__tracking_icao24 = None
                         self.__tracking_distance = 999999999
