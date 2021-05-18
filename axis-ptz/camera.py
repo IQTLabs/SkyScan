@@ -7,9 +7,6 @@ import threading
 import json
 import sys
 import os
-import logging
-import logging
-import coloredlogs
 import calendar
 from datetime import datetime, timedelta
 import signal
@@ -23,23 +20,39 @@ import paho.mqtt.client as mqtt
 from json.decoder import JSONDecodeError
 from sensecam_control import vapix_control,vapix_config
 
+import logging
+import coloredlogs
+import logging.config # This gets rid of the annoying log messages from Vapix_Control
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': True,
+})
+logging.getLogger("vapix_control.py").setLevel(logging.WARNING)
+logging.getLogger("vapix_control").setLevel(logging.WARNING)
+logging.getLogger("sensecam_control").setLevel(logging.WARNING)
 
 ID = str(random.randint(1,100001))
-tiltCorrect = 15
 args = None
 camera = None
 cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
 cameraDelay = None
-cameraBearing = 0
+
+
 object_topic = None
 flight_topic = None
 config_topic = "skyscan/config/json"
-pan = 0
-tilt = 0
-actualPan = 0
-actualTilt = 0
+
+bearing = 0         # this is an angle
+elevation = 0       # this is an angle
+cameraPan = 0   # This value is in angles and corrects for the camera not being level
+cameraTilt = 0 # This values is in angles and corrects for the camera not being level
+distance3d = 0      # this is in Meters
+planeTrack = 0    # This is the direction that the plane is moving in
+
+actualCameraPan = 0
+actualCameraTilt = 0
 follow_x = 0
 follow_y = 0
 actualX = 0
@@ -75,27 +88,27 @@ def setXY(x,y):
     follow_y = int(y)
     
 
-def setPan(bearing):
-    global pan
-    #diff_heading = getHeadingDiff(bearing, cameraBearing)
+def setCameraPan(newPan):
+    global cameraPan
+    #diff_heading = getHeadingDiff(cameraPan, cameraPan)
     
 
-    if pan != bearing: #bearing #abs(pan - diff_heading) > 2: #only update the pan if there has been a big change
-        #logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, bearing, cameraBearing))
+    if newPan != cameraPan: #cameraPan #abs(cameraPan - diff_heading) > 2: #only update the cameraPan if there has been a big change
+        #logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, cameraPan, cameraPan))
 
-        pan = bearing
-        #logging.info("Setting Pan to: %d"%pan)
+        cameraPan = newPan
+        #logging.info("Setting Bearing to: %d"%cameraPan)
             
         return True
     return False
 
-def setTilt(elevation):
-    global tilt
-    if elevation < 90:
-        if tilt != elevation: #abs(tilt-elevation) > 2:
-            tilt = elevation
+def setCameraTilt(newTilt):
+    global cameraTilt
+    if newTilt < 90:
+        if cameraTilt != newTilt: 
+            cameraTilt = newTilt
             
-            #logging.info("Setting Tilt to: %d"%elevation)
+            #logging.info("Setting Elevation to: %d"%cameraTilt)
 
  # Copied from VaPix/Sensecam to customize the folder structure for saving pictures          
 def get_jpeg_request():  # 5.2.4.1
@@ -139,7 +152,8 @@ def get_jpeg_request():  # 5.2.4.1
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}.jpg".format(captureDir, currentPlane["icao24"],datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+        filename = "{}/{}_{}_{}_{}_{}.jpg".format(captureDir,currentPlane["icao24"],int(bearing),int(elevation),int(distance3d),datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    
         
         with open(filename, 'wb') as var:
             var.write(resp.content)
@@ -148,6 +162,9 @@ def get_jpeg_request():  # 5.2.4.1
     text = str(resp)
     text += str(resp.text)
     return text
+
+
+
 
 def get_bmp_request():  # 5.2.4.1
     """
@@ -189,7 +206,7 @@ def get_bmp_request():  # 5.2.4.1
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}.bmp".format(captureDir, currentPlane["icao24"],datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+        filename = "{}/{}_{}_{}_{}_{}.bmp".format(captureDir,currentPlane["icao24"],int(bearing),int(elevation),int(distance3d),datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
         
         with open(filename, 'wb') as var:
             var.write(resp.content)
@@ -200,8 +217,8 @@ def get_bmp_request():  # 5.2.4.1
     return text
 
 def moveCamera():
-    global actualPan
-    global actualTilt
+    global actualCameraPan
+    global actualCameraTilt
     global actualX
     global actualY
     global camera
@@ -210,12 +227,11 @@ def moveCamera():
     while True:
         lockedOn = False
         if (object_timeout < time.mktime(time.gmtime())):
-            if actualTilt != tilt or actualPan != pan:
-                logging.info("Moving camera to Tilt: %d  & Pan: %d"%(tilt, pan))
-                actualTilt = tilt
-                actualPan = pan
+            if actualCameraTilt != cameraTilt or actualCameraPan != cameraPan:
+                actualCameraTilt = cameraTilt
+                actualCameraPan = cameraPan
                 lockedOn = True
-                camera.absolute_move(pan, tilt, cameraZoom, cameraMoveSpeed)
+                camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
                 time.sleep(cameraDelay)
                 get_jpeg_request()
                 #get_bmp_request()
@@ -239,7 +255,7 @@ def update_config(config):
     global cameraZoom
     global cameraMoveSpeed
     global cameraDelay
-    global cameraBearing
+    global cameraPan
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -250,15 +266,18 @@ def update_config(config):
     if "cameraMoveSpeed" in config:
         cameraMoveSpeed = int(config["cameraMoveSpeed"])
         logging.info("Setting Camera Move Speed to: {}".format(cameraMoveSpeed))
-    if "cameraBearing" in config:
-        cameraBearing = float(config["cameraBearing"])
-        logging.info("Setting Bearing Correction to: {}".format(cameraBearing))
+
+
+
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
 def on_message(client, userdata, message):
     global currentPlane
     global object_timeout
+    global distance3d
+    global bearing
+    global elevation
 
     command = str(message.payload.decode("utf-8"))
     #rint(command)
@@ -281,9 +300,12 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info("{}\tBearing: {} \tElevation: {}".format(update["icao24"],update["bearing"],update["elevation"]))
-        bearingGood = setPan(update["bearing"])
-        setTilt(update["elevation"])
+        logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tPan: {} \tTilt: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["cameraPan"]),int(update["cameraTilt"]),int(update["distance"])))
+        distance3d = update["distance"]
+        bearing = update["bearing"]
+        elevation = update["elevation"]
+        setCameraPan(update["cameraPan"])
+        setCameraTilt(update["cameraTilt"])
         currentPlane = update
     elif message.topic == config_topic:
         update_config(update)
@@ -294,20 +316,17 @@ def on_message(client, userdata, message):
 def main():
     global args
     global logging
-    global pan
-    global tilt
     global camera
     global cameraDelay
     global cameraMoveSpeed
     global cameraZoom
-    global cameraBearing
+    global cameraPan
     global cameraConfig
     global flight_topic
     global object_topic
 
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
 
-    parser.add_argument('-b', '--bearing', help="What bearing is the font of the PI pointed at (0-360)", default=0)
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument('-t', '--mqtt-flight-topic', help="MQTT topic to subscribe to", default="skyscan/flight/json")
     parser.add_argument( '--mqtt-object-topic', help="MQTT topic to subscribe to", default="skyscan/object/json")
@@ -343,7 +362,6 @@ def main():
     cameraDelay = args.camera_delay
     cameraMoveSpeed = args.camera_move_speed
     cameraZoom = args.camera_zoom
-    cameraBearing = args.bearing
     cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
     threading.Thread(target = moveCamera, daemon = True).start()
