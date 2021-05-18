@@ -1,0 +1,5 @@
+- Better startup process for the Jupyter container
+    - Bash script or
+    - docker-compose script... but last I checked docker-compose doesn't support the --gpus flag
+- Find a way to have a constant password for the Jupyter notebook
+    - 

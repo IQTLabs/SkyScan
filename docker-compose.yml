@@ -11,15 +11,15 @@ services:
       - mqtt
     restart: unless-stopped
 
-  adsb-mqtt:
-    build: ./adsb-mqtt
-    command: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
-    volumes:
-      - ./data:/data
-    depends_on:
-      - mqtt
-      - piaware
-    restart: unless-stopped
+#  adsb-mqtt:
+#    build: ./adsb-mqtt
+#    command: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
+#    volumes:
+#      - ./data:/data
+#    depends_on:
+#      - mqtt
+#      - piaware
+#    restart: unless-stopped
 
 #  pan-tilt-pi:
 #    build: ./pan-tilt-pi
