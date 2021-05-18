@@ -182,7 +182,7 @@ class Observation(object):
             self.__lon = sbs1msg["lon"]
             self.__latLonTime = datetime.utcnow()
         if sbs1msg["verticalRate"]:
-            self.__verticalRate = sbs1msg["verticalRate"]
+            self.__verticalRate =  0.00508 * float(sbs1msg["verticalRate"] or 0)   # Vertical Speed is in FEET PER MINUTE, we convert it to METERS PER SECOND. 
 
         if not self.__verticalRate:
             self.__verticalRate = 0
@@ -490,7 +490,6 @@ class FlightTracker(object):
                 logging.info("  ------------------------------------------------- ")
                 logging.info("%s: original alt %5f | extrap alt %5f | climb rate %5f | original climb rate %5f" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate(), cur.getVerticalRate()/0.00508))
                 logging.info("%s: original lat %5f | new lat %5f | original long %5f | new long %5f " % (cur.getIcao24(), latorig, lat, lonorig, lon))
-                logging.info("%s: original lat %5d | new lat %5d | original long %5d | new long %5d " % (cur.getIcao24(), latorig, lat, lonorig, lon))
         
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
@@ -686,7 +685,7 @@ class FlightTracker(object):
                             self.__tracking_distance = 999999999
                                                   
             time.sleep(0.01)
-                              
+
     def selectNearestObservation(self):
         """Select nearest presentable aircraft
         """
