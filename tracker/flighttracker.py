@@ -488,8 +488,8 @@ class FlightTracker(object):
                 distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
 
                 logging.info("  ------------------------------------------------- ")
-                logging.info("%s: original alt %5d | extrap alt %5d | climb rate %5d" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getGroundSpeed(), cur.getVerticalRate()))
-                logging.info("%s: original lat %5d | new lat %5d | original long %5d | new long %5d | climb rate %3d" % (cur.getIcao24(), latorig, lat, lonorig, lon))
+                logging.info("%s: original alt %5d | extrap alt %5d | climb rate %5d" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate()))
+                logging.info("%s: original lat %5d | new lat %5d | original long %5d | new long %5d " % (cur.getIcao24(), latorig, lat, lonorig, lon))
         
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
