@@ -665,7 +665,7 @@ class FlightTracker(object):
                             if distance < self.__tracking_distance:
                                 self.__tracking_icao24 = icao24
                                 self.__tracking_distance = distance
-                                logging.info("{}\t[TRACKING]\tDist: {}\tElev: {}\t\t - Switched to closer plane".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+                                logging.info("{}\t[TRACKING]\tDist: {}\tElev: {}\t\t - Switched to closer plane".format(self.__tracking_icao24, int(self.__tracking_distance), int(self.__observations[icao24].getElevation())))
                     else:
                         # If the plane is currently being tracked, but is no longer trackable:
                         if self.__tracking_icao24 == icao24:
