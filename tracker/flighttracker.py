@@ -379,6 +379,12 @@ def update_config(config):
     """ Adjust configuration values based on MQTT config messages that come in """
     global camera_lead
     global min_elevation
+    global min_distance
+    global min_altitude
+    global min_elevation
+    global max_altitude
+    global max_distance
+
 
     if "cameraLead" in config:
         camera_lead = float(config["cameraLead"])
@@ -386,7 +392,19 @@ def update_config(config):
     if "minElevation" in config:
         min_elevation = int(config["minElevation"])
         logging.info("Setting Min. Elevation to: {}".format(min_elevation))
-
+    if "minDistance" in config:
+        min_distance = int(config["minDistance"])
+        logging.info("Setting Min. Distance to: {}".format(min_distance))
+    if "minAltitude" in config:
+        min_altitude = int(config["minAltitude"])
+        logging.info("Setting Min. Altitude to: {}".format(min_altitude))
+    if "maxAltitude" in config:
+        max_altitude = int(config["maxAltitude"])
+        logging.info("Setting Max Altitude to: {}".format(max_altitude))                    
+    if "maxDistance" in config:
+        max_distance = int(config["maxDistance"])
+        logging.info("Setting Max Distance to: {}".format(min_elevation))
+        
 def on_message(client, userdata, message):
     """ MQTT Client callback for new messages """
 
