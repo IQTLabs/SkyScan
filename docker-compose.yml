@@ -80,6 +80,15 @@ services:
       - /run:exec,size=64M
       - /var/log
       
+  notebook:
+    build: ./notebook-server
+    ports:
+        - "8888:8888"
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+
+
   mqtt:
     build: ./mqtt
     ports:
