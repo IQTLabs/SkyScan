@@ -1,1 +1,0 @@
-./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json
