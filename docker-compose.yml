@@ -11,16 +11,6 @@ services:
       - mqtt
     restart: unless-stopped
 
-#  adsb-mqtt:
-#    build: ./adsb-mqtt
-#    command: "./adsb-mqtt.py -H piaware -m mqtt  -t skyscan/planes/json"
-#    volumes:
-#      - ./data:/data
-#    depends_on:
-#      - mqtt
-#      - piaware
-#    restart: unless-stopped
-
 #  pan-tilt-pi:
 #    build: ./pan-tilt-pi
 #    entrypoint: "./camera.py -m mqtt -t skyscan/flight/json"
@@ -64,22 +54,7 @@ services:
       - DUMP1090_DEVICE=${RTL_DEV}
     restart: unless-stopped
 
-  tar1090:
-    image: mikenye/tar1090:latest
-    tty: true
-    container_name: tar1090
-    environment:
-      - TZ=${TZ}
-      - BEASTHOST=piaware
-      - MLATHOST=piaware
-      - LAT=${LAT}
-      - LONG=${LONG}
-    ports:
-      - 8078:80
-    tmpfs:
-      - /run:exec,size=64M
-      - /var/log
-      
+    
   notebook:
     build: ./notebook-server
     ports:
