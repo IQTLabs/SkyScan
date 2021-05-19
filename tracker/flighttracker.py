@@ -166,22 +166,22 @@ class Observation(object):
             self.__icao24 = sbs1msg["icao24"].lower() # Let's always keep icao24 in lower case
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
             self.__callsign = sbs1msg["callsign"].rstrip()
-        if sbs1msg["altitude"]:
+        if sbs1msg["altitude"] is not None:
             self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
             self.__altitudeTime = datetime.utcnow()
-        if sbs1msg["groundSpeed"]:
+        if sbs1msg["groundSpeed"] is not None:
             self.__groundSpeed = sbs1msg["groundSpeed"]
-        if sbs1msg["track"]:
+        if sbs1msg["track"] is not None:
             self.__track = sbs1msg["track"]
-        if sbs1msg["onGround"]:
+        if sbs1msg["onGround"] is not None:
             self.__onGround = sbs1msg["onGround"]
-        if sbs1msg["lat"]:
+        if sbs1msg["lat"] is not None:
             self.__lat = sbs1msg["lat"]
             self.__latLonTime = datetime.utcnow()
-        if sbs1msg["lon"]:
+        if sbs1msg["lon"] is not None:
             self.__lon = sbs1msg["lon"]
             self.__latLonTime = datetime.utcnow()
-        if sbs1msg["verticalRate"]:
+        if sbs1msg["verticalRate"] is not None:
             self.__verticalRate =  0.00508 * float(sbs1msg["verticalRate"] or 0)   # Vertical Speed is in FEET PER MINUTE, we convert it to METERS PER SECOND. 
 
         if not self.__verticalRate:
