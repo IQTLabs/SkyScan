@@ -82,12 +82,12 @@ def coordinate_distance_3d(lat1: float, lon1: float, alt1: float, lat2: float, l
     """Calculate distance in meters between the two coordinates
 
     Arguments:
-        lat1 {float} -- Start latitude
-        lon1 {float} -- Start longitude
-        alt1 {float} -- Start altitude
-        lat2 {float} -- End latitude
-        lon2 {float} -- End longitude
-        alt2 {float} -- End altitude
+        lat1 {float} -- Start latitude (deg)
+        lon1 {float} -- Start longitude (deg)
+        alt1 {float} -- Start altitude (meters)
+        lat2 {float} -- End latitude (deg)
+        lon2 {float} -- End longitude (deg)
+        alt2 {float} -- End altitude (meters)
 
     Returns:
         float -- Distance in meters
@@ -128,7 +128,7 @@ def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
 
 
 def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, heading: float, lead_s: float) -> Tuple[float, float]:
-    """Calculate travel from lat, lon starting at a certain time with giben speed and heading
+    """Calculate travel from lat, lon starting at a certain time with given speed and heading
 
     Arguments:
         lat {float} -- Starting latitude
@@ -159,3 +159,37 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
 
     return (lat2, lon2)
 
+def calc_travel_3d(lat: float, lon: float, alt: float, utc_start: datetime, speed_mps: float, heading: float, climb_rate: float, lead_s: float) -> Tuple[float, float]:
+    """Extrapolate the 3D position of the aircraft
+
+    Arguments:
+        lat {float} -- Starting latitude (degrees)
+        lon {float} -- Starting longitude (degrees)
+        alt {float} -- Starting altitude (meters)
+        utc_start {datetime} -- Start time
+        speed_mps {float} -- Speed (meters per second)
+        heading {float} -- Heading (degrees)
+        climb_rate {float} -- climb rate (meters per second) 
+        
+    Returns:
+        Tuple[float, float, float] -- The new latitude (deg)/longitude (deg)/alt (meters) as a tuple
+    """
+    age = datetime.utcnow() - utc_start
+    age_s = age.total_seconds() + lead_s
+
+    R = 6378.1 # Radius of the Earth
+    brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
+    d = (age_s * speed_mps) / 1000.0 # Distance in km
+
+    lat1 = math.radians(lat) # Current lat point converted to radians
+    lon1 = math.radians(lon) # Current long point converted to radians
+
+    lat2 = math.asin(math.sin(lat1)*math.cos(d/R) + math.cos(lat1)*math.sin(d/R)*math.cos(brng))
+    lon2 = lon1 + math.atan2(math.sin(brng)*math.sin(d/R)*math.cos(lat1), math.cos(d/R)-math.sin(lat1)*math.sin(lat2))
+
+    lat2 = math.degrees(lat2)
+    lon2 = math.degrees(lon2)
+
+    alt2 = alt+climb_rate*age_s
+
+    return (lat2, lon2, alt2)
