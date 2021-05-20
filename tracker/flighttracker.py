@@ -168,7 +168,7 @@ class Observation(object):
             self.__callsign = sbs1msg["callsign"].rstrip()
         if sbs1msg["altitude"] is not None:
             self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
-            self.__altitudeTime = datetime.utcnow()
+            self.__altitudeTime = sbs1msg["generatedDate"]
         if sbs1msg["groundSpeed"] is not None:
             self.__groundSpeed = sbs1msg["groundSpeed"]
         if sbs1msg["track"] is not None:
@@ -177,10 +177,10 @@ class Observation(object):
             self.__onGround = sbs1msg["onGround"]
         if sbs1msg["lat"] is not None:
             self.__lat = sbs1msg["lat"]
-            self.__latLonTime = datetime.utcnow()
+            self.__latLonTime = sbs1msg["generatedDate"]
         if sbs1msg["lon"] is not None:
             self.__lon = sbs1msg["lon"]
-            self.__latLonTime = datetime.utcnow()
+            self.__latLonTime = sbs1msg["generatedDate"]
         if sbs1msg["verticalRate"] is not None:
             self.__verticalRate =  0.00508 * float(sbs1msg["verticalRate"] or 0)   # Vertical Speed is in FEET PER MINUTE, we convert it to METERS PER SECOND. 
 
@@ -225,8 +225,13 @@ class Observation(object):
 
     def getLoggedDate(self) -> datetime:
         return self.__loggedDate
+
     def getLatLonTime(self) -> datetime:
         return self.__latLonTime
+    
+    def getAltitudeTime(self) -> datetime:
+        return self.__altitudeTime
+
     def getGroundSpeed(self) -> float:
         return self.__groundSpeed
 
@@ -500,14 +505,14 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
+                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getAlt cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
                 distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
-                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
+                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getAltitudeTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
 
-                logging.info("  ------------------------------------------------- ")
-                logging.info("%s: original alt %5f | extrap alt %5f | climb rate %5f | original climb rate %5f" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate(), cur.getVerticalRate()/0.00508))
-                logging.info("%s: original lat %5f | new lat %5f | original long %5f | new long %5f " % (cur.getIcao24(), latorig, lat, lonorig, lon))
+                #logging.info("  ------------------------------------------------- ")
+                #logging.info("%s: original alt %5f | extrap alt %5f | climb rate %5f | original climb rate %5f" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate(), cur.getVerticalRate()/0.00508))
+                #logging.info("%s: original lat %5f | new lat %5f | original long %5f | new long %5f " % (cur.getIcao24(), latorig, lat, lonorig, lon))
         
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
@@ -518,12 +523,12 @@ class FlightTracker(object):
                 cameraTilt = elevation
                 cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
                 elevationorig = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
-                logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
+                #logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
 
                 retain = False
                 self.__client.publish(self.__flight_topic, cur.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt), 0, retain)
                 #logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
-                logging.info("  ------------------------------------------------- ")
+                #logging.info("  ------------------------------------------------- ")
                 
                 if distance3d < 3000:
                     time.sleep(0.25)
