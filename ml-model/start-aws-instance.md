@@ -13,8 +13,12 @@
 1. `ssh -i "pth to .pem file" ubuntu@pirvate.ip.address`
 
 ## Start up Jupyter notebook
-1. `cd ~/SkyScan-Private/ml-model`
-` docker run --name  plane-jupyter \
+Go into the ml-model directory for skyscan
+`cd ~/SkyScan-Private/ml-model`
+
+Now launch
+````
+ docker run --name  plane-jupyter \
 -v $PWD/model-export:/tf/model-export \
 -v $PWD/dataset-export:/tf/dataset-export \
 -v $PWD/notebooks:/tf/notebooks \
@@ -24,7 +28,8 @@
 -v $PWD/models:/tf/models \
 -v $PWD/training:/tf/training --gpus all \
 -p 8888:8888  -p 6006:6006 -p 6007:6007 -p 5151:5151 \
--it --rm plane-jupyter `
+-it --rm plane-jupyter 
+````
 
 1. copy the Token from the startup of the container
 1. Open browser

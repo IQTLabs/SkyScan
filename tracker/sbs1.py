@@ -125,7 +125,7 @@ def __parseInt(array: List, index: int):
     """Parse int at given index in array
     Return int value or None if index is out of bounds or type casting failed"""
     try:
-        numbers = re.findall('[0-9]+', array[index])[0]        
+        numbers = re.findall('[\-0-9]+', array[index])[0]        
         return int(numbers)
     except ValueError as e:
         return None
