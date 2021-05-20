@@ -50,12 +50,23 @@ Here is what they are used for:
 - **fiftyone-db** This gets mapped to the location where the Voxel51 DB for the datasets is saved. This lets them stay around between container restarts.
 - **models** The [TF Model repo](https://github.com/tensorflow/models) gets installed here. 
 
+
+
+
 ## Notebooks
 Here is what the following notebooks help you do and the rough order you want to do them in:
+
+*We use LabelBox to label our images. The free tier should support most tasks. Prior to starting, create a Labelbox Project and associated dataset. You will need the Labelbox project & dataset name, as well as a Labelbox API.
+
 
 - **Create Voxel51 Dataset.ipynb** Run this first to load images from the *testing* directory into a Voxel51 dataset
 - **Add FAA Data to Voxel51 Dataset.ipynb** Adds labels to the Voxel51 Dataset based on the FAA data
 - **Upload from Voxel51 to Labelbox.ipynb** Sends the samples to Labelbox for annotation
+
+
+### Labeling
+After you have finished uploading the images, go to Labelbox and label the images. Then Export the labels as a JSON file. Download the JSON file and move it to the machine that is running the Docker container that is serving the Notebook.
+
 
 ### For classification
 - **Export from Labelbox to Voxel51.ipynb** Export the annotations from Labelbox
