@@ -505,9 +505,9 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getAlt cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
+                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getAltitudeTime(), cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
                 distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
-                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(), cur.getAltitudeTime(), cur.getGroundSpeed(), cur.getTrack(), camera_lead)
+                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(),  cur.getGroundSpeed(), cur.getTrack(), camera_lead)
                 distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
 
                 #logging.info("  ------------------------------------------------- ")
