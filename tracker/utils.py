@@ -159,14 +159,15 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
 
     return (lat2, lon2)
 
-def calc_travel_3d(lat: float, lon: float, alt: float, utc_start: datetime, speed_mps: float, heading: float, climb_rate: float, lead_s: float) -> Tuple[float, float]:
+def calc_travel_3d(lat: float, lon: float, alt: float, lat_lon_time: datetime, altitude_time: datetime, speed_mps: float, heading: float, climb_rate: float, lead_s: float) -> Tuple[float, float]:
     """Extrapolate the 3D position of the aircraft
 
     Arguments:
         lat {float} -- Starting latitude (degrees)
         lon {float} -- Starting longitude (degrees)
         alt {float} -- Starting altitude (meters)
-        utc_start {datetime} -- Start time
+        lat_lon_time {datetime} -- Last time lat / lon was updated
+        altitude_time {datetime} -- Last time altitude was updated
         speed_mps {float} -- Speed (meters per second)
         heading {float} -- Heading (degrees)
         climb_rate {float} -- climb rate (meters per second) 
@@ -174,12 +175,15 @@ def calc_travel_3d(lat: float, lon: float, alt: float, utc_start: datetime, spee
     Returns:
         Tuple[float, float, float] -- The new latitude (deg)/longitude (deg)/alt (meters) as a tuple
     """
-    age = datetime.utcnow() - utc_start
-    age_s = age.total_seconds() + lead_s
+    lat_lon_age = datetime.utcnow() - lat_lon_time
+    lat_lon_age_s = lat_lon_age.total_seconds() + lead_s
+
+    alt_age = datetime.utcnow() - altitude_time
+    alt_age_s = alt_age.total_seconds() + lead_s
 
     R = 6378.1 # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
-    d = (age_s * speed_mps) / 1000.0 # Distance in km
+    d = (lat_lon_age_s * speed_mps) / 1000.0 # Distance in km
 
     lat1 = math.radians(lat) # Current lat point converted to radians
     lon1 = math.radians(lon) # Current long point converted to radians
@@ -190,6 +194,6 @@ def calc_travel_3d(lat: float, lon: float, alt: float, utc_start: datetime, spee
     lat2 = math.degrees(lat2)
     lon2 = math.degrees(lon2)
 
-    alt2 = alt+climb_rate*age_s
+    alt2 = alt+climb_rate*alt_age_s
 
     return (lat2, lon2, alt2)
