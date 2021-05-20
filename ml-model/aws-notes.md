@@ -47,3 +47,17 @@ A collection of notes on how to use these notebooks on AWS.
 Before you can write you will need to set the directories to by owned by the Ubuntu user: ` sudo chown -R ubuntu:ubuntu *`
 `rsync -avz -e "ssh -i ~/.aws/macbook.pem" capture-5-13 ubuntu@192.168.108.217:/home/ubuntu/SkyScan-Private/ml-model/media/`
 `scp  -p -i ~/.aws/macbook.pem capture-5-13 ubuntu@192.168.108.217:/home/ubuntu/SkyScan-Private/ml-model/media/`
+
+### Copying JSON Export to EC2
+````
+scp -i <path & filename>.pem <filename>.json ubuntu@<private.ip.address>:~/SkyScan-Private/ml-model/media
+````
+
+### Shutting down, but leaving the server running
+You can just close your terminal window and the Contain with the Jupyter notebook will keep running.
+
+### Docker Commands
+
+List the running containers:
+`docker ps`
+
