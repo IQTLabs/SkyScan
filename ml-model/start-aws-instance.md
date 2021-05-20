@@ -10,7 +10,7 @@
 1. Click on the instance once it is running
 1. Get the Private IP for the instance
 1. Now goto the Terminal
-1. `ssh -i "pth to .pem file" ubuntu@pirvate.ip.address`
+1. `ssh -i "pth to .pem file" ubuntu@<pirvate.ip.address>`
 
 ## Start up Jupyter notebook
 Go into the ml-model directory for skyscan
@@ -33,5 +33,7 @@ Now launch
 
 1. copy the Token from the startup of the container
 1. Open browser
-1. Goto: `http://private.ip.adress:8888`
+1. Goto: `http://<private.ip.adress>:8888`
 1. Open the **Notebooks** folder
+
+
