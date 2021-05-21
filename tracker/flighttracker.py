@@ -517,7 +517,7 @@ class FlightTracker(object):
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
                 bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=cur.getTrack())
-                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=cur.getAltitude()) # we need to convert to feet because the altitude is in feet
+                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) # we need to convert to feet because the altitude is in feet
                 
                 # !!!! Mike, replaces these values with the values that have been camera for roll, pitch, yaw
                 cameraTilt = elevation
