@@ -123,14 +123,14 @@ class Observation(object):
         self.__icao24 = sbs1msg["icao24"].lower() #lets always keep icao24 in lower case
         self.__loggedDate = datetime.utcnow()  # sbs1msg["loggedDate"]
         self.__callsign = sbs1msg["callsign"]
-        self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
+        self.__altitude = sbs1msg["altitude"]
         self.__altitudeTime = datetime.utcnow()
         self.__groundSpeed = sbs1msg["groundSpeed"]
         self.__track = sbs1msg["track"]
         self.__lat = sbs1msg["lat"]
         self.__lon = sbs1msg["lon"]
         self.__latLonTime = datetime.utcnow()
-        self.__verticalRate = 0.00508 * float(sbs1msg["verticalRate"] or 0)   # Vertical Speed is in FEET PER MINUTE, we convert it to METERS PER SECOND. 
+        self.__verticalRate = sbs1msg["verticalRate"]
         self.__onGround = sbs1msg["onGround"]
         self.__operator = None
         self.__registration = None
@@ -167,7 +167,7 @@ class Observation(object):
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
             self.__callsign = sbs1msg["callsign"].rstrip()
         if sbs1msg["altitude"] is not None:
-            self.__altitude = 0.3048 * float(sbs1msg["altitude"] or 0)  # Altitude is in FEET, we convert it to METER. 
+            self.__altitude = sbs1msg["altitude"]
             self.__altitudeTime = sbs1msg["generatedDate"]
         if sbs1msg["groundSpeed"] is not None:
             self.__groundSpeed = sbs1msg["groundSpeed"]
@@ -182,7 +182,7 @@ class Observation(object):
             self.__lon = sbs1msg["lon"]
             self.__latLonTime = sbs1msg["generatedDate"]
         if sbs1msg["verticalRate"] is not None:
-            self.__verticalRate =  0.00508 * float(sbs1msg["verticalRate"] or 0)   # Vertical Speed is in FEET PER MINUTE, we convert it to METERS PER SECOND. 
+            self.__verticalRate =  sbs1msg["verticalRate"]
 
         if not self.__verticalRate:
             self.__verticalRate = 0
@@ -517,12 +517,12 @@ class FlightTracker(object):
                 # Round off to nearest 100 meters
                 #distance = round(distance/100) * 100
                 bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=cur.getTrack())
-                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) # we need to convert to feet because the altitude is in feet
+                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
                 
                 # !!!! Mike, replaces these values with the values that have been camera for roll, pitch, yaw
                 cameraTilt = elevation
                 cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
-                elevationorig = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) # we need to convert to feet because the altitude is in feet
+                elevationorig = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) 
                 #logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
 
                 retain = False

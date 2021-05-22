@@ -127,7 +127,7 @@ def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
     return d
 
 
-def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, heading: float, lead_s: float) -> Tuple[float, float]:
+def calc_travel(lat: float, lon: float, utc_start: datetime, speed_mps: float, heading: float, lead_s: float) -> Tuple[float, float]:
     """Calculate travel from lat, lon starting at a certain time with given speed and heading
 
     Arguments:
@@ -145,7 +145,6 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_kts: float, h
 
     R = 6378.1 # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
-    speed_mps = 0.514444 * speed_kts # knots -> m/s
     d = (age_s * speed_mps) / 1000.0 # Distance in km
 
     lat1 = math.radians(lat) # Current lat point converted to radians
