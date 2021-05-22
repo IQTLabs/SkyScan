@@ -78,7 +78,7 @@ def parse(msg: str) -> Dict[str, Union[str, int, float, bool, datetime]]:
         if sbs1["callsign"]:
             sbs1["callsign"] = sbs1["callsign"].rstrip()
         sbs1["altitude"] = __parseInt(parts, 11)
-        sbs1["groundSpeed"] = __parseInt(parts, 12)
+        sbs1["groundSpeed"] = __parseInt(parts, 12) 
         sbs1["track"] = __parseInt(parts, 13)
         sbs1["lat"] = __parseFloat(parts, 14)
         sbs1["lon"] = __parseFloat(parts, 15)
@@ -88,6 +88,20 @@ def parse(msg: str) -> Dict[str, Union[str, int, float, bool, datetime]]:
         sbs1["emergency"] = __parseBool(parts, 19)
         sbs1["spi"] = __parseBool(parts, 20)
         sbs1["onGround"] = __parseBool(parts, 21)
+
+        # Convert ground speed from knots to meter per second
+        if sbs1["groundSpeed"] is not None:
+            sbs1["groundSpeed"] = sbs1["groundSpeed"] * 0.514444  # knots -> m/s
+
+        # Convert Altitude from feet into meters
+        if sbs1["altitude"] is not None:
+            sbs1["altitude"] = sbs1["altitude"] * 0.3048 
+
+        # Vertical Speed is in FEET PER MINUTE, we convert it to METERS PER SECOND. 
+        if sbs1["verticalRate"] is not None:
+            sbs1["verticalRate"] = sbs1["verticalRate"] * 0.00508 
+
+
     except IndexError as e:
         logging.error("Failed to init sbs1 message from '%s'" % (msg), exc_info=True)
         return None
