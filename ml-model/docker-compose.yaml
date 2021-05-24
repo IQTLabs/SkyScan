@@ -21,3 +21,4 @@ services:
       - ./fiftyone-db:/root/.fiftyone 
       - ./models:/tf/models
       - ./training:/tf/training
+    

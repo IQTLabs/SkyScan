@@ -36,9 +36,11 @@ We need to do this so we can use `docker-compose` with a GPU easily. From https:
 ### Starting up the server
 
 1. `cd ~/SkyScan-Private/ml-model/`
+1. `docker-compose build` If it is the first time or if you have new code
 1. `docker-compose up`
 
 
+If you **stop** the AWS instance while the container is running, the container should automatically start back up again when you **start** the instance the next time.
 
 ### Copying Media to EC2
 Before you can write you will need to set the directories to by owned by the Ubuntu user: ` sudo chown -R ubuntu:ubuntu *`
