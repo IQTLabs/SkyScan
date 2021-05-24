@@ -2,7 +2,11 @@ services:
     notebook:
       image: tensorflow/tensorflow:2.4.1-gpu-jupyter
       command: /bin/bash -c "source /etc/bash.bashrc && jupyter notebook --notebook-dir=/tf --ip 0.0.0.0 --no-browser --allow-root --NotebookApp.token='password'"
-      runtime: nvidia
+      deploy:
+        resources:
+          reservations:
+            devices:
+            - capabilities: [gpu]
       ports:
         - 8888:8888
         - 6006:6006
