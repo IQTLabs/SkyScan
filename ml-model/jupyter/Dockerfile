@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:2.4.1-gpu-jupyter
+FROM tensorflow/tensorflow:2.5.0-gpu-jupyter
 
 RUN apt install -y libgl1-mesa-glx
 
