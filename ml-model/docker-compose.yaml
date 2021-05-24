@@ -1,23 +1,23 @@
 services:
-    notebook:
-      image: tensorflow/tensorflow:2.4.1-gpu-jupyter
-      command: /bin/bash -c "source /etc/bash.bashrc && jupyter notebook --notebook-dir=/tf --ip 0.0.0.0 --no-browser --allow-root --NotebookApp.token='password'"
-      deploy:
-        resources:
-          reservations:
-            devices:
-            - capabilities: [gpu]
-      ports:
-        - 8888:8888
-        - 6006:6006
-        - 6007:6007
-        - 5151:5151
-       volumes:
-        - ./model-export:/tf/model-export 
-        - ./dataset-export:/tf/dataset-export
-        - ./notebooks:/tf/notebooks
-        - ./testing:/tf/testing
-        - ./media:/tf/media
-        - ./fiftyone-db:/root/.fiftyone 
-        - ./models:/tf/models
-        - ./training:/tf/training
+  notebook:
+    image: tensorflow/tensorflow:2.4.1-gpu-jupyter
+    command: /bin/bash -c "source /etc/bash.bashrc && jupyter notebook --notebook-dir=/tf --ip 0.0.0.0 --no-browser --allow-root --NotebookApp.token='password'"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: [gpu]
+    ports:
+      - 8888:8888
+      - 6006:6006
+      - 6007:6007
+      - 5151:5151
+    volumes:
+      - ./model-export:/tf/model-export 
+      - ./dataset-export:/tf/dataset-export
+      - ./notebooks:/tf/notebooks
+      - ./testing:/tf/testing
+      - ./media:/tf/media
+      - ./fiftyone-db:/root/.fiftyone 
+      - ./models:/tf/models
+      - ./training:/tf/training
