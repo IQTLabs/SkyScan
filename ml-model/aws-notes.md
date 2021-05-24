@@ -17,6 +17,13 @@ A collection of notes on how to use these notebooks on AWS.
 1. You can now do `git clone https://github.com/IQTLabs/SkyScan-Private.git` to clone the Repo. Use your username (*lberndt@iqt.org*) and the Personal Access Token as the password.
 1. Now go follow the readme...
 
+### Upgrade Docker Compose
+We need to do this so we can use `docker-compose` with a GPU easily. From https://docs.docker.com/compose/install/
+1. `sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose`
+1. `sudo chmod +x /usr/local/bin/docker-compose`
+1. 
+
+
 ### Setting up EFS
 
 1. https://labzero.com/blog/mount-amazon-efs-drives-inside-docker-for-simple-network-storage
@@ -28,20 +35,10 @@ A collection of notes on how to use these notebooks on AWS.
 
 ### Starting up the server
 
-1. cd ~/SkyScan-Private/ml-model/
-````
- docker run --name  plane-jupyter \
--v $PWD/model-export:/tf/model-export \
--v $PWD/dataset-export:/tf/dataset-export \
--v $PWD/notebooks:/tf/notebooks \
--v $PWD/testing:/tf/testing \
--v $PWD/media:/tf/media \
--v $PWD/fiftyone-db:/root/.fiftyone \
--v $PWD/models:/tf/models \
--v $PWD/training:/tf/training --gpus all \
--p 8888:8888  -p 6006:6006 -p 6007:6007 -p 5151:5151 \
--it --rm plane-jupyter 
-````
+1. `cd ~/SkyScan-Private/ml-model/`
+1. `docker-compose up`
+
+
 
 ### Copying Media to EC2
 Before you can write you will need to set the directories to by owned by the Ubuntu user: ` sudo chown -R ubuntu:ubuntu *`
