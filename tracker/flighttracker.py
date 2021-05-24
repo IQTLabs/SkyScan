@@ -43,6 +43,7 @@ import paho.mqtt.client as mqtt
 from json.decoder import JSONDecodeError
 import pandas as pd
 from queue import Queue
+from flask import Flask
 
 ID = str(random.randint(1,100001))
 
@@ -63,6 +64,9 @@ min_altitude = None
 max_altitude = None
 min_distance = None
 max_distance = None
+tracker = None
+
+app = Flask(__name__)
 
 # http://stackoverflow.com/questions/1165352/fast-comparison-between-two-python-dictionary
 class DictDiffer(object):
@@ -409,7 +413,6 @@ class FlightTracker(object):
         self.__plane_topic = plane_topic
         self.__flight_topic = flight_topic
 
-
     def __publish_thread(self):
         """
         MQTT publish closest observation every second, more often if the plane is closer
@@ -545,6 +548,16 @@ class FlightTracker(object):
         cur = self.__observations[self.__tracking_icao24]
         if cur.getAltitude():
             self.__tracking_distance = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, cur.getLat(), cur.getLon(), cur.getAltitude())
+
+    def get_observations(self):
+        return self.__observations
+
+    def get_tracking(self):
+        return self.__tracking_icao24
+
+    def get_tracking_observation(self):
+        return self.__observations[self.__tracking_icao24]
+
 
     def dump1090Connect(self) -> bool:
         """If not connected, connect to the dump1090 host
@@ -753,6 +766,13 @@ class FlightTracker(object):
             self.__next_clean = now + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL)
 
 
+
+
+@app.route('/')
+def index():
+    return 'Hello World!'
+
+
 def main():
     global args
     global logging
@@ -763,6 +783,7 @@ def main():
     global plane_topic
     global min_elevation
     global planes
+    global tracker
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
 
@@ -813,6 +834,8 @@ def main():
     logging.info(planes)
 
     tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
+
+
     tracker.run()  # Never returns
 
 
