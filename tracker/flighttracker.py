@@ -66,79 +66,6 @@ min_distance = None
 max_distance = None
 
 
-def whyTrackable(observation) -> str:
-    """ Returns a string explaining why a Plane can or cannot be tracked """
-
-    reason = ""
-
-    if observation.getAltitude() == None or observation.getGroundSpeed() == None or observation.getTrack() == None or observation.getLat() == None or observation.getLon() == None:
-        reason = "Loc: ⛔️" 
-    else:
-        reason = "Loc: ✅" 
-
-    if observation.getOnGround() == True:
-        reason = reason + "\tGrnd: ⛔️" 
-    else:
-        reason = reason + "\tGrnd: ✅" 
-    
-    if max_altitude != None and observation.getAltitude() > max_altitude:
-        reason = reason + "\tMax Alt: ⛔️" 
-    else:
-        reason = reason + "\tMax Alt: ✅" 
-
-    if min_altitude != None and observation.getAltitude() < min_altitude:
-        reason = reason + "\tMin Alt: ⛔️" 
-    else:
-        reason = reason + "\tMin Alt: ✅" 
-
-    if observation.getDistance() == None or observation.getElevation() == None:
-        return False
-
-    if min_distance != None and observation.getDistance() < min_distance:
-        reason = reason + "\tMin Dist: ⛔️" 
-    else:
-        reason = reason + "\tMin Dist: ✅" 
-
-    if max_distance != None and observation.getDistance() > max_distance:
-        reason = reason + "\tMax Dist: ⛔️" 
-    else:
-        reason = reason + "\tMax Dist: ✅" 
-    
-    if observation.getElevation() < min_elevation:
-        reason = reason + "\tMin Elv: ⛔️" 
-    else:
-        reason = reason + "\tMin Elv: ✅" 
-
-    return reason
-
-def isTrackable(observation) -> bool:
-    """ Does this observation meet all of the requirements to be tracked """
-
-    if observation.getAltitude() == None or observation.getGroundSpeed() == None or observation.getTrack() == None or observation.getLat() == None or observation.getLon() == None:
-        return False 
-
-    if observation.getOnGround() == True:
-        return False
-    
-    if max_altitude != None and observation.getAltitude() > max_altitude:
-        return False
-
-    if min_altitude != None and observation.getAltitude() < min_altitude:
-        return False
-
-    if observation.getDistance() == None or observation.getElevation() == None:
-        return False
-
-    if min_distance != None and observation.getDistance() < min_distance:
-        return False
-
-    if max_distance != None and observation.getDistance() > max_distance:
-        return False
-    
-    if observation.getElevation() < min_elevation:
-        return False
-
-    return True
 
 
 def update_config(config):
@@ -298,8 +225,81 @@ class FlightTracker(object):
                 else:
                     time.sleep(1)
 
+    def __whyTrackable(self, observation) -> str:
+        """ Returns a string explaining why a Plane can or cannot be tracked """
 
-    def updateTrackingDistance(self):
+        reason = ""
+
+        if observation.getAltitude() == None or observation.getGroundSpeed() == None or observation.getTrack() == None or observation.getLat() == None or observation.getLon() == None:
+            reason = "Loc: ⛔️" 
+        else:
+            reason = "Loc: ✅" 
+
+        if observation.getOnGround() == True:
+            reason = reason + "\tGrnd: ⛔️" 
+        else:
+            reason = reason + "\tGrnd: ✅" 
+        
+        if max_altitude != None and observation.getAltitude() > max_altitude:
+            reason = reason + "\tMax Alt: ⛔️" 
+        else:
+            reason = reason + "\tMax Alt: ✅" 
+
+        if min_altitude != None and observation.getAltitude() < min_altitude:
+            reason = reason + "\tMin Alt: ⛔️" 
+        else:
+            reason = reason + "\tMin Alt: ✅" 
+
+        if observation.getDistance() == None or observation.getElevation() == None:
+            return False
+
+        if min_distance != None and observation.getDistance() < min_distance:
+            reason = reason + "\tMin Dist: ⛔️" 
+        else:
+            reason = reason + "\tMin Dist: ✅" 
+
+        if max_distance != None and observation.getDistance() > max_distance:
+            reason = reason + "\tMax Dist: ⛔️" 
+        else:
+            reason = reason + "\tMax Dist: ✅" 
+        
+        if observation.getElevation() < min_elevation:
+            reason = reason + "\tMin Elv: ⛔️" 
+        else:
+            reason = reason + "\tMin Elv: ✅" 
+
+        return reason
+
+    def __isTrackable(self, observation) -> bool:
+        """ Does this observation meet all of the requirements to be tracked """
+
+        if observation.getAltitude() == None or observation.getGroundSpeed() == None or observation.getTrack() == None or observation.getLat() == None or observation.getLon() == None:
+            return False 
+
+        if observation.getOnGround() == True:
+            return False
+        
+        if max_altitude != None and observation.getAltitude() > max_altitude:
+            return False
+
+        if min_altitude != None and observation.getAltitude() < min_altitude:
+            return False
+
+        if observation.getDistance() == None or observation.getElevation() == None:
+            return False
+
+        if min_distance != None and observation.getDistance() < min_distance:
+            return False
+
+        if max_distance != None and observation.getDistance() > max_distance:
+            return False
+        
+        if observation.getElevation() < min_elevation:
+            return False
+
+        return True
+
+    def __updateTrackingDistance(self):
         """Update distance to aircraft being tracked
         """
         cur = self.__observations[self.__tracking_icao24]
@@ -441,17 +441,17 @@ class FlightTracker(object):
                         self.__observations[icao24].update(m)
 
                     # if the plane is suitable to be tracked    
-                    if isTrackable(self.__observations[icao24]):
+                    if self.__isTrackable(self.__observations[icao24]):
 
                         # if no plane is being tracked, track this one
                         if not self.__tracking_icao24:
                             self.__tracking_icao24 = icao24
-                            self.updateTrackingDistance()
+                            self.__updateTrackingDistance()
                             logging.info("{}\t[TRACKING]\tDist: {}\tElev: {}\t\t".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
           
                         # if this is the plane being tracked, update the tracking distance
                         elif self.__tracking_icao24 == icao24:
-                            self.updateTrackingDistance()
+                            self.__updateTrackingDistance()
                         
                         # This plane is trackable, but is not the one being tracked
                         else:
@@ -464,7 +464,7 @@ class FlightTracker(object):
                         # If the plane is currently being tracked, but is no longer trackable:
                         if self.__tracking_icao24 == icao24:
                             logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
-                            logging.info(whyTrackable(self.__observations[icao24]))
+                            logging.info(self.__whyTrackable(self.__observations[icao24]))
                             self.__tracking_icao24 = None
                             self.__tracking_distance = 999999999
                                                   
@@ -476,7 +476,7 @@ class FlightTracker(object):
         self.__tracking_icao24 = None
         self.__tracking_distance = 999999999
         for icao24 in self.__observations:
-            if not isTrackable(self.__observations[icao24]):
+            if not self.__isTrackable(self.__observations[icao24]):
                 continue
             distance = self.__observations[icao24].getDistance()
             if self.__observations[icao24].getDistance() < self.__tracking_distance:
@@ -500,9 +500,9 @@ class FlightTracker(object):
                         self.__tracking_icao24 = None
                         self.__tracking_distance = 999999999
                     cleaned.append(icao24)
-                if icao24 == self.__tracking_icao24 and not isTrackable(self.__observations[icao24]):
+                if icao24 == self.__tracking_icao24 and not self.__isTrackable(self.__observations[icao24]):
                     logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
-                    logging.info(whyTrackable(self.__observations[icao24]))
+                    logging.info(self.__whyTrackable(self.__observations[icao24]))
                     self.__tracking_icao24 = None
                     self.__tracking_distance = 999999999
             for icao24 in cleaned:
