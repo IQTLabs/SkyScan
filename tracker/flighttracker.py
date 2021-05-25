@@ -832,7 +832,7 @@ def main():
     planes = pd.read_csv("/data/aircraftDatabase.csv") #,index_col='icao24')
     logging.info("Printing table")
     logging.info(planes)
-    threading.Thread(target=app.run).start()
+    threading.Thread(target=app.run, args=[{host: '0.0.0.0'}, {port: 5000}]).start()
     tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
 
 

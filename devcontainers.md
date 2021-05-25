@@ -39,9 +39,8 @@ It is pretty easy to get things running. I have found it is best to make sure al
 
 In short, go to the Pi, go to the SkyScan folder and run `docker-compose down`.
 
-I have setup Dev Containers for 3 different SkyScan containers:
+I have setup Dev Containers for 2 different SkyScan containers:
 - tracker
-- absd-mqtt
 - axis-ptz
 
 The Dev Container extends the default Docker Compose. It maps the folder with the Container's Python code into the **/workspace** folder inside the Container. Any changes you make in VS Code will be saved into the git repo for SkyScan on the Pi. If you have installed SkyScan into a different location on the Pi, you will need to update the **docker-compose** files in each of these folders on your Dev Laptop, eg **axis-ptz/docker-compose.axis-ptz.devcontainer.yml**.
