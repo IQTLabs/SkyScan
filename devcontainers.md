@@ -31,7 +31,8 @@ The basic overview on developing inside a remote container is here: https://code
         ![settings](./assets/docker-host.png)
         1. Enter the command to SSH to the Pi. My Pi is at *192.168.1.47*, so I have the following command: `ssh://pi@192.168.1.47`
     
-    1. Make sure you `.env` file is correctly configured. I am pretty sure that the .env is read in off the Dev Laptop, so you need to have it there. If you figure out it is reading the .env off the Pi, let me know.
+    1. You need to have a correctly configured `.env` on your Dev Laptop. The best way to do this is by copying the `.env` file you are using on the Pi to the  DevLaptop. It should be in the root of the SkyScan Repo folder on the Dev Laptop. 
+    1. *Note: The **docker-compose.yml** file that is initially run is the one from the Dev Laptop, not the one on the Pi. So, if you have edited anything on the Pi **docker-compose.yml** file, you will need to make the same edits on the Dev Laptop version. I sometimes comment out the EGI container when I do not have GPS attached.*
 
 ## Running Things
 
