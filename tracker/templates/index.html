@@ -1,0 +1,121 @@
+<html>
+    <head>
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <h1>SkyScan Tracker Status</h1>
+        <h2>Prioritization Config</h2>
+        <table>
+            <tr>
+                <th></th>
+                <th>Min</th>
+                <th>Max</th>
+            </tr>
+            <tr>
+                <th>Distance</th>
+                <td>{{config["min_distance"]}}</td>
+                <td>{{config["max_distance"]}}</td>
+            </tr>
+            <tr>
+                <th>Altitude</th>
+                <td>{{config["min_altitude"]}}</td>
+                <td>{{config["max_altitude"]}}</td>
+            </tr>
+            <tr>
+                <th>Elevation</th>
+                <td>{{config["min_elevation"]}}</td>
+            </tr>
+        </table>
+
+        <h2>Camera Config</h2>
+        <table>
+            <tr>
+                <th>Camera Lead</th>
+                <td>{{config["camera_lead"]}}</td>
+            </tr>
+            <tr>
+                <th>Camera Altitude</th>
+                <td>{{config["camera_altitude"]}}</td>
+            </tr>
+            <tr>
+                <th>Camera Latitude</th>
+                <td>{{config["camera_latitude"]}}</td>
+            </tr>
+            <tr>
+                <th>Camera Longitude</th>
+                <td>{{config["camera_longitude"]}}</td>
+            </tr>
+        </table>
+
+
+        <h2>Current Observations</h2>
+        <table>
+         <tr>
+             <th>Call Sign</th>
+             <th>ICAO24</th>
+             <th>Distance</th>
+             <th>Altitude</th>
+             <th>Elevation</th>
+             <th>On Ground</th>
+             <th>Speed</th>
+             <th>Vert Rate</th>
+             <th>Track</th>
+             <th>Type</th>
+             <th>Manufacturer</th>
+             <th>Model</th>
+             <th>Operator</th>
+         </tr>   
+        {% for observation in observations: %}
+        {% if tracking == observation["_Observation__icao24"]: %}
+            <tr style="font-weight: bolder; background-color: lightgreen;">
+        {% else %}
+            <tr>
+        {% endif %}
+        
+        <td>{{ observation["_Observation__callsign"] }}</td>
+        <td>{{ observation["_Observation__icao24"] }}</td>
+       
+        {% if config["max_distance"] != None and config["max_distance"] < observation["_Observation__distance"]: %} 
+            <td style="color: red;">
+        {% elif config["min_distance"] != None and config["min_distance"] > observation["_Observation__distance"]: %}
+            <td style="color: red;">
+        {% else %}
+            <td style="color: green;">
+        {% endif %}
+            {{ observation["_Observation__distance"]|int }}</td>
+
+        {% if config["max_altitude"] != None and config["max_altitude"] < observation["_Observation__altitude"]: %} 
+            <td style="color: red;">
+        {% elif config["min_altitude"] != None and config["min_altitude"] > observation["_Observation__altitude"]: %}
+            <td style="color: red;">
+        {% else %}
+            <td style="color: green;">
+        {% endif %}
+            {{ observation["_Observation__altitude"]|int }}</td>
+
+        {% if config["min_elevation"] != None and config["min_elevation"] > observation["_Observation__elevation"]: %}
+            <td style="color: red;">
+        {% else %}
+            <td style="color: green;">
+        {% endif %}
+            {{ observation["_Observation__elevation"]|int }}</td>
+
+         {% if observation["_Observation__onGround"]: %}
+            <td style="color: red;">
+        {% else %}
+            <td style="color: green;">
+        {% endif %}
+            {{ observation["_Observation__onGround"] }}</td>
+
+        <td>{{ observation["_Observation__groundSpeed"]|int }}</td>
+        <td>{{ observation["_Observation__verticalRate"]|int }}</td>
+        <td>{{ observation["_Observation__track"]|int }}</td>
+        <td>{{ observation["_Observation__type"] }}</td>
+        <td>{{ observation["_Observation__manufacturer"] }}</td>
+        <td>{{ observation["_Observation__model"] }}</td>
+        <td>{{ observation["_Observation__operator"] }}</td>
+        </tr>
+	    {% endfor %}
+        </table>
+    </body>
+</html>

@@ -44,6 +44,7 @@ from json.decoder import JSONDecodeError
 import pandas as pd
 from queue import Queue
 from flask import Flask
+from flask import render_template
 
 ID = str(random.randint(1,100001))
 
@@ -270,13 +271,14 @@ class Observation(object):
         return self.__verticalRate
 
     def isPresentable(self) -> bool:
-        return self.__altitude and self.__groundSpeed and self.__track and self.__lat and self.__lon 
+        return self.__altitude and self.__groundSpeed and self.__track and self.__lat and self.__lon and self.__distance
 
     def dump(self):
         """Dump this observation on the console
         """
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
+
 
     def json(self, bearing: float, elevation: float, cameraPan: float,  cameraTilt: float, distance: int) -> str:
         """Return JSON representation of this observation
@@ -413,6 +415,18 @@ class FlightTracker(object):
         self.__plane_topic = plane_topic
         self.__flight_topic = flight_topic
 
+    def __getObservationJson(self, observation):
+        (lat, lon, alt) = utils.calc_travel_3d(observation.getLat(), observation.getLon(), observation.getAltitude(), observation.getLatLonTime(), observation.getAltitudeTime(), observation.getGroundSpeed(), observation.getTrack(), observation.getVerticalRate(), camera_lead)
+        distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
+        #(latorig, lonorig) = utils.calc_travel(observation.getLat(), observation.getLon(), observation.getLatLonTime(),  observation.getGroundSpeed(), observation.getTrack(), camera_lead)
+        distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+        bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=observation.getTrack())
+        elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
+        cameraTilt = elevation
+        cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
+        #elevationorig = utils.elevation(distance2d, observation.getAltitude(), camera_altitude) 
+        return observation.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt)
+
     def __publish_thread(self):
         """
         MQTT publish closest observation every second, more often if the plane is closer
@@ -436,34 +450,26 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getAltitudeTime(), cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
-                distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
-                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(),  cur.getGroundSpeed(), cur.getTrack(), camera_lead)
-                distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+
 
                 #logging.info("  ------------------------------------------------- ")
                 #logging.info("%s: original alt %5f | extrap alt %5f | climb rate %5f | original climb rate %5f" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate(), cur.getVerticalRate()/0.00508))
                 #logging.info("%s: original lat %5f | new lat %5f | original long %5f | new long %5f " % (cur.getIcao24(), latorig, lat, lonorig, lon))
         
-                # Round off to nearest 100 meters
-                #distance = round(distance/100) * 100
-                bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=cur.getTrack())
-                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
+
                 
                 # !!!! Mike, replaces these values with the values that have been camera for roll, pitch, yaw
-                cameraTilt = elevation
-                cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
-                elevationorig = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) 
+
                 #logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
 
                 retain = False
-                self.__client.publish(self.__flight_topic, cur.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt), 0, retain)
+                self.__client.publish(self.__flight_topic, self.__getObservationJson(cur) ,0, retain)
                 #logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
                 #logging.info("  ------------------------------------------------- ")
                 
-                if distance3d < 3000:
+                if self.__tracking_distance < 3000:
                     time.sleep(0.25)
-                elif distance3d < 6000:
+                elif self.__tracking_distance < 6000:
                     time.sleep(0.5)
                 else:
                     time.sleep(1)
@@ -549,14 +555,24 @@ class FlightTracker(object):
         if cur.getAltitude():
             self.__tracking_distance = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, cur.getLat(), cur.getLon(), cur.getAltitude())
 
-    def get_observations(self):
-        return self.__observations
+    def __observationKey(self,obs):
 
-    def get_tracking(self):
+        return int(obs["_Observation__distance"])
+
+
+    def getObservations(self):
+        items=[]
+        for icao24 in self.__observations:
+            if self.__observations[icao24].isPresentable():
+                items.append(self.__observations[icao24].dict())
+        items.sort(key=self.__observationKey)
+        return items
+
+    def getTracking(self):
         return self.__tracking_icao24
 
-    def get_tracking_observation(self):
-        return self.__observations[self.__tracking_icao24]
+    def getTrackingObservation(self):
+        return self.__getObservationJson(self.__observations[self.__tracking_icao24])
 
 
     def dump1090Connect(self) -> bool:
@@ -766,11 +782,26 @@ class FlightTracker(object):
             self.__next_clean = now + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL)
 
 
+def getConfig():
+    config ={}
+    config["camera_altitude"] = camera_altitude
+    config["camera_latitude"] = camera_latitude
+    config["camera_longitude"] = camera_longitude
+    config["camera_lead"] = camera_lead
+    config["min_elevation"] = min_elevation
+    config["min_distance"] = min_distance
+    config["max_distance"] = max_distance
+    config["min_altitude"] = min_altitude
+    config["max_altitude"] = max_altitude
+    return config
+
+
 
 
 @app.route('/')
 def index():
-    return 'Hello World!'
+    return render_template('index.html', title='Welcome', tracking=tracker.getTracking(), observations=tracker.getObservations(), config=getConfig())
+
 
 
 def main():
@@ -832,7 +863,7 @@ def main():
     planes = pd.read_csv("/data/aircraftDatabase.csv") #,index_col='icao24')
     logging.info("Printing table")
     logging.info(planes)
-    threading.Thread(target=app.run, args=[{host: '0.0.0.0'}, {port: 5000}]).start()
+    threading.Thread(target=app.run, kwargs={"host": '0.0.0.0', "port": 5000}).start()
     tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
 
 
