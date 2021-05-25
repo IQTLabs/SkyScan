@@ -800,7 +800,7 @@ def getConfig():
 
 @app.route('/')
 def index():
-    return render_template('index.html', title='Welcome', tracking=tracker.getTracking(), observations=tracker.getObservations(), config=getConfig())
+    return render_template('index.html', title='SkyScan', tracking=tracker.getTracking(), observations=tracker.getObservations(), config=getConfig())
 
 
 
