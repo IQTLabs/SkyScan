@@ -3,3 +3,17 @@
 This folder contains scripts that enable an operator or analyst
 to run data- and model-related SkyScan functions from a script
 rather than a series of Jupyter notebooks.
+
+UNDER DEVELOPMENT
+
+To run script:
+
+```
+python main.py
+```
+
+To run tests:
+
+```
+pytest
+```
