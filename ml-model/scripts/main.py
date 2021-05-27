@@ -2,6 +2,13 @@
 
 import argparse
 import configparser
+import sys
+
+from customvox51 import (
+    add_sample_images_to_voxel51_dataset,
+    build_image_list,
+    create_voxel51_dataset,
+)
 
 
 def read_config(config_file="config.ini"):
@@ -27,14 +34,39 @@ def read_config(config_file="config.ini"):
 
 def parse_command_line_arguments():
     """Parse command line arguments with argparse."""
-    # TODO: incomplete.
     parser = argparse.ArgumentParser(
         description="Run skyscan data and model scripts.",
         epilog="For help with this program, contact John Speed at jmeyers@iqt.org.",
     )
-    argparse.ArgumentParser("--prepare_dataset", description="Prepare voxel51 dataset.")
+    parser.add_argument(
+        "--prep",
+        default=False,  # default value is False
+        action="store_true",
+        help="Prepare voxel51 dataset.",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_command_line_arguments()
+    config = read_config()
+
+    # check if user selected data preparation stage
+    if args.prep:
+        # check that config file contains both dataset name and
+        # image_directory
+        if (
+            config["file_names"]["dataset_name"]
+            and config["file_locations"]["image_directory"]
+        ):
+            print("Entering 'prepare data' route.")
+            image_list = build_image_list(config["file_locations"]["image_directory"])
+            dataset = create_voxel51_dataset(config["file_names"]["dataset_name"])
+            modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset)
+            print("Exiting 'prepare data' route.")
+        # exit if config file does not contain image directory or dataset name.
+        else:
+            print(
+                "Missing config file value image for image directory or dataset_name."
+            )
+            sys.exit(1)  # exit program
