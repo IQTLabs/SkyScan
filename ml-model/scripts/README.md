@@ -9,6 +9,7 @@ UNDER DEVELOPMENT
 To run script:
 
 ```
+pipenv install
 python main.py
 ```
 
