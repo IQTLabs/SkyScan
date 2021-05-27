@@ -1,14 +1,11 @@
-'''custom functionality related to voxel51 databases'''
+"""custom functionality related to voxel51 databases"""
 
-import glob
 import os
-
-import fiftyone as fo
 
 
 def build_image_list(file_path):
     """Create a list of plane data dicts.
-    
+
     Extract plane data from from jpg filenames.
 
     The plane image filenames follow a strict naming convention.
@@ -17,11 +14,11 @@ def build_image_list(file_path):
     194 - plane bearing
     50 - plane elevation
     11882 - plane distance
-    TODO: external_id - ????
-    
+    ac760d_194_50_11882_2021-05-13-14-13-42 - external_id
+
     Args:
         file_path - Path to images
-        
+
     Returns:
         (list) image_list - a list of plane dict objects
     """
@@ -38,13 +35,14 @@ def build_image_list(file_path):
                 plane_elevation = external_id.split("_")[2]
                 plane_distance = external_id.split("_")[3]
                 # place plane image data in a dict
-                item = {"file_path": image_path,
-                        "external_id": external_id,
-                        "bearing": plane_bearing,
-                        "elevation": plane_elevation,
-                        "distance": plane_distance,
-                        "icao24": plane_id}
-
+                item = {
+                    "file_path": image_path,
+                    "external_id": external_id,
+                    "bearing": plane_bearing,
+                    "elevation": plane_elevation,
+                    "distance": plane_distance,
+                    "icao24": plane_id,
+                }
                 image_list.append(item)
 
     return image_list
