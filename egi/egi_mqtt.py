@@ -125,7 +125,7 @@ try:
         if timeHeartbeat < time.mktime(time.gmtime()):
             timeHeartbeat = time.mktime(time.gmtime()) + 30
             logging.info("Current EGI State: " + json.dumps(state))
-    time.sleep(0.01)
+        time.sleep(0.01)
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     logging.info("Killing GPS Thread...")
     gpsp.running = False
