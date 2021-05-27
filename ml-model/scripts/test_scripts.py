@@ -2,7 +2,11 @@
 
 import fiftyone as fo
 
-from customvox51 import build_image_list, create_voxel51_dataset
+from customvox51 import (
+    add_sample_images_to_voxel51_dataset,
+    build_image_list,
+    create_voxel51_dataset,
+)
 from main import read_config
 
 
@@ -20,6 +24,16 @@ def test_create_voxel51_dataset():
     """Test create_voxel51_dataset()."""
     test_dataset = create_voxel51_dataset("test")
     assert isinstance(test_dataset, fo.core.dataset.Dataset)
+
+
+def test_add_sample_images_to_voxel51_dataset():
+    """Test add_sample_images_to_voxel51_dataset()."""
+    test_image_list = build_image_list("test")
+    test_dataset = create_voxel51_dataset("test")
+    modified_dataset = add_sample_images_to_voxel51_dataset(
+        test_image_list, test_dataset
+    )
+    assert isinstance(modified_dataset, fo.core.dataset.Dataset)
 
 
 def test_read_config():
