@@ -1,9 +1,10 @@
 """test all scripts."""
 
+import fiftyone as fo
+
 from customvox51 import build_image_list, create_voxel51_dataset
 from main import read_config
 
-import fiftyone as fo
 
 def test_build_image_list():
     """Test build_image_list()."""
@@ -13,6 +14,7 @@ def test_build_image_list():
     assert output[0]["elevation"] == "50"
     assert output[0]["external_id"] == "ac760d_194_50_11882_2021-05-13-14-13-42"
     assert output[0]["icao24"] == "ac760d"
+
 
 def test_create_voxel51_dataset():
     """Test create_voxel51_dataset()."""

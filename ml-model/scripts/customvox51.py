@@ -4,6 +4,7 @@ import os
 
 import fiftyone as fo
 
+
 def build_image_list(file_path):
     """Create a list of plane data dicts.
 
@@ -63,17 +64,9 @@ def create_voxel51_dataset(dataset_name):
         dataset = fo.Dataset(name=dataset_name)
         dataset.persistent = True
         print("Created {} dataset".format(dataset_name))
-    # If the dataset already exists, load it instead 
+    # If the dataset already exists, load it instead
     except ValueError:
         dataset = fo.load_dataset(name=dataset_name)
         print("Dataset already exists. Loaded {} dataset".format(dataset_name))
 
     return dataset
-
-
-
-
-
-
-
-
