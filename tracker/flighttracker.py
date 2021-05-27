@@ -280,7 +280,7 @@ class Observation(object):
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
 
 
-    def json(self, bearing: float, elevation: float, cameraPan: float,  cameraTilt: float, distance: int) -> str:
+    def json(self) -> str:
         """Return JSON representation of this observation
         
         Arguments:
@@ -296,7 +296,7 @@ class Observation(object):
         else:
             callsign = "\"%s\"" % self.__callsign
 
-        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign, "bearing": bearing, "cameraPan": cameraPan, "distance": distance, "elevation": elevation, "cameraTilt": cameraTilt}
+        planeDict = {"verticalRate": self.__verticalRate, "time": time.time(), "lat": self.__lat, "lon": self.__lon,  "altitude": self.__altitude, "groundSpeed": self.__groundSpeed, "icao24": self.__icao24, "registration": self.__registration, "track": self.__track, "operator": self.__operator,   "loggedDate": self.__loggedDate, "type": self.__type, "latLonTime": self.__latLonTime, "altitudeTime": self.__altitudeTime, "manufacturer": self.__manufacturer, "model": self.__model, "callsign": callsign, "bearing": self.__bearing, "distance": self.__distance, "elevation": self.__elevation}
         jsonString = json.dumps(planeDict, indent=4, sort_keys=True, default=str)
         return jsonString
 
@@ -425,13 +425,15 @@ class FlightTracker(object):
         cameraTilt = elevation
         cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
         #elevationorig = utils.elevation(distance2d, observation.getAltitude(), camera_altitude) 
-        return observation.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt)
+        return observation.json()
 
     def __publish_thread(self):
         """
         MQTT publish closest observation every second, more often if the plane is closer
         """
         timeHeartbeat = 0
+        notTrackingJson = "{}"
+
         while True:
 
             # Checks to see if it is time to publish a hearbeat message
@@ -441,31 +443,20 @@ class FlightTracker(object):
 
             # if we are not tracking anything, goto sleep for 1 second
             if not self.__tracking_icao24:
+                retain = False
+                self.__client.publish(self.__flight_topic, notTrackingJson, 0, retain)
                 time.sleep(1)
             else:
+                # Check to see if the currently tracked airplane is in the observations
                 if not self.__tracking_icao24 in self.__observations:
-                    self.__tracking_icao24 is None
+                    self.__tracking_icao24 = None
                     continue
                 cur = self.__observations[self.__tracking_icao24]
                 if cur is None:
                     continue
 
-
-
-                #logging.info("  ------------------------------------------------- ")
-                #logging.info("%s: original alt %5f | extrap alt %5f | climb rate %5f | original climb rate %5f" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate(), cur.getVerticalRate()/0.00508))
-                #logging.info("%s: original lat %5f | new lat %5f | original long %5f | new long %5f " % (cur.getIcao24(), latorig, lat, lonorig, lon))
-        
-
-                
-                # !!!! Mike, replaces these values with the values that have been camera for roll, pitch, yaw
-
-                #logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
-
                 retain = False
-                self.__client.publish(self.__flight_topic, self.__getObservationJson(cur) ,0, retain)
-                #logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
-                #logging.info("  ------------------------------------------------- ")
+                self.__client.publish(self.__flight_topic, cur.json(), 0, retain)
                 
                 if self.__tracking_distance < 3000:
                     time.sleep(0.25)
