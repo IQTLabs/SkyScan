@@ -5,32 +5,6 @@ import os
 import fiftyone as fo
 
 
-def add_sample_images_to_voxel51_dataset(image_list, dataset):
-    """Add sample images to a voxel51 dataset.
-
-    Args:
-        image_list - list of image data dicts
-        dataset - a voxel51 dataset object
-
-    Returns:
-        dataset (voxel51 dataset object)
-    """
-    for image in image_list:
-        # create a voxel51 row/sample based on the path to the image
-        sample = fo.Sample(filepath=image["file_path"])
-        # add additional columns to the voxel51 dataset row
-        sample["external_id"] = fo.Classification(label=image["external_id"])
-        sample["bearing"] = fo.Classification(label=image["bearing"])
-        sample["elevation"] = fo.Classification(label=image["elevation"])
-        sample["distance"] = fo.Classification(label=image["distance"])
-        sample["icao24"] = fo.Classification(label=image["icao24"])
-
-        dataset.add_sample(sample)
-
-    # return modified dataset
-    return dataset
-
-
 def build_image_list(file_path):
     """Create a list of plane data dicts.
 
@@ -95,4 +69,30 @@ def create_voxel51_dataset(dataset_name):
         dataset = fo.load_dataset(name=dataset_name)
         print("Dataset already exists. Loaded {} dataset".format(dataset_name))
 
+    return dataset
+
+
+def add_sample_images_to_voxel51_dataset(image_list, dataset):
+    """Add sample images to a voxel51 dataset.
+
+    Args:
+        image_list - list of image data dicts
+        dataset - a voxel51 dataset object
+
+    Returns:
+        dataset (voxel51 dataset object)
+    """
+    for image in image_list:
+        # create a voxel51 row/sample based on the path to the image
+        sample = fo.Sample(filepath=image["file_path"])
+        # add additional columns to the voxel51 dataset row
+        sample["external_id"] = fo.Classification(label=image["external_id"])
+        sample["bearing"] = fo.Classification(label=image["bearing"])
+        sample["elevation"] = fo.Classification(label=image["elevation"])
+        sample["distance"] = fo.Classification(label=image["distance"])
+        sample["icao24"] = fo.Classification(label=image["icao24"])
+
+        dataset.add_sample(sample)
+
+    # return modified dataset
     return dataset
