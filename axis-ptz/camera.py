@@ -207,7 +207,7 @@ def calculateCameraPosition():
 
 def moveCamera(ip, username, password):
 
-    movePeriod = 250  # milliseconds
+    movePeriod = 500  # milliseconds
     capturePeriod = 1000 # milliseconds
     moveTimeout = datetime.now()
     captureTimeout = datetime.now()
