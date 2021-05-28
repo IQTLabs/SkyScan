@@ -290,6 +290,8 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
+        logging.info(update)
+        logging.info(update.has_key("icao24"))
         if update.has_key("icao24"):
             if active is False:
                 logging.info("{}\t[Starting Capture]".format(update["icao24"]))
