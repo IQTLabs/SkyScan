@@ -177,8 +177,8 @@ def calc_travel_3d(current_plane, lead_s: float):
     lat = current_plane["lat"]
     lon = current_plane["lon"]
     alt = current_plane["altitude"]
-    lat_lon_time = current_plane["latLonTime"]
-    altitude_time = current_plane["altitudeTime"]
+    lat_lon_time = datetime(current_plane["latLonTime"])
+    altitude_time = datetime(current_plane["altitudeTime"])
     speed_mps = current_plane["groundSpeed"]
     heading = current_plane["track"]
     climb_rate = current_plane["verticalRate"]
