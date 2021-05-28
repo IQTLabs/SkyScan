@@ -19,10 +19,13 @@ import errno
 import paho.mqtt.client as mqtt 
 from json.decoder import JSONDecodeError
 from sensecam_control import vapix_control,vapix_config
+import utils
+
 
 import logging
 import coloredlogs
 import logging.config # This gets rid of the annoying log messages from Vapix_Control
+
 logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': True,
@@ -38,7 +41,8 @@ cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
 cameraDelay = None
-
+cameraLead = 0 
+active = False
 
 object_topic = None
 flight_topic = None
@@ -46,69 +50,16 @@ config_topic = "skyscan/config/json"
 
 bearing = 0         # this is an angle
 elevation = 0       # this is an angle
-cameraPan = 0   # This value is in angles and corrects for the camera not being level
-cameraTilt = 0 # This values is in angles and corrects for the camera not being level
+cameraPan = 0       # This value is in angles 
+cameraTilt = 0      # This values is in angles 
 distance3d = 0      # this is in Meters
-planeTrack = 0    # This is the direction that the plane is moving in
+distance2d = 0      # in meters
+planeTrack = 0      # This is the direction that the plane is moving in
 
-actualCameraPan = 0
-actualCameraTilt = 0
-follow_x = 0
-follow_y = 0
-actualX = 0
-actualY = 0
 currentPlane=None
-object_timeout=0
 
-# https://stackoverflow.com/questions/45659723/calculate-the-difference-between-two-compass-headings-python
 
-# The camera hat takes bearings between -90 and 90. 
-# h1 is the target heading
-# h2 is the heading the camera is pointed at
-def getHeadingDiff(h1, h2):
-    if h1 > 360 or h1 < 0 or h2 > 360 or h2 < 0:
-        raise Exception("out of range")
-    diff = h1 - h2
-    absDiff = abs(diff)
 
-    if absDiff == 180:
-        return absDiff
-    elif absDiff < 180:
-        return diff
-    elif h2 > h1:
-        return 360 - absDiff
-    else:
-        return absDiff - 360
-
-def setXY(x,y):
-    global follow_x
-    global follow_y
-
-    follow_x = int(x)
-    follow_y = int(y)
-    
-
-def setCameraPan(newPan):
-    global cameraPan
-    #diff_heading = getHeadingDiff(cameraPan, cameraPan)
-    
-
-    if newPan != cameraPan: #cameraPan #abs(cameraPan - diff_heading) > 2: #only update the cameraPan if there has been a big change
-        #logging.info("Heading Diff %d for Bearing %d & Camera Bearing: %d"% (diff_heading, cameraPan, cameraPan))
-
-        cameraPan = newPan
-        #logging.info("Setting Bearing to: %d"%cameraPan)
-            
-        return True
-    return False
-
-def setCameraTilt(newTilt):
-    global cameraTilt
-    if newTilt < 90:
-        if cameraTilt != newTilt: 
-            cameraTilt = newTilt
-            
-            #logging.info("Setting Elevation to: %d"%cameraTilt)
 
  # Copied from VaPix/Sensecam to customize the folder structure for saving pictures          
 def get_jpeg_request():  # 5.2.4.1
@@ -235,38 +186,50 @@ def get_bmp_request():  # 5.2.4.1
     text += str(resp.text)
     return text
 
-def moveCamera():
-    global actualCameraPan
-    global actualCameraTilt
-    global actualX
-    global actualY
-    global camera
+def calculateCameraPosition():
+    global cameraPan
+    global cameraTilt
+    global distance2d
+    global distance3d
+    global bearing
+    global elevation
 
+    (lat, lon, alt) = utils.calc_travel_3d(currentPlane, camera_lead)
+    distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
+    #(latorig, lonorig) = utils.calc_travel(observation.getLat(), observation.getLon(), observation.getLatLonTime(),  observation.getGroundSpeed(), observation.getTrack(), camera_lead)
+    distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+    bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=observation.getTrack())
+    elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
+    cameraTilt = elevation
+    cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
+
+
+
+def moveCamera(ip, username, password):
+
+    active = True
+    movePeriod = 250  # milliseconds
+    capturePeriod = 1000 # milliseconds
+    moveTimeout = datetime.now()
+    captureTimeout = datetime.now()
+    camera = vapix_control.CameraControl(ip, username, password)
     
     while True:
-        lockedOn = False
-        if (object_timeout < time.mktime(time.gmtime())):
-            if actualCameraTilt != cameraTilt or actualCameraPan != cameraPan:
-                actualCameraTilt = cameraTilt
-                actualCameraPan = cameraPan
-                lockedOn = True
+        if active:
+            if moveTimeout <= datetime.now():
+                calculateCameraPosition()
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
+                moveTimeout = moveTimeout + datetime.timedelta(milliseconds=movePeriod)
+                if moveTimeout <= datetime.now():
+                    moveTimeout = datetime.now() + datetime.timedelta(milliseconds=movePeriod)
+                    logging.info(" 🚨 Move execution time was greater that Move Period")
+            if captureTimeout <= datetime.now():
                 time.sleep(cameraDelay)
                 get_jpeg_request()
-                #get_bmp_request()
-        else:
-            if actualX != follow_x or actualY != follow_y:
-                actualX = follow_x
-                actualY = follow_y
-                #camera.center_move(actualX, actualY, cameraMoveSpeed)
-                pan_tilt = str(actualX) + "," + str(actualY)
-                camera._camera_command({'center': pan_tilt, 'speed': cameraMoveSpeed, 'imagewidth': '1280', 'imageheight': '720'})
-                #time.sleep(cameraDelay)
-        #if lockedOn == True:
-        #    filename = "capture/{}_{}".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), currentPlane)
-        #    camera.capture("{}.jpeg".format(filename))
-
-        # Sleep for a bit so we're not hammering the camera withupdates
+                captureTimeout = captureTimeout + datetime.timedelta(milliseconds=capturePeriod)
+                if captureTimeout <= datetime.now():
+                    captureTimeout = datetime.now() + datetime.timedelta(milliseconds=capturePeriod)
+                    logging.info(" 🚨 Capture execution time was greater that Capture Period")
         time.sleep(0.005)
 
 
@@ -275,6 +238,7 @@ def update_config(config):
     global cameraMoveSpeed
     global cameraDelay
     global cameraPan
+    global cameraLead
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -285,7 +249,9 @@ def update_config(config):
     if "cameraMoveSpeed" in config:
         cameraMoveSpeed = int(config["cameraMoveSpeed"])
         logging.info("Setting Camera Move Speed to: {}".format(cameraMoveSpeed))
-
+    if "cameraLead" in config:
+        camera_lead = float(config["cameraLead"])
+        logging.info("Setting Camera Lead to: {}".format(camera_lead))
 
 
 #############################################
@@ -294,9 +260,9 @@ def update_config(config):
 def on_message(client, userdata, message):
     global currentPlane
     global object_timeout
-    global distance3d
-    global bearing
-    global elevation
+
+    global active
+ 
 
     command = str(message.payload.decode("utf-8"))
     #rint(command)
@@ -319,16 +285,25 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tPan: {} \tTilt: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["cameraPan"]),int(update["cameraTilt"]),int(update["distance"])))
-        distance3d = update["distance"]
-        bearing = update["bearing"]
-        elevation = update["elevation"]
-        setCameraPan(update["cameraPan"])
-        setCameraTilt(update["cameraTilt"])
-        currentPlane = update
+        if update.has_key("icao24"):
+            if active is False:
+                logging.info("{}\t[Starting Capture]".format(update["icao24"]))
+            active = True
+            logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["distance"])))
+            currentPlane = update
+        else:
+            if active is True:
+                logging.info("{}\t[Stopping Capture]".format(currentPlane["icao24"]))
+            active = False
+            currentPlane = {}        
     elif message.topic == config_topic:
         update_config(update)
         logging.info("Config Message: {}".format(update))
+    elif message.topic == "skyscan/egi":
+        logging.info(update)
+        camera_longitude = float(update["long"])
+        camera_latitude = float(update["lat"])
+        camera_altitude = float(update["alt"])
     else:
         logging.info("Message: {} Object: {} Flight: {}".format(message.topic, object_topic, flight_topic))
 
@@ -340,11 +315,19 @@ def main():
     global cameraMoveSpeed
     global cameraZoom
     global cameraPan
+    global camera_altitude
+    global camera_latitude
+    global camera_longitude
+    global camera_lead
     global cameraConfig
     global flight_topic
     global object_topic
 
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
+    parser.add_argument('--lat', type=float, help="Latitude of camera")
+    parser.add_argument('--lon', type=float, help="Longitude of camera")
+    parser.add_argument('--alt', type=float, help="altitude of camera in METERS!", default=0)
+    parser.add_argument('--camera-lead', type=float, help="how many seconds ahead of a plane's predicted location should the camera be positioned", default=0.1)
 
     parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
     parser.add_argument('-t', '--mqtt-flight-topic', help="MQTT topic to subscribe to", default="skyscan/flight/json")
@@ -377,13 +360,17 @@ def main():
                                 '%(message)s')
 
     logging.info("---[ Starting %s ]---------------------------------------------" % sys.argv[0])
-    camera = vapix_control.CameraControl(args.axis_ip, args.axis_username, args.axis_password)
+    #camera = vapix_control.CameraControl(args.axis_ip, args.axis_username, args.axis_password)
     cameraDelay = args.camera_delay
     cameraMoveSpeed = args.camera_move_speed
     cameraZoom = args.camera_zoom
-    cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
+    camera_longitude = args.lon
+    camera_latitude = args.lat
+    camera_altitude = args.alt # Altitude is in METERS
+    camera_lead = args.camera_lead
+    #cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
-    threading.Thread(target = moveCamera, daemon = True).start()
+    threading.Thread(target=moveCamera, args=[args.axis_ip, args.axis_username, args.axis_password],daemon=True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
     time.sleep(0.005)
     flight_topic=args.mqtt_flight_topic
@@ -398,6 +385,7 @@ def main():
     client.subscribe(flight_topic)
     client.subscribe(object_topic)
     client.subscribe(config_topic)
+    client.subscribe("skyscan/egi")
     client.publish("skyscan/registration", "skyscan-axis-ptz-camera-"+ID+" Registration", 0, False)
 
     #############################################
