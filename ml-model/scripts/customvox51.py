@@ -2,6 +2,7 @@
 
 import os
 
+import pandas as pd
 import fiftyone as fo
 
 
@@ -95,4 +96,39 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset):
         dataset.add_sample(sample)
 
     # return modified dataset
+    return dataset
+
+
+def add_faa_data_to_voxel51_dataset(voxel51_dataset_name, faa_dataset_path):
+    """Add FAA data to each entry in voxel51 dataset.
+
+    Args:
+        voxel51_dataset (str) - the voxel51 dataset name
+        faa_dataset_path - path to FAA dataset csv
+
+    Returns:
+        dataset (voxel51 dataset object)
+    """
+    # todo: check that this whole function is working
+    planes = pd.read_csv(faa_dataset_path, index_col="icao24")
+    dataset = fo.load_dataset(voxel51_dataset_name)
+    for row in dataset:
+        # render plane_id in lowercase letters
+        plane_id = row["icao24"].label.lower()
+        try:
+            plane = planes.loc[plane_id.lower()]
+            # Check for valid row with all columns present
+            if plane.size == 26:
+                if isinstance(plane["model"], str):
+                    row["model"] = fo.Classification(label=plane["model"])
+                if isinstance(plane["manufacturername"], str):
+                    row["manufacturer"] = fo.Classification(
+                        label=plane["manufacturername"]
+                    )
+                row.save()
+            else:
+                print(plane.size)
+        except KeyError:
+            print("FAA Data entry not found for: {}".format(plane_id))
+
     return dataset
