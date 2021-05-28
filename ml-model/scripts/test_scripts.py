@@ -11,6 +11,10 @@ from customvox51 import (
 from main import read_config
 
 
+# delete dataset first to create repeatable test environment
+fo.load_dataset("test").delete()
+
+
 def test_build_image_list():
     """Test build_image_list()."""
     output = build_image_list("test")
@@ -39,8 +43,15 @@ def test_add_sample_images_to_voxel51_dataset():
 
 def test_add_faa_data_to_voxel51_dataset():
     """Test add_FAA_data_to_voxel51_dataset()."""
-    # TODO: fill out
-    pass
+    test_image_list = build_image_list("test")
+    test_dataset = create_voxel51_dataset("test")
+    add_sample_images_to_voxel51_dataset(test_image_list, test_dataset)
+    dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
+        "test", "../notebooks/aircraftDatabase.csv"
+    )
+    assert isinstance(dataset_with_faa_data, fo.core.dataset.Dataset)
+    assert dataset_with_faa_data.persistent
+    assert dataset_with_faa_data.media_type == "image"
 
 
 def test_read_config():
