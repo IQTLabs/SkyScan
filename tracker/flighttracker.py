@@ -365,7 +365,7 @@ def on_message(client, userdata, message):
         log.critical("onMessage - Caught it!")
 
     if message.topic == "skyscan/egi":
-        logging.info(update)
+        #logging.info(update)
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
         camera_altitude = float(update["alt"])
@@ -454,10 +454,10 @@ class FlightTracker(object):
                 cur = self.__observations[self.__tracking_icao24]
                 if cur is None:
                     continue
-
                 retain = False
                 self.__client.publish(self.__flight_topic, cur.json(), 0, retain)
                 
+
                 if self.__tracking_distance < 3000:
                     time.sleep(0.25)
                 elif self.__tracking_distance < 6000:

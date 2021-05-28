@@ -221,6 +221,7 @@ def moveCamera(ip, username, password):
             if moveTimeout <= datetime.now():
                 calculateCameraPosition()
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
+                logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
                 moveTimeout = moveTimeout + datetime.timedelta(milliseconds=movePeriod)
                 if moveTimeout <= datetime.now():
                     moveTimeout = datetime.now() + datetime.timedelta(milliseconds=movePeriod)
@@ -232,8 +233,10 @@ def moveCamera(ip, username, password):
                 if captureTimeout <= datetime.now():
                     captureTimeout = datetime.now() + datetime.timedelta(milliseconds=capturePeriod)
                     logging.info(" 🚨 Capture execution time was greater that Capture Period")
-        time.sleep(0.005)
-
+            time.sleep(0.005)
+        else:
+            time.sleep(1)
+            logging.info("waiting for a plane")
 
 def update_config(config):
     global cameraZoom
@@ -302,7 +305,7 @@ def on_message(client, userdata, message):
         update_config(update)
         logging.info("Config Message: {}".format(update))
     elif message.topic == "skyscan/egi":
-        logging.info(update)
+        #logging.info(update)
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
         camera_altitude = float(update["alt"])
