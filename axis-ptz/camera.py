@@ -139,12 +139,17 @@ def get_jpeg_request():  # 5.2.4.1
     payload = {
         'resolution': "1920x1080",
         'compression': 0,
-        'camera': 1,
+        'camera': 5,
     }
     url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
-    resp = requests.get(url, auth=HTTPDigestAuth(args.axis_username, args.axis_password),
-                        params=payload)
+    start_time = datetime.now()
+    try:
+        resp = requests.get(url, auth=HTTPDigestAuth(
+            args.axis_username, args.axis_password), params=payload, timeout=0.2)
+    except requests.exceptions.Timeout:
+        logging.info("We timed out")
 
+    disk_time = datetime.now()
     if resp.status_code == 200:
         captureDir = "capture/{}".format(currentPlane["type"])
         try:
@@ -152,16 +157,30 @@ def get_jpeg_request():  # 5.2.4.1
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}_{}_{}_{}.jpg".format(captureDir,currentPlane["icao24"],int(bearing),int(elevation),int(distance3d),datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-    
-        
-        with open(filename, 'wb') as var:
-            var.write(resp.content)
-        return str('Image saved')
+        filename = "{}/{}_{}_{}_{}_{}.jpg".format(captureDir, currentPlane["icao24"], int(
+            bearing), int(elevation), int(distance3d), datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 
-    text = str(resp)
-    text += str(resp.text)
-    return text
+        # Original
+        #with open(filename, 'wb') as var:
+        #    var.write(resp.content)
+
+        #Non-Blocking
+        #fd = os.open(filename, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
+        #os.write(fd, resp.content)
+        #os.close(fd)
+
+        # Blocking
+
+        fd = os.open(filename, os.O_CREAT | os.O_WRONLY)
+        os.write(fd, resp.content)
+        os.close(fd)
+
+
+    end_time = datetime.now()
+    net_time_diff = (disk_time - start_time)
+    disk_time_diff = (end_time - disk_time)
+    if disk_time_diff.total_seconds() > 0.1:
+        logging.info("🚨  Image Capture Timeout  🚨  Net time: {}  \tDisk time: {}".format(net_time_diff, disk_time_diff))
 
 
 
