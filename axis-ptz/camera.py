@@ -215,7 +215,7 @@ def moveCamera(ip, username, password):
     
     while True:
         if active:
-            if not currentPlane.has_key("icao24"):
+            if not "icao24" in currentPlane:
                 logging.info(" 🚨 Active but Current Plane is not set")
                 continue
             if moveTimeout <= datetime.now():
@@ -291,8 +291,8 @@ def on_message(client, userdata, message):
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
         logging.info(update)
-        logging.info(update.has_key("icao24"))
-        if update.has_key("icao24"):
+        logging.info("icao24" in update)
+        if "icao24" in update:
             if active is False:
                 logging.info("{}\t[Starting Capture]".format(update["icao24"]))
             active = True
