@@ -109,7 +109,6 @@ def add_faa_data_to_voxel51_dataset(voxel51_dataset_name, faa_dataset_path):
     Returns:
         dataset (voxel51 dataset object)
     """
-    # todo: check that this whole function is working
     planes = pd.read_csv(faa_dataset_path, index_col="icao24")
     dataset = fo.load_dataset(voxel51_dataset_name)
     for row in dataset:
@@ -125,6 +124,7 @@ def add_faa_data_to_voxel51_dataset(voxel51_dataset_name, faa_dataset_path):
                     row["manufacturer"] = fo.Classification(
                         label=plane["manufacturername"]
                     )
+                # TODO: (for Luke) isn't there some other label Adam requested?
                 row.save()
             else:
                 print(plane.size)
