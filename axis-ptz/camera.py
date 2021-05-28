@@ -221,7 +221,7 @@ def moveCamera(ip, username, password):
             if moveTimeout <= datetime.now():
                 calculateCameraPosition()
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
-                logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
+                #logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
                 moveTimeout = moveTimeout + timedelta(milliseconds=movePeriod)
                 if moveTimeout <= datetime.now():
                     moveTimeout = datetime.now() + timedelta(milliseconds=movePeriod)
@@ -236,7 +236,6 @@ def moveCamera(ip, username, password):
             time.sleep(0.005)
         else:
             time.sleep(1)
-            logging.info("waiting for a plane")
 
 def update_config(config):
     global cameraZoom
@@ -290,8 +289,6 @@ def on_message(client, userdata, message):
         setXY(update["x"], update["y"])
         object_timeout = time.mktime(time.gmtime()) + 5
     elif message.topic == flight_topic:
-        logging.info(update)
-        logging.info("icao24" in update)
         if "icao24" in update:
             if active is False:
                 logging.info("{}\t[Starting Capture]".format(update["icao24"]))
