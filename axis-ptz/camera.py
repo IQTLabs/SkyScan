@@ -198,7 +198,7 @@ def calculateCameraPosition():
     distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
     #(latorig, lonorig) = utils.calc_travel(observation.getLat(), observation.getLon(), observation.getLatLonTime(),  observation.getGroundSpeed(), observation.getTrack(), camera_lead)
     distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
-    bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=observation.getTrack())
+    bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=currentPlane["track"])
     elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
     cameraTilt = elevation
     cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
@@ -207,7 +207,6 @@ def calculateCameraPosition():
 
 def moveCamera(ip, username, password):
 
-    active = True
     movePeriod = 250  # milliseconds
     capturePeriod = 1000 # milliseconds
     moveTimeout = datetime.now()
@@ -216,6 +215,9 @@ def moveCamera(ip, username, password):
     
     while True:
         if active:
+            if not currentPlane.has_key("icao24"):
+                logging.info(" 🚨 Active but Current Plane is not set")
+                continue
             if moveTimeout <= datetime.now():
                 calculateCameraPosition()
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
