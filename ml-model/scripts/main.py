@@ -5,6 +5,7 @@ import configparser
 import sys
 
 from customvox51 import (
+    add_faa_data_to_voxel51_dataset,
     add_sample_images_to_voxel51_dataset,
     build_image_list,
     create_voxel51_dataset,
@@ -63,6 +64,9 @@ if __name__ == "__main__":
             image_list = build_image_list(config["file_locations"]["image_directory"])
             dataset = create_voxel51_dataset(config["file_names"]["dataset_name"])
             modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset)
+            dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
+                config["file_names"]["dataset_name"], "../notebooks/aircraftDatabase.csv"
+            )
             print("Exiting 'prepare data' route.")
         # exit if config file does not contain image directory or dataset name.
         else:
