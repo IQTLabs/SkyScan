@@ -177,8 +177,17 @@ def calc_travel_3d(current_plane, lead_s: float):
     lat = current_plane["lat"]
     lon = current_plane["lon"]
     alt = current_plane["altitude"]
-    lat_lon_time = datetime.strptime(current_plane["latLonTime"], '%Y-%m-%d %H:%M:%S.%f')
-    altitude_time = datetime.strptime(current_plane["altitudeTime"], '%Y-%m-%d %H:%M:%S.%f')
+
+    # The time values sometimes do not have a microsecond component if it falls exactly on the second
+    # we need to parse both formats to avoid crashing.
+    try:
+        lat_lon_time = datetime.strptime(current_plane["latLonTime"], '%Y-%m-%d %H:%M:%S.%f')
+    except ValueError:
+        lat_lon_time = datetime.strptime(current_plane["latLonTime"], '%Y-%m-%d %H:%M:%S')
+    try:
+        altitude_time = datetime.strptime(current_plane["altitudeTime"], '%Y-%m-%d %H:%M:%S.%f')
+    except ValueError:
+        altitude_time = datetime.strptime(current_plane["altitudeTime"], '%Y-%m-%d %H:%M:%S')
     speed_mps = current_plane["groundSpeed"]
     heading = current_plane["track"]
     climb_rate = current_plane["verticalRate"]
