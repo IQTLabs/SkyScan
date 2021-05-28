@@ -222,16 +222,16 @@ def moveCamera(ip, username, password):
                 calculateCameraPosition()
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
                 logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
-                moveTimeout = moveTimeout + datetime.timedelta(milliseconds=movePeriod)
+                moveTimeout = moveTimeout + timedelta(milliseconds=movePeriod)
                 if moveTimeout <= datetime.now():
-                    moveTimeout = datetime.now() + datetime.timedelta(milliseconds=movePeriod)
+                    moveTimeout = datetime.now() + timedelta(milliseconds=movePeriod)
                     logging.info(" 🚨 Move execution time was greater that Move Period")
             if captureTimeout <= datetime.now():
                 time.sleep(cameraDelay)
                 get_jpeg_request()
-                captureTimeout = captureTimeout + datetime.timedelta(milliseconds=capturePeriod)
+                captureTimeout = captureTimeout + timedelta(milliseconds=capturePeriod)
                 if captureTimeout <= datetime.now():
-                    captureTimeout = datetime.now() + datetime.timedelta(milliseconds=capturePeriod)
+                    captureTimeout = datetime.now() + timedelta(milliseconds=capturePeriod)
                     logging.info(" 🚨 Capture execution time was greater that Capture Period")
             time.sleep(0.005)
         else:
