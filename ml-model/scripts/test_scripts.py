@@ -3,6 +3,7 @@
 import fiftyone as fo
 
 from customvox51 import (
+    add_faa_data_to_voxel51_dataset,
     add_sample_images_to_voxel51_dataset,
     build_image_list,
     create_voxel51_dataset,
@@ -36,8 +37,15 @@ def test_add_sample_images_to_voxel51_dataset():
     assert isinstance(modified_dataset, fo.core.dataset.Dataset)
 
 
+def test_add_faa_data_to_voxel51_dataset():
+    """Test add_FAA_data_to_voxel51_dataset()."""
+    # TODO: fill out
+    pass
+
+
 def test_read_config():
     """Test read_config()."""
     config = read_config("test_config.ini")
     assert config["file_names"]["dataset_name"] == "hello_world"
     assert config["file_locations"]["image_directory"] == "foo"
+    assert config["file_locations"]["faa_aircraft_db"] == "bar"
