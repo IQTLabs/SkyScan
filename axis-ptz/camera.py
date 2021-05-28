@@ -224,15 +224,18 @@ def moveCamera(ip, username, password):
                 #logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
                 moveTimeout = moveTimeout + timedelta(milliseconds=movePeriod)
                 if moveTimeout <= datetime.now():
+                    lag = datetime.now() - moveTimeout
+                    logging.info(" 🚨 Move execution time was greater that Move Period - lag: {}".format(lag))
                     moveTimeout = datetime.now() + timedelta(milliseconds=movePeriod)
-                    logging.info(" 🚨 Move execution time was greater that Move Period")
+
             if captureTimeout <= datetime.now():
                 time.sleep(cameraDelay)
                 get_jpeg_request()
                 captureTimeout = captureTimeout + timedelta(milliseconds=capturePeriod)
                 if captureTimeout <= datetime.now():
+                    lag = datetime.now() - captureTimeout
+                    logging.info(" 🚨 Capture execution time was greater that Capture Period - lag: {}".format(lag))
                     captureTimeout = datetime.now() + timedelta(milliseconds=capturePeriod)
-                    logging.info(" 🚨 Capture execution time was greater that Capture Period")
             time.sleep(0.005)
         else:
             time.sleep(1)
