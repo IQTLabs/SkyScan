@@ -64,6 +64,8 @@ if __name__ == "__main__":
             image_list = build_image_list(config["file_locations"]["image_directory"])
             dataset = create_voxel51_dataset(config["file_names"]["dataset_name"])
             modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset)
+            # TODO: (LUKE) Do you want the aircraft database csv file location hardcoded?
+            # Or do you want the location to come from the config file?
             dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
                 config["file_names"]["dataset_name"], "../notebooks/aircraftDatabase.csv"
             )
