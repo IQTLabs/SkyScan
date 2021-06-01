@@ -89,14 +89,13 @@ def get_jpeg_request():  # 5.2.4.1
     """
     payload = {
         'resolution': "1920x1080",
-        'compression': 0,
-        'camera': 5,
+        'compression': 5,
+        'camera': 1,
     }
     url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
     start_time = datetime.now()
     try:
-        resp = requests.get(url, auth=HTTPDigestAuth(
-            args.axis_username, args.axis_password), params=payload, timeout=0.2)
+        resp = requests.get(url, auth=HTTPDigestAuth(args.axis_username, args.axis_password), params=payload, timeout=0.2)
     except requests.exceptions.Timeout:
         logging.info("We timed out")
 
@@ -124,7 +123,8 @@ def get_jpeg_request():  # 5.2.4.1
         #fd = os.open(filename, os.O_CREAT | os.O_WRONLY)
         #os.write(fd, resp.content)
         #os.close(fd)
-
+    else:
+        logging.error("Unable to fetch image: {}\tstatus: {}".format(url,resp.status_code))
 
     end_time = datetime.now()
     net_time_diff = (disk_time - start_time)
