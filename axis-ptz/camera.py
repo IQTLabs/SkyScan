@@ -301,7 +301,9 @@ def on_message(client, userdata, message):
             if active is True:
                 logging.info("{}\t[Stopping Capture]".format(currentPlane["icao24"]))
             active = False
-            currentPlane = {}        
+            # It is better to just have the old values for currentPlane in case a message comes in while the 
+            # moveCamera Thread is running.
+            #currentPlane = {}        
     elif message.topic == config_topic:
         update_config(update)
         logging.info("Config Message: {}".format(update))
