@@ -95,9 +95,10 @@ def get_jpeg_request():  # 5.2.4.1
     url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
     start_time = datetime.now()
     try:
-        resp = requests.get(url, auth=HTTPDigestAuth(args.axis_username, args.axis_password), params=payload, timeout=0.2)
+        resp = requests.get(url, auth=HTTPDigestAuth(args.axis_username, args.axis_password), params=payload, timeout=0.5)
     except requests.exceptions.Timeout:
-        logging.info("We timed out")
+        logging.info("🚨 Images capture request timed out 🚨  ")
+        return
 
     disk_time = datetime.now()
     if resp.status_code == 200:
