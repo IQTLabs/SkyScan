@@ -267,6 +267,9 @@ def update_config(config):
 def on_message(client, userdata, message):
     global currentPlane
     global object_timeout
+    global camera_longitude
+    global camera_latitude
+    global camera_altitude
 
     global active
  
