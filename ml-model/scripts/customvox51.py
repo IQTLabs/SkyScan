@@ -1,5 +1,6 @@
 """custom functionality related to voxel51 databases"""
 
+import logging
 import os
 
 import pandas as pd
@@ -26,6 +27,7 @@ def build_image_list(file_path):
         (list) image_list - a list of plane dict objects
     """
     image_list = []
+    logging.info("Building image list.")
     for folder, _, files in os.walk(file_path):
         for file in files:
             if file.endswith(".jpg"):
@@ -47,6 +49,7 @@ def build_image_list(file_path):
                     "icao24": plane_id,
                 }
                 image_list.append(item)
+    logging.info("Finished building image list.")
 
     return image_list
 
@@ -64,11 +67,11 @@ def create_voxel51_dataset(dataset_name):
     try:
         dataset = fo.Dataset(name=dataset_name)
         dataset.persistent = True
-        print("Created {} dataset".format(dataset_name))
+        logging.info("Created %s dataset", dataset_name)
     # If the dataset already exists, load it instead
     except ValueError:
         dataset = fo.load_dataset(name=dataset_name)
-        print("Dataset already exists. Loaded {} dataset".format(dataset_name))
+        logging.info("Dataset already exists. Loaded %s dataset", dataset_name)
 
     return dataset
 
@@ -129,11 +132,12 @@ def add_faa_data_to_voxel51_dataset(voxel51_dataset_name, faa_dataset_path):
                 # TODO: (for Luke) isn't there some other label Adam requested?
                 row.save()
             else:
-                print(plane.size)
+                logging.info("Invalid row with row size of %s", plane.size)
         except KeyError:
-            print("FAA Data entry not found for: {}".format(plane_id))
+            logging.info("FAA Data entry not found for: %s", plane_id)
 
     return dataset
+
 
 def normalize_models():
     # TODO: Fill out this function
@@ -150,7 +154,7 @@ def normalize_models():
 
     # TODO: probably convert this into a json dict structure that can then be more easily
     # understood within the code
-    # 
+    #
     # def normalizeModel(model):
     # norm_model=None
     # if model=="A319-112" or model=="A319-115" or model=="A319-132":
@@ -224,22 +228,22 @@ def normalize_models():
 
     # if model=="PC-12/47E":
     #     norm_model="Pilatus PC-12"
-        
-    # if model=="FALCON 10" or model=="FALCON 2000" or model=="FALCON 50" or model=="FALCON 7X" or model=="FALCON 900 EX" or model=="FALCON 900EX":    
+
+    # if model=="FALCON 10" or model=="FALCON 2000" or model=="FALCON 50" or model=="FALCON 7X" or model=="FALCON 900 EX" or model=="FALCON 900EX":
     #     norm_model="Falcon"
-    
+
     # if model=="G-IV" or model=="G-V" or model=="GALAXY" or model=="GIV-X (G450)" or model=="GULFSTREAM 200" or model=="GV-SP (G550)" or model=="GVI(G650ER)":
     #     norm_model="Gulfstream"
-        
+
     # if model=="HAWKER 800XP" or model=="HAWKER 900XP":
     #     norm_model="Hawker"
-    
+
     # if model=="SF50":
     #     norm_model="Cirrus"
-    
+
     # if model=="PRESSURIZED LANCR IV":
     #     norm_model="Lancair IV"
-        
+
     # if model=="B300":
     #     norm_model="King Air"
 

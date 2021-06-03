@@ -2,6 +2,7 @@
 
 import argparse
 import configparser
+import logging
 import sys
 
 from customvox51 import (
@@ -10,6 +11,8 @@ from customvox51 import (
     build_image_list,
     create_voxel51_dataset,
 )
+
+# pylint: disable=C0330, W0621
 
 
 def read_config(config_file="config.ini"):
@@ -30,9 +33,11 @@ def read_config(config_file="config.ini"):
     Returns:
         config - a config object similar to a dict
     """
+
+    logging.info("Starting to read config file.")
     config = configparser.ConfigParser()
     config.read(config_file)
-
+    logging.info("Finished reading config file.")
     return config
 
 
@@ -63,18 +68,18 @@ if __name__ == "__main__":
             config["file_names"]["dataset_name"]
             and config["file_locations"]["image_directory"]
         ):
-            # TODO: Use logger module, not print statements.
-            print("Entering 'prepare data' route.")
+            logging.info("Entering 'prepare data' route.")
             image_list = build_image_list(config["file_locations"]["image_directory"])
             dataset = create_voxel51_dataset(config["file_names"]["dataset_name"])
             modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset)
             dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
-                config["file_names"]["dataset_name"], "../notebooks/aircraftDatabase.csv"
+                config["file_names"]["dataset_name"],
+                "../notebooks/aircraftDatabase.csv",
             )
-            print("Exiting 'prepare data' route.")
+            logging.info("Exiting 'prepare data' route.")
         # exit if config file does not contain image directory or dataset name.
         else:
-            print(
+            logging.info(
                 "Missing config file value image for image directory or dataset_name."
             )
             sys.exit(1)  # exit program
