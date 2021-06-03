@@ -346,7 +346,7 @@ def update_config(config):
         max_distance = int(config["maxDistance"])
         logging.info("Setting Max Distance to: {}".format(min_elevation))
     if "aircraftPinned" in config:
-        aircraft_pinned = config["aircraftPinned"]
+        aircraft_pinned = config["aircraftPinned"].lower()
         logging.info("Pinning Aircraft to: {}".format(aircraft_pinned))
         
 def on_message(client, userdata, message):
