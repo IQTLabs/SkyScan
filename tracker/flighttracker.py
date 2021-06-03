@@ -361,13 +361,13 @@ def on_message(client, userdata, message):
     try:
         update = json.loads(command)
     except JSONDecodeError as e:
-        log.critical("onMessage - JSONDecode Error: {} ".format(e))
+        logging.critical("onMessage - JSONDecode Error: {} ".format(e))
     except TypeError as e:
-        log.critical("onMessage - Type Error: {} ".format(e))
+        logging.critical("onMessage - Type Error: {} ".format(e))
     except ValueError as e:
-        log.critical("onMessage - Value Error: {} ".format(e))
+        logging.critical("onMessage - Value Error: {} ".format(e))
     except:
-        log.critical("onMessage - Caught it!")
+        logging.critical("onMessage - Caught it!")
 
     if message.topic == "skyscan/egi":
         logging.info(update)
