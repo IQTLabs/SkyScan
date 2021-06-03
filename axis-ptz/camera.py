@@ -54,6 +54,8 @@ cameraPan = 0       # This value is in angles
 cameraTilt = 0      # This values is in angles 
 distance3d = 0      # this is in Meters
 distance2d = 0      # in meters
+angularVelocityHorizontal = 0      # in meters
+angularVelocityVertical = 0      # in meters
 planeTrack = 0      # This is the direction that the plane is moving in
 
 currentPlane=None
@@ -192,6 +194,8 @@ def calculateCameraPosition():
     global distance2d
     global distance3d
     global bearing
+    global angularVelocityHorizontal
+    global angularVelocityVertical
     global elevation
 
     (lat, lon, alt) = utils.calc_travel_3d(currentPlane, camera_lead)
@@ -199,7 +203,9 @@ def calculateCameraPosition():
     #(latorig, lonorig) = utils.calc_travel(observation.getLat(), observation.getLon(), observation.getLatLonTime(),  observation.getGroundSpeed(), observation.getTrack(), camera_lead)
     distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
     bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=currentPlane["track"])
-    elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
+    elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt)
+    (angularVelocityHorizontal, angularVelocityVertical) = utils.angular_velocity(distance3d, bearing, currentPlane["groundSpeed"], currentPlane["verticalRate"], elevation) 
+    logging.info("Angular Velocity - Horizontal: {} Vertical: {}".format(angularVelocityHorizontal, angularVelocityVertical))
     cameraTilt = elevation
     cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
 
