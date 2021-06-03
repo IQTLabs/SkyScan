@@ -229,7 +229,6 @@ def calc_travel_3d(current_plane, lead_s: float):
     return (lat2, lon2, alt2)
 
 
-#def angular_velocity(slantRange, bearing, speed_mps, climb_rate, tilt):
 def angular_velocity(currentPlane,camera_latitude, camera_longitude, camera_altitude):
     (lat, lon, alt) = calc_travel_3d(currentPlane, 0)
     distance2d = coordinate_distance(camera_latitude, camera_longitude, lat, lon)
