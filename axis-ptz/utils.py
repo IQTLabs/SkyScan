@@ -234,7 +234,7 @@ def angular_velocity(slantRange, bearing, speed_mps, climb_rate, tilt):
     tangentialVelocityH=math.sin(deg2rad(bearing))*speed_mps
     angularVelocityH=rad2deg(tangentialVelocityH/slantRange)
 
-    radialVelocityV=math.sin(tilt*d2r)*climb_rate
-    tangentialVelocityV=math.cos(tilt*d2r)*climb_rate
+    radialVelocityV=math.sin(deg2rad(tilt))*climb_rate
+    tangentialVelocityV=math.cos(deg2rad(tilt))*climb_rate
     angularVelocityV=rad2deg(tangentialVelocityV/slantRange)
     return (angularVelocityH, angularVelocityV)
