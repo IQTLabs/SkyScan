@@ -76,6 +76,8 @@ def create_voxel51_dataset(dataset_name):
 def add_sample_images_to_voxel51_dataset(image_list, dataset):
     """Add sample images to a voxel51 dataset.
 
+    # TODO: Add check to make sure you can't add the same image twice
+
     Args:
         image_list - list of image data dicts
         dataset - a voxel51 dataset object
