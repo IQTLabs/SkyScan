@@ -761,6 +761,7 @@ class FlightTracker(object):
             
 
     def cleanObservations(self):
+        global aircraft_pinned
         """Clean observations for planes not seen in a while
         """
         now = datetime.utcnow()
@@ -770,11 +771,14 @@ class FlightTracker(object):
 #                logging.info("[%s] %s -> %s : %s" % (icao24, self.__observations[icao24].getLoggedDate(), self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL), now))
                 if self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL) < now:
                     logging.info("%s\t[REMOVED]\t" % (icao24))
+                    if icao24 == aircraft_pinned:
+                        aircraft_pinned = None
+                        logging.info("%s\t[REMOVED PINNED AIRCRAFT - REVERTING TO NORMAL TRACKING]\t" % (icao24))
                     if icao24 == self.__tracking_icao24:
                         self.__tracking_icao24 = None
                         self.__tracking_distance = 999999999
                     cleaned.append(icao24)
-                if icao24 == self.__tracking_icao24 and not self.__isTrackable(self.__observations[icao24]):
+                if icao24 == self.__tracking_icao24 and not self.__isTrackable(self.__observations[icao24]) and not aircraft_pinned:
                     logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
                     logging.info(self.__whyTrackable(self.__observations[icao24]))
                     self.__tracking_icao24 = None
