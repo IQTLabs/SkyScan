@@ -714,8 +714,17 @@ class FlightTracker(object):
                     else:
                         self.__observations[icao24].update(m)
 
-                    # if the plane is suitable to be tracked    
-                    if self.__isTrackable(self.__observations[icao24]):
+                    # if the pinned_aircraft variable is set and that the plane is the pinned aircraft    
+                    if (aircraft_pinned) & (icao24 == aircraft_pinned):
+                        if aircraft_pinned != self.__tracking_icao24:
+                            self.__tracking_icao24 = icao24
+                            self.__updateTrackingDistance()
+                            logging.info("{}\t[PINNED AIRCRAFT TRACKING]\tDist: {}\tElev: {}\t\t".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+                        else:
+                            self.__updateTrackingDistance()
+                    
+                    # if the plane is suitable to be tracked        
+                    elif self.__isTrackable(self.__observations[icao24]):
 
                         # if no plane is being tracked, track this one
                         if not self.__tracking_icao24:
