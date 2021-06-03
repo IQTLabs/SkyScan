@@ -681,6 +681,7 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
+        global aircraft_pinned
         print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__flight_topic)
         self.__client = mqtt.Client("skyscan-tracker-" + ID) #create new instance
 
