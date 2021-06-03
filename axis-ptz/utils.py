@@ -15,6 +15,19 @@ def deg2rad(deg: float) -> float:
     """
     return deg * (math.pi/180)
 
+
+def rad2deg(deg: float) -> float:
+    """Convert degrees to radians
+
+    Arguments:
+        deg {float} -- Angle in degrees
+
+    Returns:
+        float -- Angle in radians
+    """
+    return deg / (math.pi/180)
+
+
 def elevation(distance: float, cameraAltitude, airplaneAltitude):
 
     if distance > 0:
@@ -214,3 +227,14 @@ def calc_travel_3d(current_plane, lead_s: float):
     alt2 = alt+climb_rate*alt_age_s
 
     return (lat2, lon2, alt2)
+
+
+def angular_velocity(slantRange, bearing, speed_mps, climb_rate, tilt):
+    radialVelocityH=math.cos(deg2rad(angle))*speed_mps
+    tangentialVelocityH=math.sin(deg2rad(angle))*speed_mps
+    angularVelocityH=rad2deg(tangentialVelocityH/slantRange)
+
+    radialVelocityV=math.sin(tilt*d2r)*climb_rate
+    tangentialVelocityV=math.cos(tilt*d2r)*climb_rate
+    angularVelocityV=rad2deg(tangentialVelocityV/slantRange)
+    return (angularVelocityH, angularVelocityV)
