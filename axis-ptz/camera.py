@@ -205,7 +205,7 @@ def calculateCameraPosition():
     bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=currentPlane["track"])
     elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt)
     (angularVelocityHorizontal, angularVelocityVertical) = utils.angular_velocity(currentPlane,camera_latitude, camera_longitude, camera_altitude) 
-    logging.info("Angular Velocity - Horizontal: {} Vertical: {}".format(angularVelocityHorizontal, angularVelocityVertical))
+    #logging.info("Angular Velocity - Horizontal: {} Vertical: {}".format(angularVelocityHorizontal, angularVelocityVertical))
     cameraTilt = elevation
     cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
 
