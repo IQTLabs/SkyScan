@@ -1,5 +1,7 @@
 """test all scripts."""
 
+import os
+
 import fiftyone as fo
 
 from customvox51 import (
@@ -56,7 +58,7 @@ def test_add_faa_data_to_voxel51_dataset():
 
 def test_read_config():
     """Test read_config()."""
-    config = read_config("test_config.ini")
+    config = read_config(os.path.join("test", "test_config.ini"))
     assert config["file_names"]["dataset_name"] == "hello_world"
     assert config["file_locations"]["image_directory"] == "foo"
     assert config["file_locations"]["faa_aircraft_db"] == "bar"

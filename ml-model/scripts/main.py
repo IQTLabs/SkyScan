@@ -3,6 +3,7 @@
 import argparse
 import configparser
 import logging
+import os
 import sys
 
 from customvox51 import (
@@ -15,11 +16,8 @@ from customvox51 import (
 # pylint: disable=C0330, W0621
 
 
-def read_config(config_file="config.ini"):
+def read_config(config_file=os.path.join("config", "config.ini")):
     """Read in config file values.
-
-    # TODO: Add config folder and then add in this config file and then
-    # allow for adding other config files too
 
     Use python standard library configparser module
     to read in user-defined values. This enables configurability.
