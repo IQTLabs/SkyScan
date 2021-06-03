@@ -65,6 +65,7 @@ min_altitude = None
 max_altitude = None
 min_distance = None
 max_distance = None
+aircraft_pinned = None
 tracker = None
 
 app = Flask(__name__)
@@ -323,6 +324,7 @@ def update_config(config):
     global min_elevation
     global max_altitude
     global max_distance
+    global aircraft_pinned
 
 
     if "cameraLead" in config:
@@ -343,6 +345,9 @@ def update_config(config):
     if "maxDistance" in config:
         max_distance = int(config["maxDistance"])
         logging.info("Setting Max Distance to: {}".format(min_elevation))
+    if "aircraftPinned" in config:
+        aircraft_pinned = float(config["aircraftPinned"])
+        logging.info("Pinning Aircraft to: {}".format(aircraft_pinned))
         
 def on_message(client, userdata, message):
     """ MQTT Client callback for new messages """
@@ -793,6 +798,7 @@ def getConfig():
     config["max_distance"] = max_distance
     config["min_altitude"] = min_altitude
     config["max_altitude"] = max_altitude
+    config["aircraft_pinned"] = aircraft_pinned
     return config
 
 
