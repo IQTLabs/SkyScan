@@ -715,7 +715,7 @@ class FlightTracker(object):
                         self.__observations[icao24].update(m)
 
                     # if the pinned_aircraft variable is set and that the plane is the pinned aircraft    
-                    if (aircraft_pinned) & (icao24 == aircraft_pinned):
+                    if (bool(aircraft_pinned)) & (icao24 == aircraft_pinned):
                         if aircraft_pinned != self.__tracking_icao24:
                             self.__tracking_icao24 = icao24
                             self.__updateTrackingDistance()
