@@ -230,8 +230,8 @@ def calc_travel_3d(current_plane, lead_s: float):
 
 
 def angular_velocity(slantRange, bearing, speed_mps, climb_rate, tilt):
-    radialVelocityH=math.cos(deg2rad(angle))*speed_mps
-    tangentialVelocityH=math.sin(deg2rad(angle))*speed_mps
+    radialVelocityH=math.cos(deg2rad(bearing))*speed_mps
+    tangentialVelocityH=math.sin(deg2rad(bearing))*speed_mps
     angularVelocityH=rad2deg(tangentialVelocityH/slantRange)
 
     radialVelocityV=math.sin(tilt*d2r)*climb_rate
