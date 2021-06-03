@@ -844,7 +844,7 @@ def main():
     args = parser.parse_args()
 
     if not args.lat and not args.lon:
-        log.critical("You really need to tell me where you are located (--lat and --lon)")
+        logging.critical("You really need to tell me where you are located (--lat and --lon)")
         sys.exit(1)
     camera_longitude = args.lon
     camera_latitude = args.lat
