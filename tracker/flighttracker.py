@@ -724,7 +724,7 @@ class FlightTracker(object):
                             self.__updateTrackingDistance()
                     
                     # if the plane is suitable to be tracked        
-                    elif self.__isTrackable(self.__observations[icao24]):
+                    elif (not bool(aircraft_pinned)) & self.__isTrackable(self.__observations[icao24]):
 
                         # if no plane is being tracked, track this one
                         if not self.__tracking_icao24:
