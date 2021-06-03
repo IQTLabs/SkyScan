@@ -229,12 +229,19 @@ def calc_travel_3d(current_plane, lead_s: float):
     return (lat2, lon2, alt2)
 
 
-def angular_velocity(slantRange, bearing, speed_mps, climb_rate, tilt):
-    radialVelocityH=math.cos(deg2rad(bearing))*speed_mps
-    tangentialVelocityH=math.sin(deg2rad(bearing))*speed_mps
-    angularVelocityH=rad2deg(tangentialVelocityH/slantRange)
+#def angular_velocity(slantRange, bearing, speed_mps, climb_rate, tilt):
+def angular_velocity(currentPlane,camera_latitude, camera_longitude, camera_altitude):
+    (lat, lon, alt) = calc_travel_3d(currentPlane, 0)
+    distance2d = coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+    bearing1 = bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=currentPlane["track"])
+    elevation1 = elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt)
 
-    radialVelocityV=math.sin(deg2rad(tilt))*climb_rate
-    tangentialVelocityV=math.cos(deg2rad(tilt))*climb_rate
-    angularVelocityV=rad2deg(tangentialVelocityV/slantRange)
+    (lat, lon, alt) = calc_travel_3d(currentPlane, 1)
+    distance2d = coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+    bearing2 = bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=currentPlane["track"])
+    elevation2 = elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt)
+    
+    angularVelocityH=((bearing2-bearing1) + 180) % 360 - 180
+    angularVelocityV=elevation2-elevation1
+
     return (angularVelocityH, angularVelocityV)
