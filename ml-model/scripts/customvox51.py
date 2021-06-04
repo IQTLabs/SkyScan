@@ -1,5 +1,6 @@
 """custom functionality related to voxel51 databases"""
 
+import json
 import logging
 import os
 
@@ -175,160 +176,14 @@ def normalize_single_model_value(model):
         model (str) - a plane model name
 
     Returns:
-        norm_model (str) - a standardized model name
+        normalized_model_value (str) - a standardized model name
     """
-    # TODO: probably convert this into a json dict structure that can then be more easily
-    # understood within the code
-    norm_model = None
+    # json file storing plane model strings as key and standardized model
+    # as value
+    with open("plane_model_dict.json", "r") as file_path:
+        plane_model_dict = json.load(file_path)
 
-    if model in ["A319-112", "A319-115", "A319-132"]:
-        norm_model = "A319"
+    # check for model value, if not present return None
+    normalized_model_value = plane_model_dict.get(model, None)
 
-    if model in [
-        "A320 232",
-        "A320 232SL",
-        "A320-211",
-        "A320-212",
-        "A320-214",
-        "A320-232",
-        "A320-251N",
-        "A320-271N",
-    ]:
-        norm_model = "A320"
-
-    if model in ("A321-211", "A321-231", "A321-271NX", "Airbus A321-231(SL)"):
-        norm_model = "A321"
-
-    if model in ("A330 243", "A330-243F"):
-        norm_model = "A330"
-
-    if model in ("737-71B", "737-724", "737-73V", "737-752", "737-7H4", "737-7Q8"):
-        norm_model = "737-700"
-
-    if model in (
-        "737-800",
-        "Boeing 737-852",
-        "737-823",
-        "737-824",
-        "737-832",
-        "737-83N",
-        "737-84P",
-        "737-890",
-        "737-8EH",
-        "737-8H4",
-        "737NG 823/W",
-        "737NG 852/W",
-        "737NG 85P/W",
-        "737NG 86N/W",
-        "737NG 8V3/W",
-    ):
-        norm_model = "737-800"
-
-    if model in ("737-900ER", "737-924ER", "737-932ER"):
-        norm_model = "737-900"
-
-    if model == "747-48EF":
-        norm_model = "747-400"
-
-    if model in ("757-231", "757-232", "757-251"):
-        norm_model = "757-200"
-
-    if model == "767 330ER/W":
-        norm_model = "767-300"
-
-    if model == "777-223":
-        norm_model = "777-200"
-
-    if model == "787-8":
-        norm_model = "787-800"
-
-    if model in ("787-9 (Boeing)", "BOEING 787-9 Dreamliner"):
-        norm_model = "787-800"
-
-    if model in ("45", "60"):
-        norm_model = "Learjet 45/60"
-
-    if model in (
-        "510",
-        "Citation Excel",
-        "Citation Sovereign+",
-        "525",
-        "550",
-        "560",
-        "680",
-        "750",
-        "525A",
-        "525B",
-        "525C",
-        "560XL",
-        "680A",
-    ):
-        norm_model = "Cessna Jet"
-
-    if model in ("CL-600-2B16", "BD-100-1A10", "BD-700-1A11"):
-        norm_model = "Bombardier Challanger"
-
-    if model == "CL-600-2C10":
-        norm_model = "CRJ700"
-
-    if model == "CL-600-2C11":
-        norm_model = "CRJ550"
-
-    if model in ("CL-600-2D24", "CRJ 900 LR NG", "CRJ-900"):
-        norm_model = "CRJ900"
-
-    if model in (
-        "ERJ 170-100 SE",
-        "ERJ 170-100SU",
-        "ERJ 170-200 LR",
-        "ERJ 190-100 IGW",
-        "EMB-190 AR",
-    ):
-        norm_model = "ERJ-170"
-
-    if model in ("EMB-135BJ", "EMB-145LR"):
-        norm_model = "EMB-135"
-
-    if model in ("EMB-505", "EMB-545"):
-        norm_model = "EMB-505"
-
-    if model == "PA-23-250":
-        norm_model = "Piper PA-23"
-
-    if model == "PC-12/47E":
-        norm_model = "Pilatus PC-12"
-
-    if model in (
-        "FALCON 10",
-        "FALCON 2000",
-        "FALCON 50",
-        "FALCON 7X",
-        "FALCON 900 EX",
-        "FALCON 900EX",
-    ):
-        norm_model = "Falcon"
-
-    if model in (
-        "G-IV",
-        "G-V",
-        "GALAXY",
-        "GIV-X (G450)",
-        "GULFSTREAM 200",
-        "GV-SP (G550)",
-        "GVI(G650ER)",
-    ):
-        norm_model = "Gulfstream"
-
-    if model in ("HAWKER 800XP", "HAWKER 900XP"):
-        norm_model = "Hawker"
-
-    if model == "SF50":
-        norm_model = "Cirrus"
-
-    if model == "PRESSURIZED LANCR IV":
-        norm_model = "Lancair IV"
-
-    if model == "B300":
-        norm_model = "King Air"
-
-    return norm_model
+    return normalized_model_value
