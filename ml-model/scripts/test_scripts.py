@@ -9,12 +9,16 @@ from customvox51 import (
     add_sample_images_to_voxel51_dataset,
     build_image_list,
     create_voxel51_dataset,
+    normalize_single_model_value,
 )
 from main import read_config
 
 
 # delete dataset first to create repeatable test environment
-fo.load_dataset("test").delete()
+try:
+    fo.load_dataset("test").delete()
+except ValueError:
+    pass
 
 
 def test_build_image_list():
@@ -62,3 +66,14 @@ def test_read_config():
     assert config["file_names"]["dataset_name"] == "hello_world"
     assert config["file_locations"]["image_directory"] == "foo"
     assert config["file_locations"]["faa_aircraft_db"] == "bar"
+
+
+def test_normalize_single_model_value():
+    """Test normalize_single_model_value"""
+    assert normalize_single_model_value("A320 232") == "A320"
+    assert normalize_single_model_value("737-73V") == "737-700"
+
+
+def test_normalize_model_values():
+    """Test normalize_model_values()"""
+    pass
