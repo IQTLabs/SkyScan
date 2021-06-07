@@ -228,7 +228,7 @@ def calc_travel_3d(current_plane, lead_s: float):
     lon2 = math.degrees(lon2)
         
     alt2 = alt+climb_rate*alt_age_s
-    logging.info("⏱ {} 🛫 {}  alt: {} new alt: {} ".format(alt_age_s,climb_rate,alt, alt2))
+    logging.info("⏱ {} {} {} 🛫 {}  alt: {} new alt: {} ".format(alt_age_s,current_plane["altitudeTime"], altitude_time , climb_rate,alt, alt2))
     
     return (lat2, lon2, alt2)
 
