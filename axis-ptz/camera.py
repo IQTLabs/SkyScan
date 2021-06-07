@@ -251,7 +251,7 @@ def update_config(config):
     global cameraMoveSpeed
     global cameraDelay
     global cameraPan
-    global cameraLead
+    global camera_lead
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
