@@ -248,6 +248,8 @@ class Observation(object):
         return self.__onGround
 
     def getAltitude(self) -> float:
+        if self.getOnGround():
+            self.__altitude = camera_altitude
         return self.__altitude
 
     def getType(self) -> str:
