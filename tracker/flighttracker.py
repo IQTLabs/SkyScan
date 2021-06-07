@@ -172,8 +172,9 @@ class Observation(object):
         if sbs1msg["callsign"] and self.__callsign != sbs1msg["callsign"]:
             self.__callsign = sbs1msg["callsign"].rstrip()
         if sbs1msg["altitude"] is not None:
-            self.__altitude = sbs1msg["altitude"]
-            self.__altitudeTime = sbs1msg["generatedDate"]
+            if self.__altitude != sbs1msg["altitude"]:
+                self.__altitude = sbs1msg["altitude"]
+                self.__altitudeTime = sbs1msg["generatedDate"]
         if sbs1msg["groundSpeed"] is not None:
             self.__groundSpeed = sbs1msg["groundSpeed"]
         if sbs1msg["track"] is not None:
