@@ -13,7 +13,7 @@ def deg2rad(deg: float) -> float:
     Returns:
         float -- Angle in radians
     """
-    return deg * (math.pi/180)
+    return deg * (math.pi/float(180))
 
 
 def rad2deg(deg: float) -> float:
@@ -25,32 +25,35 @@ def rad2deg(deg: float) -> float:
     Returns:
         float -- Angle in radians
     """
-    return deg / (math.pi/180)
+    return deg / (math.pi/float(180))
 
 
 def elevation(distance: float, cameraAltitude, airplaneAltitude):
 
     if distance > 0:
-        ratio = ( airplaneAltitude - cameraAltitude) / float(distance)
-        a = math.atan(ratio) * (180 /math.pi)
+        ratio = ( float(airplaneAltitude) - float(cameraAltitude)) / float(distance)
+        a = math.atan(ratio) * (float(180) /math.pi)
+        logging.info("✈️ {} 📷 {}  distance: {} ratio: {} a: {} ".format(airplaneAltitude,cameraAltitude,distance, ratio, a))
+        
         return a
     else:
+        logging.info("🚨 Elevation is less than zero 🚨  ")
         return 0
 
 def bearingFromCoordinate( cameraPosition, airplanePosition, heading):
     if heading is None:
         return -1
 
-    lat2 = airplanePosition[0]
-    lon2 = airplanePosition[1]
+    lat2 = float(airplanePosition[0])
+    lon2 = float(airplanePosition[1])
     
-    lat1 = cameraPosition[0]
-    lon1 = cameraPosition[1]
+    lat1 = float(cameraPosition[0])
+    lon1 = float(cameraPosition[1])
     
-    dLon = (lon1 - lon2)
+    dLon = float(lon1 - lon2)
 
-    y = math.sin(dLon*math.pi/180) * math.cos(lat1*math.pi/180)
-    x = math.cos(lat2*math.pi/180) * math.sin(lat1*math.pi/180) - math.sin(lat2*math.pi/180) * math.cos(lat1*math.pi/180) * math.cos(dLon*math.pi/180)
+    y = math.sin(dLon*math.pi/float(180)) * math.cos(lat1*math.pi/float(180))
+    x = math.cos(lat2*math.pi/float(180)) * math.sin(lat1*math.pi/float(180)) - math.sin(lat2*math.pi/float(180)) * math.cos(lat1*math.pi/float(180)) * math.cos(dLon*math.pi/float(180))
 
     brng = math.atan2(-y, x)*180/math.pi
     brng = (brng + 360) % 360
@@ -156,7 +159,7 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_mps: float, h
     age = datetime.utcnow() - utc_start
     age_s = age.total_seconds() + lead_s
 
-    R = 6378.1 # Radius of the Earth
+    R = 6371 # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
     d = (age_s * speed_mps) / 1000.0 # Distance in km
 
@@ -211,9 +214,9 @@ def calc_travel_3d(current_plane, lead_s: float):
     alt_age = datetime.utcnow() - altitude_time
     alt_age_s = alt_age.total_seconds() + lead_s
 
-    R = 6378.1 # Radius of the Earth
+    R = float(6371) # Radius of the Earth
     brng = math.radians(heading) # Bearing is 90 degrees converted to radians.
-    d = (lat_lon_age_s * speed_mps) / 1000.0 # Distance in km
+    d = float((lat_lon_age_s * speed_mps) / 1000.0) # Distance in km
 
     lat1 = math.radians(lat) # Current lat point converted to radians
     lon1 = math.radians(lon) # Current long point converted to radians
@@ -223,9 +226,10 @@ def calc_travel_3d(current_plane, lead_s: float):
 
     lat2 = math.degrees(lat2)
     lon2 = math.degrees(lon2)
-
+        
     alt2 = alt+climb_rate*alt_age_s
-
+    logging.info("⏱ {} 🛫 {}  alt: {} new alt: {} ".format(alt_age_s,climb_rate,alt, alt2))
+    
     return (lat2, lon2, alt2)
 
 
