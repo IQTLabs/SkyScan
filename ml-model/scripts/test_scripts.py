@@ -53,7 +53,7 @@ def test_add_faa_data_to_voxel51_dataset():
     test_dataset = create_voxel51_dataset("test")
     add_sample_images_to_voxel51_dataset(test_image_list, test_dataset)
     dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
-        "test", "../notebooks/aircraftDatabase.csv"
+        "test", "../data/faa_master.txt", "../data/faa_aircraft_reference.txt"
     )
     assert isinstance(dataset_with_faa_data, fo.core.dataset.Dataset)
     assert dataset_with_faa_data.persistent
