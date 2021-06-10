@@ -43,6 +43,8 @@ import paho.mqtt.client as mqtt
 from json.decoder import JSONDecodeError
 import pandas as pd
 from queue import Queue
+from flask import Flask
+from flask import render_template
 
 ID = str(random.randint(1,100001))
 
@@ -63,6 +65,9 @@ min_altitude = None
 max_altitude = None
 min_distance = None
 max_distance = None
+tracker = None
+
+app = Flask(__name__)
 
 # http://stackoverflow.com/questions/1165352/fast-comparison-between-two-python-dictionary
 class DictDiffer(object):
@@ -266,87 +271,14 @@ class Observation(object):
         return self.__verticalRate
 
     def isPresentable(self) -> bool:
-        return self.__altitude and self.__groundSpeed and self.__track and self.__lat and self.__lon 
-
-    def whyTrackable(self) -> str:
-        """ Returns a string explaining why a Plane can or cannot be tracked """
-
-        reason = ""
-
-        if self.__altitude == None or self.__groundSpeed == None or self.__track == None or self.__lat == None or self.__lon == None:
-            reason = "Loc: ⛔️" 
-        else:
-            reason = "Loc: ✅" 
-
-        if self.__onGround == True:
-            reason = reason + "\tGrnd: ⛔️" 
-        else:
-            reason = reason + "\tGrnd: ✅" 
-        
-        if max_altitude != None and self.__altitude > max_altitude:
-            reason = reason + "\tMax Alt: ⛔️" 
-        else:
-            reason = reason + "\tMax Alt: ✅" 
-
-        if min_altitude != None and self.__altitude < min_altitude:
-            reason = reason + "\tMin Alt: ⛔️" 
-        else:
-            reason = reason + "\tMin Alt: ✅" 
-
-        if self.__distance == None or self.__elevation == None:
-            return False
-
-        if min_distance != None and self.__distance < min_distance:
-            reason = reason + "\tMin Dist: ⛔️" 
-        else:
-            reason = reason + "\tMin Dist: ✅" 
-
-        if max_distance != None and self.__distance > max_distance:
-            reason = reason + "\tMax Dist: ⛔️" 
-        else:
-            reason = reason + "\tMax Dist: ✅" 
-        
-        if self.__elevation < min_elevation:
-            reason = reason + "\tMin Elv: ⛔️" 
-        else:
-            reason = reason + "\tMin Elv: ✅" 
-
-        return reason
-
-    def isTrackable(self) -> bool:
-        """ Does this observation meet all of the requirements to be tracked """
-
-        if self.__altitude == None or self.__groundSpeed == None or self.__track == None or self.__lat == None or self.__lon == None:
-            return False 
-
-        if self.__onGround == True:
-            return False
-        
-        if max_altitude != None and self.__altitude > max_altitude:
-            return False
-
-        if min_altitude != None and self.__altitude < min_altitude:
-            return False
-
-        if self.__distance == None or self.__elevation == None:
-            return False
-
-        if min_distance != None and self.__distance < min_distance:
-            return False
-
-        if max_distance != None and self.__distance > max_distance:
-            return False
-        
-        if self.__elevation < min_elevation:
-            return False
-
-        return True
+        return self.__altitude and self.__groundSpeed and self.__track and self.__lat and self.__lon and self.__distance
 
     def dump(self):
         """Dump this observation on the console
         """
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logging.debug("> %s  %s %-7s - trk:%3d spd:%3d alt:%5d (%5d) %.4f, %.4f" % (now, self.__icao24, self.__callsign, self.__track, self.__groundSpeed, self.__altitude, self.__verticalRate, self.__lat, self.__lon))
+
 
     def json(self, bearing: float, elevation: float, cameraPan: float,  cameraTilt: float, distance: int) -> str:
         """Return JSON representation of this observation
@@ -379,6 +311,8 @@ class Observation(object):
         if "_Observation__lastLon" in d:
             del d["lastLon"]
         return d
+
+
 
 def update_config(config):
     """ Adjust configuration values based on MQTT config messages that come in """
@@ -481,6 +415,17 @@ class FlightTracker(object):
         self.__plane_topic = plane_topic
         self.__flight_topic = flight_topic
 
+    def __getObservationJson(self, observation):
+        (lat, lon, alt) = utils.calc_travel_3d(observation.getLat(), observation.getLon(), observation.getAltitude(), observation.getLatLonTime(), observation.getAltitudeTime(), observation.getGroundSpeed(), observation.getTrack(), observation.getVerticalRate(), camera_lead)
+        distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
+        #(latorig, lonorig) = utils.calc_travel(observation.getLat(), observation.getLon(), observation.getLatLonTime(),  observation.getGroundSpeed(), observation.getTrack(), camera_lead)
+        distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+        bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=observation.getTrack())
+        elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
+        cameraTilt = elevation
+        cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
+        #elevationorig = utils.elevation(distance2d, observation.getAltitude(), camera_altitude) 
+        return observation.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt)
 
     def __publish_thread(self):
         """
@@ -505,45 +450,130 @@ class FlightTracker(object):
                 if cur is None:
                     continue
 
-                (lat, lon, alt) = utils.calc_travel_3d(cur.getLat(), cur.getLon(), cur.getAltitude(), cur.getLatLonTime(), cur.getAltitudeTime(), cur.getGroundSpeed(), cur.getTrack(), cur.getVerticalRate(), camera_lead)
-                distance3d = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, lat, lon, alt)
-                (latorig, lonorig) = utils.calc_travel(cur.getLat(), cur.getLon(), cur.getLatLonTime(),  cur.getGroundSpeed(), cur.getTrack(), camera_lead)
-                distance2d = utils.coordinate_distance(camera_latitude, camera_longitude, lat, lon)
+
 
                 #logging.info("  ------------------------------------------------- ")
                 #logging.info("%s: original alt %5f | extrap alt %5f | climb rate %5f | original climb rate %5f" % (cur.getIcao24(), cur.getAltitude(), alt, cur.getVerticalRate(), cur.getVerticalRate()/0.00508))
                 #logging.info("%s: original lat %5f | new lat %5f | original long %5f | new long %5f " % (cur.getIcao24(), latorig, lat, lonorig, lon))
         
-                # Round off to nearest 100 meters
-                #distance = round(distance/100) * 100
-                bearing = utils.bearingFromCoordinate( cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon], heading=cur.getTrack())
-                elevation = utils.elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt) 
+
                 
                 # !!!! Mike, replaces these values with the values that have been camera for roll, pitch, yaw
-                cameraTilt = elevation
-                cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
-                elevationorig = utils.elevation(distance2d, cur.getAltitude(), camera_altitude) 
+
                 #logging.info("%s: original elevation %5d | new elevation %5d" % (cur.getIcao24(), elevationorig, elevation))
 
                 retain = False
-                self.__client.publish(self.__flight_topic, cur.json(bearing=bearing, cameraPan=cameraPan, distance=distance3d, elevation=elevation, cameraTilt=cameraTilt), 0, retain)
+                self.__client.publish(self.__flight_topic, self.__getObservationJson(cur) ,0, retain)
                 #logging.info("%s at %5d brg %3d alt %5d trk %3d spd %3d %s" % (cur.getIcao24(), distance3d, bearing, cur.getAltitude(), cur.getTrack(), cur.getGroundSpeed(), cur.getType()))
                 #logging.info("  ------------------------------------------------- ")
                 
-                if distance3d < 3000:
+                if self.__tracking_distance < 3000:
                     time.sleep(0.25)
-                elif distance3d < 6000:
+                elif self.__tracking_distance < 6000:
                     time.sleep(0.5)
                 else:
                     time.sleep(1)
 
+    def __whyTrackable(self, observation) -> str:
+        """ Returns a string explaining why a Plane can or cannot be tracked """
 
-    def updateTrackingDistance(self):
+        reason = ""
+
+        if observation.getAltitude() == None or observation.getGroundSpeed() == None or observation.getTrack() == None or observation.getLat() == None or observation.getLon() == None:
+            reason = "Loc: ⛔️" 
+        else:
+            reason = "Loc: ✅" 
+
+        if observation.getOnGround() == True:
+            reason = reason + "\tGrnd: ⛔️" 
+        else:
+            reason = reason + "\tGrnd: ✅" 
+        
+        if max_altitude != None and observation.getAltitude() > max_altitude:
+            reason = reason + "\tMax Alt: ⛔️" 
+        else:
+            reason = reason + "\tMax Alt: ✅" 
+
+        if min_altitude != None and observation.getAltitude() < min_altitude:
+            reason = reason + "\tMin Alt: ⛔️" 
+        else:
+            reason = reason + "\tMin Alt: ✅" 
+
+        if observation.getDistance() == None or observation.getElevation() == None:
+            return False
+
+        if min_distance != None and observation.getDistance() < min_distance:
+            reason = reason + "\tMin Dist: ⛔️" 
+        else:
+            reason = reason + "\tMin Dist: ✅" 
+
+        if max_distance != None and observation.getDistance() > max_distance:
+            reason = reason + "\tMax Dist: ⛔️" 
+        else:
+            reason = reason + "\tMax Dist: ✅" 
+        
+        if observation.getElevation() < min_elevation:
+            reason = reason + "\tMin Elv: ⛔️" 
+        else:
+            reason = reason + "\tMin Elv: ✅" 
+
+        return reason
+
+    def __isTrackable(self, observation) -> bool:
+        """ Does this observation meet all of the requirements to be tracked """
+
+        if observation.getAltitude() == None or observation.getGroundSpeed() == None or observation.getTrack() == None or observation.getLat() == None or observation.getLon() == None:
+            return False 
+
+        if observation.getOnGround() == True:
+            return False
+        
+        if max_altitude != None and observation.getAltitude() > max_altitude:
+            return False
+
+        if min_altitude != None and observation.getAltitude() < min_altitude:
+            return False
+
+        if observation.getDistance() == None or observation.getElevation() == None:
+            return False
+
+        if min_distance != None and observation.getDistance() < min_distance:
+            return False
+
+        if max_distance != None and observation.getDistance() > max_distance:
+            return False
+        
+        if observation.getElevation() < min_elevation:
+            return False
+
+        return True
+
+    def __updateTrackingDistance(self):
         """Update distance to aircraft being tracked
         """
         cur = self.__observations[self.__tracking_icao24]
         if cur.getAltitude():
             self.__tracking_distance = utils.coordinate_distance_3d(camera_latitude, camera_longitude, camera_altitude, cur.getLat(), cur.getLon(), cur.getAltitude())
+
+    def __observationKey(self,obs):
+
+        return int(obs["_Observation__distance"])
+
+
+    def getObservations(self):
+        items=[]
+        for icao24 in self.__observations:
+            if self.__observations[icao24].isPresentable():
+                items.append(self.__observations[icao24].dict())
+        items.sort(key=self.__observationKey)
+        return items
+
+    def getTracking(self):
+        return self.__tracking_icao24
+
+    def getTrackingObservation(self):
+        return self.__getObservationJson(self.__observations[self.__tracking_icao24])
+
 
     def dump1090Connect(self) -> bool:
         """If not connected, connect to the dump1090 host
@@ -680,17 +710,17 @@ class FlightTracker(object):
                         self.__observations[icao24].update(m)
 
                     # if the plane is suitable to be tracked    
-                    if self.__observations[icao24].isTrackable():
+                    if self.__isTrackable(self.__observations[icao24]):
 
                         # if no plane is being tracked, track this one
                         if not self.__tracking_icao24:
                             self.__tracking_icao24 = icao24
-                            self.updateTrackingDistance()
+                            self.__updateTrackingDistance()
                             logging.info("{}\t[TRACKING]\tDist: {}\tElev: {}\t\t".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
           
                         # if this is the plane being tracked, update the tracking distance
                         elif self.__tracking_icao24 == icao24:
-                            self.updateTrackingDistance()
+                            self.__updateTrackingDistance()
                         
                         # This plane is trackable, but is not the one being tracked
                         else:
@@ -703,7 +733,7 @@ class FlightTracker(object):
                         # If the plane is currently being tracked, but is no longer trackable:
                         if self.__tracking_icao24 == icao24:
                             logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
-                            logging.info(self.__observations[icao24].whyTrackable())
+                            logging.info(self.__whyTrackable(self.__observations[icao24]))
                             self.__tracking_icao24 = None
                             self.__tracking_distance = 999999999
                                                   
@@ -715,7 +745,7 @@ class FlightTracker(object):
         self.__tracking_icao24 = None
         self.__tracking_distance = 999999999
         for icao24 in self.__observations:
-            if not self.__observations[icao24].isTrackable():
+            if not self.__isTrackable(self.__observations[icao24]):
                 continue
             distance = self.__observations[icao24].getDistance()
             if self.__observations[icao24].getDistance() < self.__tracking_distance:
@@ -739,9 +769,9 @@ class FlightTracker(object):
                         self.__tracking_icao24 = None
                         self.__tracking_distance = 999999999
                     cleaned.append(icao24)
-                if icao24 == self.__tracking_icao24 and not self.__observations[icao24].isTrackable():
+                if icao24 == self.__tracking_icao24 and not self.__isTrackable(self.__observations[icao24]):
                     logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
-                    logging.info(self.__observations[icao24].whyTrackable())
+                    logging.info(self.__whyTrackable(self.__observations[icao24]))
                     self.__tracking_icao24 = None
                     self.__tracking_distance = 999999999
             for icao24 in cleaned:
@@ -750,6 +780,28 @@ class FlightTracker(object):
                 self.selectNearestObservation()
 
             self.__next_clean = now + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL)
+
+
+def getConfig():
+    config ={}
+    config["camera_altitude"] = camera_altitude
+    config["camera_latitude"] = camera_latitude
+    config["camera_longitude"] = camera_longitude
+    config["camera_lead"] = camera_lead
+    config["min_elevation"] = min_elevation
+    config["min_distance"] = min_distance
+    config["max_distance"] = max_distance
+    config["min_altitude"] = min_altitude
+    config["max_altitude"] = max_altitude
+    return config
+
+
+
+
+@app.route('/')
+def index():
+    return render_template('index.html', title='SkyScan', tracking=tracker.getTracking(), observations=tracker.getObservations(), config=getConfig())
+
 
 
 def main():
@@ -762,6 +814,7 @@ def main():
     global plane_topic
     global min_elevation
     global planes
+    global tracker
     parser = argparse.ArgumentParser(description='A Dump 1090 to MQTT bridge')
 
 
@@ -810,8 +863,10 @@ def main():
     planes = pd.read_csv("/data/aircraftDatabase.csv") #,index_col='icao24')
     logging.info("Printing table")
     logging.info(planes)
-
+    threading.Thread(target=app.run, kwargs={"host": '0.0.0.0', "port": 5000}).start()
     tracker = FlightTracker(args.dump1090_host, args.mqtt_host, args.plane_topic, args.flight_topic,dump1090_port = args.dump1090_port,  mqtt_port = args.mqtt_port)
+
+
     tracker.run()  # Never returns
 
 
