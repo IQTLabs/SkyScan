@@ -7,7 +7,7 @@ import os
 import pandas as pd
 import fiftyone as fo
 
-# pylint: disable=C0330
+# pylint: disable=C0330,R0914
 
 
 def build_image_list(file_path):
@@ -107,37 +107,62 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset):
     return dataset
 
 
-def add_faa_data_to_voxel51_dataset(voxel51_dataset_name, faa_dataset_path):
+def add_faa_data_to_voxel51_dataset(
+    voxel51_dataset_name, faa_master_dataset_path, faa_reference_dataset_path
+):
     """Add FAA data to each entry in voxel51 dataset.
 
     Args:
         voxel51_dataset (str) - the voxel51 dataset name
-        faa_dataset_path - path to FAA dataset csv
+        faa_master_dataset_path - path to FAA master dataset .txt
+        faa_reference_dataset_path - path to FAA reference dataset .txt
 
     Returns:
         dataset (voxel51 dataset object)
     """
-    planes = pd.read_csv(faa_dataset_path, index_col="icao24")
+    # import master dataset and strip white space from beacon column
+    planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
+    planes_master.index = planes_master.index.str.strip()
+    planes_reference = pd.read_csv(faa_reference_dataset_path)
     dataset = fo.load_dataset(voxel51_dataset_name)
+
     for row in dataset:
         # render plane_id in lowercase letters
-        plane_id = row["icao24"].label.lower()
+        plane_icao24 = row["icao24"].label.upper()
+        # find plane model code associated with the icao24 code, i.e. mode s code hex
         try:
-            plane = planes.loc[plane_id.lower()]
-            # Check for valid row with all columns present
-            if plane.size == 26:
-                if isinstance(plane["model"], str):
-                    row["model"] = fo.Classification(label=plane["model"])
-                if isinstance(plane["manufacturername"], str):
-                    row["manufacturer"] = fo.Classification(
-                        label=plane["manufacturername"]
-                    )
-                # TODO: (for Luke) isn't there some other label Adam requested?
-                row.save()
-            else:
-                logging.info("Invalid row with row size of %s", plane.size)
-        except KeyError:
-            logging.info("FAA Data entry not found for: %s", plane_id)
+            model_code = planes_master.loc[
+                planes_master.index == plane_icao24, "MFR MDL CODE"
+            ].values[0]
+        except IndexError:
+            logging.info(
+                "Plane ID not found in master dataset. Plane ID: %s", plane_icao24
+            )
+
+        # find reference row with all relevant model data
+        plane_reference_row = planes_reference.loc[
+            planes_reference["CODE"] == model_code
+        ]
+        # exract all relevant data from plane_reference_row
+        # convert all fields to string
+        manufacturer = str(plane_reference_row["MFR"].values[0])
+        model_name = str(plane_reference_row["MODEL"].values[0])
+        aircraft_type = str(plane_reference_row["TYPE-ACFT"].values[0])
+        engine_type = str(plane_reference_row["TYPE-ENG"].values[0])
+        num_engines = str(plane_reference_row["NO-ENG"].values[0])
+        num_seats = str(plane_reference_row["NO-SEATS"].values[0])
+        aircraft_weight = str(plane_reference_row["AC-WEIGHT"].values[0])
+
+        # store values in voxel51 dataset row
+        row["model_code"] = fo.Classification(label=model_code)
+        row["manufacturer"] = fo.Classification(label=manufacturer)
+        row["model_name"] = fo.Classification(label=model_name)
+        row["aircraft_type"] = fo.Classification(label=aircraft_type)
+        row["engine_type"] = fo.Classification(label=engine_type)
+        row["num_engines"] = fo.Classification(label=num_engines)
+        row["num_seats"] = fo.Classification(label=num_seats)
+        row["aircraft_weight"] = fo.Classification(label=aircraft_weight)
+        row.save()
 
     return dataset
 
