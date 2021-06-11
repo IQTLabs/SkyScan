@@ -49,7 +49,7 @@ from flask import render_template
 ID = str(random.randint(1,100001))
 
 # Clean out observations this often
-OBSERVATION_CLEAN_INTERVAL = 30
+OBSERVATION_CLEAN_INTERVAL = 10
 # Socket read timeout
 DUMP1090_SOCKET_TIMEOUT = 60
 q=Queue() # Good writeup of how to pass messages from MQTT into classes, here: http://www.steves-internet-guide.com/mqtt-python-callbacks/
