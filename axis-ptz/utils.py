@@ -33,7 +33,7 @@ def elevation(distance: float, cameraAltitude, airplaneAltitude):
     if distance > 0:
         ratio = ( float(airplaneAltitude) - float(cameraAltitude)) / float(distance)
         a = math.atan(ratio) * (float(180) /math.pi)
-        logging.info("✈️ {} 📷 {}  distance: {} ratio: {} a: {} ".format(airplaneAltitude,cameraAltitude,distance, ratio, a))
+        
         
         return a
     else:
@@ -228,7 +228,6 @@ def calc_travel_3d(current_plane, lead_s: float):
     lon2 = math.degrees(lon2)
         
     alt2 = alt+climb_rate*alt_age_s
-    logging.info("⏱ {} {} {} 🛫 {}  alt: {} new alt: {} ".format(alt_age_s,current_plane["altitudeTime"], altitude_time , climb_rate,alt, alt2))
     
     return (lat2, lon2, alt2)
 
