@@ -37,6 +37,7 @@ logging.getLogger("sensecam_control").setLevel(logging.WARNING)
 ID = str(random.randint(1,100001))
 args = None
 camera = None
+cameraBearingCorrection = None
 cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
@@ -60,8 +61,8 @@ planeTrack = 0      # This is the direction that the plane is moving in
 
 currentPlane=None
 
-
-
+def calculate_bearing_correction(b):
+    return (b + cameraBearingCorrection) % 360
 
  # Copied from VaPix/Sensecam to customize the folder structure for saving pictures          
 def get_jpeg_request():  # 5.2.4.1
@@ -208,6 +209,7 @@ def calculateCameraPosition():
     #logging.info("Angular Velocity - Horizontal: {} Vertical: {}".format(angularVelocityHorizontal, angularVelocityVertical))
     cameraTilt = elevation
     cameraPan = utils.cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[lat, lon])
+    cameraPan = calculate_bearing_correction(cameraPan)
 
 
 
@@ -252,6 +254,8 @@ def update_config(config):
     global cameraDelay
     global cameraPan
     global camera_lead
+    global camera_altitude
+    global cameraBearingCorrection
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -265,7 +269,12 @@ def update_config(config):
     if "cameraLead" in config:
         camera_lead = float(config["cameraLead"])
         logging.info("Setting Camera Lead to: {}".format(camera_lead))
-
+    if "cameraAltitude" in config:
+        camera_altitude = float(config["cameraAltitude"])
+        logging.info("Setting Camera Altitude to: {}".format(camera_altitude))
+    if "cameraBearingCorrection" in config:
+        cameraBearingCorrection = float(config["cameraBearingCorrection"])
+        logging.info("Setting Camera Bearing Correction to: {}".format(cameraBearingCorrection))        
 
 #############################################
 ##         MQTT Callback Function          ##
