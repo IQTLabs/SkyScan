@@ -37,7 +37,7 @@ logging.getLogger("sensecam_control").setLevel(logging.WARNING)
 ID = str(random.randint(1,100001))
 args = None
 camera = None
-cameraBearingCorrection = None
+cameraBearingCorrection = 0
 cameraConfig = None
 cameraZoom = None
 cameraMoveSpeed = None
