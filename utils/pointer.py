@@ -69,6 +69,7 @@ def cameraPanFromCoordinate(airplanePosition, cameraPosition) -> float:
     return bn
 
 def main():
+
     parser = argparse.ArgumentParser(description='An MQTT based camera controller')
     parser.add_argument('--lat', type=float, help="Latitude of camera")
     parser.add_argument('--lon', type=float, help="Longitude of camera")
@@ -97,4 +98,11 @@ def main():
     cameraPan = cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[landmark_latitude, landmark_longitude])
     camera.absolute_move(cameraPan, cameraTilt, 9999, 99)
     print("All done!")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logging.critical(e, exc_info=True)
+
                     
