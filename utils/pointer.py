@@ -74,9 +74,9 @@ def main():
     parser.add_argument('--lat', type=float, help="Latitude of camera")
     parser.add_argument('--lon', type=float, help="Longitude of camera")
     parser.add_argument('--alt', type=float, help="altitude of camera in METERS!", default=0)
-    parser.add_argument('--markLat', type=float, help="Latitude of landmark")
-    parser.add_argument('--markLon', type=float, help="Longitude of landmark")
-    parser.add_argument('--markAlt', type=float, help="altitude of landmark in METERS!", default=0)
+    parser.add_argument('--mark-lat', type=float, help="Latitude of landmark")
+    parser.add_argument('--mark-lon', type=float, help="Longitude of landmark")
+    parser.add_argument('--mark-alt', type=float, help="altitude of landmark in METERS!", default=0)
     parser.add_argument('-u', '--axis-username', help="Username for the Axis camera", required=True)
     parser.add_argument('-p', '--axis-password', help="Password for the Axis camera", required=True)
     parser.add_argument('-a', '--axis-ip', help="IP address for the Axis camera", required=True)
@@ -84,17 +84,17 @@ def main():
     print(args)
     camera = vapix_control.CameraControl(args.axis_ip, args.axis_username, args.axis_password)
 
-
+    print(camera)
     camera_longitude = args.lon
     camera_latitude = args.lat
     camera_altitude = args.alt # Altitude is in METERS
-    landmark_longitude = args.markLon
-    landmark_latitude = args.markLat
-    landmark_altitude = args.markAlt # Altitude is in METERS
+    landmark_longitude = args.mark_lon
+    landmark_latitude = args.mark_lat
+    landmark_altitude = args.mark_alt # Altitude is in METERS
     distance2d = coordinate_distance(camera_latitude, camera_longitude, landmark_latitude, landmark_longitude)
     cameraTilt  = elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=landmark_altitude)
 
-
+    print(cameraTilt)
     cameraPan = cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[landmark_latitude, landmark_longitude])
     camera.absolute_move(cameraPan, cameraTilt, 9999, 99)
     print("All done!")
