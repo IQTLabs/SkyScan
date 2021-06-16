@@ -4,6 +4,31 @@ import math
 from sensecam_control import vapix_control,vapix_config
 import argparse
 
+def deg2rad(deg: float) -> float:
+    """Convert degrees to radians
+
+    Arguments:
+        deg {float} -- Angle in degrees
+
+    Returns:
+        float -- Angle in radians
+    """
+    return deg * (math.pi/float(180))
+
+
+def rad2deg(deg: float) -> float:
+    """Convert degrees to radians
+
+    Arguments:
+        deg {float} -- Angle in degrees
+
+    Returns:
+        float -- Angle in radians
+    """
+    return deg / (math.pi/float(180))
+
+
+
 def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate distance in meters between the two coordinates
 
@@ -98,6 +123,7 @@ def main():
 
     print(cameraTilt)
     cameraPan = cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[landmark_latitude, landmark_longitude])
+    print("about to move")
     camera.absolute_move(cameraPan, cameraTilt, 9999, 99)
     print("All done!")
 
