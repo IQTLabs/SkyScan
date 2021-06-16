@@ -91,7 +91,9 @@ def main():
     landmark_longitude = args.mark_lon
     landmark_latitude = args.mark_lat
     landmark_altitude = args.mark_alt # Altitude is in METERS
+    print(landmark_longitude)
     distance2d = coordinate_distance(camera_latitude, camera_longitude, landmark_latitude, landmark_longitude)
+    print(distance2d)
     cameraTilt  = elevation(distance2d, cameraAltitude=camera_altitude, airplaneAltitude=landmark_altitude)
 
     print(cameraTilt)
