@@ -96,4 +96,5 @@ def main():
 
     cameraPan = cameraPanFromCoordinate(cameraPosition=[camera_latitude, camera_longitude], airplanePosition=[landmark_latitude, landmark_longitude])
     camera.absolute_move(cameraPan, cameraTilt, 9999, 99)
+    print("All done!")
                     
