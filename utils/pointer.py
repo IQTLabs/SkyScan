@@ -76,6 +76,9 @@ def main():
     parser.add_argument('--markLat', type=float, help="Latitude of landmark")
     parser.add_argument('--markLon', type=float, help="Longitude of landmark")
     parser.add_argument('--markAlt', type=float, help="altitude of landmark in METERS!", default=0)
+    parser.add_argument('-u', '--axis-username', help="Username for the Axis camera", required=True)
+    parser.add_argument('-p', '--axis-password', help="Password for the Axis camera", required=True)
+    parser.add_argument('-a', '--axis-ip', help="IP address for the Axis camera", required=True)
     args = parser.parse_args()
 
     camera = vapix_control.CameraControl(args.axis_ip, args.axis_username, args.axis_password)
