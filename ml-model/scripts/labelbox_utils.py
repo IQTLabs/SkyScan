@@ -50,7 +50,7 @@ def upload_vox51_dataset_to_labelbox(
 
     project = list(projects)[0]
 
-    # sekect proper labelbox dataset
+    # select proper labelbox dataset
     labelbox_datasets = project.datasets(where=Dataset.name == labelbox_dataset_name)
 
     # ensure there is only one labelbox dataset of specified name
@@ -68,3 +68,45 @@ def upload_vox51_dataset_to_labelbox(
     # take random sample of images and upload to labelbox
     view = dataset.shuffle().take(num_samples)
     foul.upload_media_to_labelbox(labelbox_dataset, view, labelbox_id_field)
+
+
+def merge_labelbox_dataset_with_voxel51(
+    voxel51_dataset_name, labelbox_json_path, labelbox_id_field="labelbox_id"
+):
+    """Merge the labels created via labelbox with the voxel51 dataset.
+
+    The json referenced in the labelbox_json_path must be manually downloaded
+    from the labelbox website.
+
+    TODO: (Luke) Is there a way to automate the download of the labelbox json?
+    If so, do you want it automated?
+
+    Args:
+        voxel51_dataset_name (str)
+        labelbox_json_path (str) - a path to
+        lablebox_id_field (str) - unique ID required for merging of dataset
+
+    Returns:
+        None
+    """
+
+    dataset = fo.load_dataset(voxel51_dataset_name)
+
+    foul.import_from_labelbox(
+        dataset, labelbox_json_path, labelbox_id_field=labelbox_id_field
+    )
+
+    # Add a label & tag that captures if the image was skipped, indicating
+    # there was no plane, or accepted, indicating there was a plane
+    label_field = "plane_ground_truth"
+    model_view = dataset.exists("model")
+    for sample in model_view:
+        sample[label_field] = fo.Classification(label="plane")
+        sample.tags.append("plane")
+        sample.save()
+
+    skipped_view = dataset.match({"model": {"$exists": False, "$eq": None}})
+    for sample in skipped_view:
+        sample[label_field] = fo.Classification(label="noplane")
+        sample.tags.append("noPlane")
+        sample.save()
