@@ -13,6 +13,11 @@ from customvox51 import (
     create_voxel51_dataset,
 )
 
+from labelbox_utils import (
+    upload_vox51_dataset_to_labelbox,
+    merge_labelbox_dataset_with_voxel51,
+)
+
 # pylint: disable=C0330, W0621
 
 
@@ -51,6 +56,20 @@ def parse_command_line_arguments():
         action="store_true",
         help="Prepare voxel51 dataset.",
     )
+    parser.add_argument(
+        "--upload",
+        "--upload_to_labelbox",
+        default=False,  # default value is False
+        action="store_true",
+        help="Upload dataset to labelbox.",
+    )
+    parser.add_argument(
+        "--download",
+        "--download_from_labelbox",
+        default=False,  # default value is False
+        action="store_true",
+        help="Download dataset from labelbox.",
+    )
     return parser.parse_args()
 
 
@@ -72,12 +91,57 @@ if __name__ == "__main__":
             modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset)
             dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
                 config["file_names"]["dataset_name"],
-                "../notebooks/aircraftDatabase.csv",
+                "../data/faa_master.txt",
+                "../data/faa_aircraft_reference.txt",
             )
             logging.info("Exiting 'prepare data' route.")
         # exit if config file does not contain image directory or dataset name.
         else:
             logging.info(
                 "Missing config file value image for image directory or dataset_name."
+            )
+            sys.exit(1)  # exit program
+
+    # check if user selected upload to labelbox stage
+    if args.upload:
+        if all(
+            [
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+            ]
+        ):
+            logging.info("Entering 'upload dataset to labelbox' route.")
+            upload_vox51_dataset_to_labelbox(
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+            )
+            logging.info("Exiting 'upload dataset to labelbox' route.")
+        else:
+            logging.info(
+                """Missing config file value for labelbox API key, lablebox dataset name,
+                labelbox project name or voxel51 dataset name."""
+            )
+            sys.exit(1)  # exit program
+
+    # check if user selected download from labelbox stage
+    if args.download:
+        if (
+            config["file_names"]["dataset_name"]
+            and config["labelbox"]["exported_json_path"]
+        ):
+            logging.info("Entering 'download from labelbox' route.")
+            merge_labelbox_dataset_with_voxel51(
+                config["file_names"]["dataset_name"],
+                config["labelbox"]["exported_json_path"],
+            )
+            logging.info("Exiting 'download from labelbox' route.")
+        else:
+            logging.info(
+                """Missing config file value for voxel51 dataset name and
+                labelbox exported JSON path."""
             )
             sys.exit(1)  # exit program
