@@ -78,9 +78,6 @@ def merge_labelbox_dataset_with_voxel51(
     The json referenced in the labelbox_json_path must be manually downloaded
     from the labelbox website.
 
-    TODO: (Luke) Is there a way to automate the download of the labelbox json?
-    If so, do you want it automated?
-
     Args:
         voxel51_dataset_name (str)
         labelbox_json_path (str) - a path to
