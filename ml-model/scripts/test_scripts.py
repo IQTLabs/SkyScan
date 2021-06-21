@@ -11,6 +11,7 @@ from customvox51 import (
     create_voxel51_dataset,
     normalize_single_model_value,
 )
+from labelbox_utils import merge_labelbox_dataset_with_voxel51
 from main import read_config
 
 
@@ -76,4 +77,12 @@ def test_normalize_single_model_value():
 
 def test_normalize_model_values():
     """Test normalize_model_values()"""
+    pass
+
+
+def test_merge_labelbox_dataset_with_voxel51():
+    """Test merge_labelbox_dataset_with_voxel51()"""
+    # TODO: determine if writing a simple test for this function is possible. Luke?
+    # test_dataset = create_voxel51_dataset("test")
+    # merge_labelbox_dataset_with_voxel51(test_dataset, "test/labelbox_export_test.json")
     pass
