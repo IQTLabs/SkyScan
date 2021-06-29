@@ -9,7 +9,7 @@ UNDER DEVELOPMENT
 To run script:
 
 ```
-pipenv install
+pip install -r requirements.txt
 python main.py
 ```
 
