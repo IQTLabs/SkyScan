@@ -214,6 +214,19 @@ sudo rmmod dvb_usb_rtl28xxu
 sudo rmmod rtl2832
 ```
 
+## Configure GPS
+Some GPS devices seem to be sensitive to tty echo settings which prevent getting a GPS fix. Use the following command to disable tty echo:
+
+```bash
+stty -F /dev/ttyACM0 -echo -echoe -echok
+```
+
+Use the following command to verify the GPS device is working:
+
+```bash
+gpscat /dev/ttyACM0 | gpsdecode
+```
+
 ## Wrap it up...
 
 Now go back to the readme to finish the config. You will need to get a Flight Aware key.
