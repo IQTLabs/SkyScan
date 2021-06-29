@@ -78,6 +78,7 @@ services:
     entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
     devices:
       - /dev/ttyACM0
+    privileged: true
     depends_on:
       - mqtt
     restart: unless-stopped
