@@ -15,7 +15,6 @@ The basic overview on developing over SSH is here: https://code.visualstudio.com
     1. You can install it to other Directories, but you will need to modify some of the config files so it gets mapping into the containers correctly.
 1. On the Dev Laptop:
     1. Open up VSCode
-    1. Goto **File** and **Open Workspace** and select the SkyScan Workspace in the repo folder
     1. Goto **View** and **Extensions**
         1. Search for *Remote Development* extension pack and install it
 
@@ -30,3 +29,11 @@ The basic overview on developing over SSH is here: https://code.visualstudio.com
 ![connect](ml-model/assets/ssh-explorer-connect.png)
 1. The Remote Explorer allows you to both open a new empty window on the remote host or directly open a folder you previously opened. Expand the host and click on the Open Folder icon next to the folder you want to open on the host.
 ![folder](ml-model/assets/ssh-explorer-open-folder.png)
+
+
+## Running things
+It is easy to run things using VS Code. There is a built-in terminal window and it gives you SSH access to the machine you are connected to. If you don't see a terminal window, goto **View** and click **Terminal**.
+
+- To go inside the running container, run: `sudo docker exec -it ml-model_jupyter_1  /bin/bash`
+
+- now navigate to `/tf/scripts`
