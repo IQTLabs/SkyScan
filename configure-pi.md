@@ -154,7 +154,7 @@ cp env-example .env
 nano .env
 ```
 
-## Add Dcoker
+## Add Docker
 
 Install the following prerequisites:
 
@@ -172,7 +172,7 @@ Start the Docker service:
 
 `systemctl start docker.service`
 
-Verify that Docker is installed and running:
+Verify that Docker is installed and running (You may need to log out and log back in so that your group membership is re-evaluated):
 
 `docker info`
 
