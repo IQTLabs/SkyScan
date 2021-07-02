@@ -83,7 +83,7 @@ After you have finished uploading the images, go to Labelbox and label the image
 ### Attach to a running container
 If you wish to access the running version of the container and poke around on the command line inside it, use the following command:
 ````
-sudo docker exec -it plane-jupyter  /bin/bash
+sudo docker exec -it ml-model_jupyter_1  /bin/bash
 ````
 
 

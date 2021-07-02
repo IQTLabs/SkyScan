@@ -55,23 +55,29 @@ Here is a brief overview of each component. There are additional details in the 
 
 - [axis-ptz](axis-ptz) Receives updates on which plane to track over MQTT and then directs the PTZ camera towards the plane and takes a picture.
 
+## Installation
 
+### Install and Configure Raspberry Pi
 
-### Configure
+Follow the instructions here: [configure-pi.md](./configure-pi.md)
+
+### Configure PiAware
+
 In order to start PiAware, you need to register with Flight Aware and request a Feed ID. There are directions on how to do that [here](https://github.com/mikenye/docker-piaware#new-to-piaware).
 
 Copy the **env-example** file to **.env**. Edit the **.env** file to include the correct values.
 
-### Operations
-Launch the application using docker-compose: 
-```bash
-docker-compose up
-```
+### Configure Camera
 
-A web interface will be available on **port 8080**. As pictures of planes are captured they will be saved in folders in the **./capture** directory.
+#### Axis Security Camera
 
+- Locate your camera on your network using the [Axis Discovery Tool](https://www.axis.com/support/downloads/axis-ip-utility) or with the following linux command `avahi-browse -a -r`
+- Add IP and login info to `.env` file 
+> AXIS_USERNAME= # The username for the Axis camera
+> AXIS_PASSWORD= # The Password for the Axis camera
+> AXIS_IP= # The IP address of the camera
 
-### Enable Raspi-camera
+#### (Optional) Enable Raspi-camera
 
 If you are using the Pan Tilt hat, you will need to make sure the Pi Camera has been configured correctly:
 In the base OS on the Pi make sure the Camera is enabled:
@@ -81,6 +87,15 @@ sudo raspi-config
 - Interfacing Options
 - Camera
 - Enable
+
+## Operations
+Launch the application using docker-compose: 
+```bash
+cd ~/Projects/SkyScan
+docker-compose up
+```
+
+A web interface will be available on **port 8080**. As pictures of planes are captured they will be saved in folders in the **./capture** directory.
 
 ### Testing with pytest
 
