@@ -65,6 +65,7 @@ min_altitude = None
 max_altitude = None
 min_distance = None
 max_distance = None
+aircraft_pinned = None
 tracker = None
 
 app = Flask(__name__)
@@ -248,6 +249,8 @@ class Observation(object):
         return self.__onGround
 
     def getAltitude(self) -> float:
+        if self.getOnGround():
+            self.__altitude = camera_altitude
         return self.__altitude
 
     def getType(self) -> str:
@@ -324,6 +327,7 @@ def update_config(config):
     global min_elevation
     global max_altitude
     global max_distance
+    global aircraft_pinned
 
 
     if "cameraLead" in config:
@@ -344,6 +348,9 @@ def update_config(config):
     if "maxDistance" in config:
         max_distance = int(config["maxDistance"])
         logging.info("Setting Max Distance to: {}".format(min_elevation))
+    if "aircraftPinned" in config:
+        aircraft_pinned = config["aircraftPinned"].lower()
+        logging.info("Pinning Aircraft to: {}".format(aircraft_pinned))
         
 def on_message(client, userdata, message):
     """ MQTT Client callback for new messages """
@@ -357,13 +364,13 @@ def on_message(client, userdata, message):
     try:
         update = json.loads(command)
     except JSONDecodeError as e:
-        log.critical("onMessage - JSONDecode Error: {} ".format(e))
+        logging.critical("onMessage - JSONDecode Error: {} ".format(e))
     except TypeError as e:
-        log.critical("onMessage - Type Error: {} ".format(e))
+        logging.critical("onMessage - Type Error: {} ".format(e))
     except ValueError as e:
-        log.critical("onMessage - Value Error: {} ".format(e))
+        logging.critical("onMessage - Value Error: {} ".format(e))
     except:
-        log.critical("onMessage - Caught it!")
+        logging.critical("onMessage - Caught it!")
 
     if message.topic == "skyscan/egi":
         #logging.info(update)
@@ -668,6 +675,7 @@ class FlightTracker(object):
     def run(self):
         """Run the flight tracker.
         """
+        global aircraft_pinned
         print("connecting to MQTT broker at "+ self.__mqtt_broker +", subcribing on channel '"+ self.__plane_topic+"'publising on: " + self.__flight_topic)
         self.__client = mqtt.Client("skyscan-tracker-" + ID) #create new instance
 
@@ -700,9 +708,21 @@ class FlightTracker(object):
                         self.__observations[icao24] = Observation(m)
                     else:
                         self.__observations[icao24].update(m)
+                    
+                    if bool(aircraft_pinned) & (aircraft_pinned not in self.__observations):
+                        aircraft_pinned = None
 
-                    # if the plane is suitable to be tracked    
-                    if self.__isTrackable(self.__observations[icao24]):
+                    # if the pinned_aircraft variable is set and that the plane is the pinned aircraft    
+                    if (bool(aircraft_pinned)) & (icao24 == aircraft_pinned):
+                        if aircraft_pinned != self.__tracking_icao24:
+                            self.__tracking_icao24 = icao24
+                            self.__updateTrackingDistance()
+                            logging.info("{}\t[PINNED AIRCRAFT TRACKING]\tDist: {}\tElev: {}\t\t".format(self.__tracking_icao24, self.__tracking_distance, self.__observations[icao24].getElevation()))
+                        else:
+                            self.__updateTrackingDistance()
+                    
+                    # if the plane is suitable to be tracked        
+                    elif (not bool(aircraft_pinned)) & self.__isTrackable(self.__observations[icao24]):
 
                         # if no plane is being tracked, track this one
                         if not self.__tracking_icao24:
@@ -748,6 +768,7 @@ class FlightTracker(object):
             
 
     def cleanObservations(self):
+        global aircraft_pinned
         """Clean observations for planes not seen in a while
         """
         now = datetime.utcnow()
@@ -757,11 +778,14 @@ class FlightTracker(object):
 #                logging.info("[%s] %s -> %s : %s" % (icao24, self.__observations[icao24].getLoggedDate(), self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL), now))
                 if self.__observations[icao24].getLoggedDate() + timedelta(seconds=OBSERVATION_CLEAN_INTERVAL) < now:
                     logging.info("%s\t[REMOVED]\t" % (icao24))
+                    if icao24 == aircraft_pinned:
+                        aircraft_pinned = None
+                        logging.info("%s\t[REMOVED PINNED AIRCRAFT - REVERTING TO NORMAL TRACKING]\t" % (icao24))
                     if icao24 == self.__tracking_icao24:
                         self.__tracking_icao24 = None
                         self.__tracking_distance = 999999999
                     cleaned.append(icao24)
-                if icao24 == self.__tracking_icao24 and not self.__isTrackable(self.__observations[icao24]):
+                if icao24 == self.__tracking_icao24 and not self.__isTrackable(self.__observations[icao24]) and not aircraft_pinned:
                     logging.info("%s\t[NOT TRACKING]\t - Observation is no longer trackable" % (icao24))
                     logging.info(self.__whyTrackable(self.__observations[icao24]))
                     self.__tracking_icao24 = None
@@ -785,6 +809,7 @@ def getConfig():
     config["max_distance"] = max_distance
     config["min_altitude"] = min_altitude
     config["max_altitude"] = max_altitude
+    config["aircraft_pinned"] = aircraft_pinned
     return config
 
 
@@ -826,7 +851,7 @@ def main():
     args = parser.parse_args()
 
     if not args.lat and not args.lon:
-        log.critical("You really need to tell me where you are located (--lat and --lon)")
+        logging.critical("You really need to tell me where you are located (--lat and --lon)")
         sys.exit(1)
     camera_longitude = args.lon
     camera_latitude = args.lat

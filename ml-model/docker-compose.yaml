@@ -22,5 +22,6 @@ services:
       - ./models:/tf/models
       - ./training:/tf/training
       - ./data:/tf/data
+      - ./scripts:/tf/scripts
     restart: always
     

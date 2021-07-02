@@ -140,6 +140,11 @@ def calc_travel(lat: float, lon: float, utc_start: datetime, speed_mps: float, h
     Returns:
         Tuple[float, float] -- The new lat/lon as a tuple
     """
+    if heading==None:
+        heading=0
+    if speed_mps==None:
+        speed_mps=0
+
     age = datetime.utcnow() - utc_start
     age_s = age.total_seconds() + lead_s
 
@@ -174,6 +179,10 @@ def calc_travel_3d(lat: float, lon: float, alt: float, lat_lon_time: datetime, a
     Returns:
         Tuple[float, float, float] -- The new latitude (deg)/longitude (deg)/alt (meters) as a tuple
     """
+    if heading==None:
+        heading=0
+    if speed_mps==None:
+        speed_mps=0
     lat_lon_age = datetime.utcnow() - lat_lon_time
     lat_lon_age_s = lat_lon_age.total_seconds() + lead_s
 
