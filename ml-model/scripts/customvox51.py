@@ -1,9 +1,13 @@
 """custom functionality related to voxel51 databases"""
 
+import json
+import logging
 import os
 
 import pandas as pd
 import fiftyone as fo
+
+# pylint: disable=C0330,R0914
 
 
 def build_image_list(file_path):
@@ -26,6 +30,7 @@ def build_image_list(file_path):
         (list) image_list - a list of plane dict objects
     """
     image_list = []
+    logging.info("Building image list.")
     for folder, _, files in os.walk(file_path):
         for file in files:
             if file.endswith(".jpg"):
@@ -47,6 +52,7 @@ def build_image_list(file_path):
                     "icao24": plane_id,
                 }
                 image_list.append(item)
+    logging.info("Finished building image list.")
 
     return image_list
 
@@ -64,17 +70,19 @@ def create_voxel51_dataset(dataset_name):
     try:
         dataset = fo.Dataset(name=dataset_name)
         dataset.persistent = True
-        print("Created {} dataset".format(dataset_name))
+        logging.info("Created %s dataset", dataset_name)
     # If the dataset already exists, load it instead
     except ValueError:
         dataset = fo.load_dataset(name=dataset_name)
-        print("Dataset already exists. Loaded {} dataset".format(dataset_name))
+        logging.info("Dataset already exists. Loaded %s dataset", dataset_name)
 
     return dataset
 
 
 def add_sample_images_to_voxel51_dataset(image_list, dataset):
     """Add sample images to a voxel51 dataset.
+
+    # TODO: Add check to make sure you can't add the same image twice
 
     Args:
         image_list - list of image data dicts
@@ -99,157 +107,108 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset):
     return dataset
 
 
-def add_faa_data_to_voxel51_dataset(voxel51_dataset_name, faa_dataset_path):
+def add_faa_data_to_voxel51_dataset(
+    voxel51_dataset_name, faa_master_dataset_path, faa_reference_dataset_path
+):
     """Add FAA data to each entry in voxel51 dataset.
 
     Args:
         voxel51_dataset (str) - the voxel51 dataset name
-        faa_dataset_path - path to FAA dataset csv
+        faa_master_dataset_path - path to FAA master dataset .txt
+        faa_reference_dataset_path - path to FAA reference dataset .txt
 
     Returns:
         dataset (voxel51 dataset object)
     """
-    planes = pd.read_csv(faa_dataset_path, index_col="icao24")
+    # import master dataset and strip white space from beacon column
+    planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
+    planes_master.index = planes_master.index.str.strip()
+    planes_reference = pd.read_csv(faa_reference_dataset_path)
     dataset = fo.load_dataset(voxel51_dataset_name)
+
     for row in dataset:
         # render plane_id in lowercase letters
-        plane_id = row["icao24"].label.lower()
+        plane_icao24 = row["icao24"].label.upper()
+        # find plane model code associated with the icao24 code, i.e. mode s code hex
         try:
-            plane = planes.loc[plane_id.lower()]
-            # Check for valid row with all columns present
-            if plane.size == 26:
-                if isinstance(plane["model"], str):
-                    row["model"] = fo.Classification(label=plane["model"])
-                if isinstance(plane["manufacturername"], str):
-                    row["manufacturer"] = fo.Classification(
-                        label=plane["manufacturername"]
-                    )
-                # TODO: (for Luke) isn't there some other label Adam requested?
-                row.save()
-            else:
-                print(plane.size)
-        except KeyError:
-            print("FAA Data entry not found for: {}".format(plane_id))
+            model_code = planes_master.loc[
+                planes_master.index == plane_icao24, "MFR MDL CODE"
+            ].values[0]
+        except IndexError:
+            logging.info(
+                "Plane ID not found in master dataset. Plane ID: %s", plane_icao24
+            )
+
+        # find reference row with all relevant model data
+        plane_reference_row = planes_reference.loc[
+            planes_reference["CODE"] == model_code
+        ]
+        # exract all relevant data from plane_reference_row
+        # convert all fields to string
+        manufacturer = str(plane_reference_row["MFR"].values[0])
+        model_name = str(plane_reference_row["MODEL"].values[0])
+        aircraft_type = str(plane_reference_row["TYPE-ACFT"].values[0])
+        engine_type = str(plane_reference_row["TYPE-ENG"].values[0])
+        num_engines = str(plane_reference_row["NO-ENG"].values[0])
+        num_seats = str(plane_reference_row["NO-SEATS"].values[0])
+        aircraft_weight = str(plane_reference_row["AC-WEIGHT"].values[0])
+
+        # store values in voxel51 dataset row
+        row["model_code"] = fo.Classification(label=model_code)
+        row["manufacturer"] = fo.Classification(label=manufacturer)
+        row["model_name"] = fo.Classification(label=model_name)
+        row["aircraft_type"] = fo.Classification(label=aircraft_type)
+        row["engine_type"] = fo.Classification(label=engine_type)
+        row["num_engines"] = fo.Classification(label=num_engines)
+        row["num_seats"] = fo.Classification(label=num_seats)
+        row["aircraft_weight"] = fo.Classification(label=aircraft_weight)
+        row.save()
 
     return dataset
 
-def normalize_models():
-    # TODO: Fill out this function
-    pass
 
-    # models = []
-    # view = dataset.exists("model")
+def normalize_model_values(dataset):
+    """Standardize plane model string values.
 
-    # for s in view.select_fields("model"):
-    #     if s.model.label not in models:
-    #         models.append(s.model.label)
-    # for model in models:
-    #     print(model)
+    The plane model string values received from ADS-B broadcasts
+    are not standardized. An A319 model, for instance, could be
+    represented as A319-112 or A319-115 or A39-132. This function
+    helps standardize all model strings.
 
-    # TODO: probably convert this into a json dict structure that can then be more easily
-    # understood within the code
-    # 
-    # def normalizeModel(model):
-    # norm_model=None
-    # if model=="A319-112" or model=="A319-115" or model=="A319-132":
-    #     norm_model="A319"
+    Args:
+        dataset - a voxel51 dataset object
 
-    # if model=="A320 232" or model=="A320 232SL" or model=="A320-211" or model=="A320-212" or model=="A320-214" or model=="A320-232" or model=="A320-251N" or model=="A320-271N":
-    #     norm_model="A320"
+    Returns:
+        dataset - a voxel51 dataset object
+    """
+    # TODO: Need to add testing.
+    # Loop thru each row of model column
+    for sample in dataset.exists("model"):
+        norm_model = normalize_single_model_value(sample["model"].label)
+        if norm_model is not None:
+            sample["norm_model"] = fo.Classification(label=norm_model)
+            sample.save()
+        else:
+            logging.info("Match not found for: %s", sample["model"].label)
 
-    # if model=="A321-211" or model=="A321-231" or model=="A321-271NX" or model=="Airbus A321-231(SL)":
-    #     norm_model="A321"
+    return dataset
 
-    # if model=="A330 243" or model=="A330-243F":
-    #     norm_model="A330"
 
-    # if model=="737-71B" or model=="737-724" or model=="737-73V" or model=="737-752" or model=="737-7H4" or model=="737-7Q8":
-    #     norm_model="737-700"
+def normalize_single_model_value(model):
+    """Standardize a single plane model string.
 
-    # if model=="737-800" or model=="Boeing 737-852" or model=="737-823" or model=="737-824" or model=="737-832" or model=="737-83N" or model=="737-84P" or model=="737-890" or model=="737-8EH" or model=="737-8H4" or model=="737NG 823/W" or model=="737NG 852/W" or model=="737NG 85P/W" or model=="737NG 86N/W" or model=="737NG 8V3/W":
-    #     norm_model="737-800"
+    Args:
+        model (str) - a plane model name
 
-    # if model=="737-900ER" or model=="737-924ER" or model=="737-932ER":
-    #     norm_model="737-900"
+    Returns:
+        normalized_model_value (str) - a standardized model name
+    """
+    # json file storing plane model strings as key and standardized model
+    # as value
+    with open("plane_model_dict.json", "r") as file_path:
+        plane_model_dict = json.load(file_path)
 
-    # if model=="747-48EF":
-    #     norm_model="747-400"
+    # check for model value, if not present return None
+    normalized_model_value = plane_model_dict.get(model, None)
 
-    # if model=="757-231" or model=="757-232" or model=="757-251":
-    #     norm_model="757-200"
-
-    # if model=="767 330ER/W":
-    #     norm_model="767-300"
-
-    # if model=="777-223":
-    #     norm_model="777-200"
-
-    # if model=="787-8":
-    #     norm_model="787-800"
-
-    # if model=="787-9 (Boeing)" or model=="BOEING 787-9 Dreamliner":
-    #     norm_model="787-800"
-
-    # if model=="45" or model=="60":
-    #     norm_model="Learjet 45/60"
-
-    # if model=="510" or model=="Citation Excel" or model=="Citation Sovereign+" or model=="525" or model=="550" or model=="560" or model=="680" or model=="750" or model=="525A" or model=="525B" or model=="525C" or model=="560XL" or model=="680A":
-    #     norm_model="Cessna Jet"
-
-    # if model=="CL-600-2B16" or model=="BD-100-1A10" or model=="BD-700-1A11":
-    #     norm_model="Bombardier Challanger"
-
-    # if model=="CL-600-2C10":
-    #     norm_model="CRJ700"
-
-    # if model=="CL-600-2C11":
-    #     norm_model="CRJ550"
-
-    # if model=="CL-600-2D24" or model=="CRJ 900 LR NG" or model=="CRJ-900":
-    #     norm_model="CRJ900"
-
-    # if model=="ERJ 170-100 SE" or model=="ERJ 170-100SU" or model=="ERJ 170-200 LR" or model=="ERJ 190-100 IGW" or model=="EMB-190 AR":
-    #     norm_model="ERJ-170"
-
-    # if model=="EMB-135BJ" or model=="EMB-145LR":
-    #     norm_model="EMB-135"
-
-    # if model=="EMB-505" or model=="EMB-545":
-    #     norm_model="EMB-505"
-
-    # if model=="PA-23-250":
-    #     norm_model="Piper PA-23"
-
-    # if model=="PC-12/47E":
-    #     norm_model="Pilatus PC-12"
-        
-    # if model=="FALCON 10" or model=="FALCON 2000" or model=="FALCON 50" or model=="FALCON 7X" or model=="FALCON 900 EX" or model=="FALCON 900EX":    
-    #     norm_model="Falcon"
-    
-    # if model=="G-IV" or model=="G-V" or model=="GALAXY" or model=="GIV-X (G450)" or model=="GULFSTREAM 200" or model=="GV-SP (G550)" or model=="GVI(G650ER)":
-    #     norm_model="Gulfstream"
-        
-    # if model=="HAWKER 800XP" or model=="HAWKER 900XP":
-    #     norm_model="Hawker"
-    
-    # if model=="SF50":
-    #     norm_model="Cirrus"
-    
-    # if model=="PRESSURIZED LANCR IV":
-    #     norm_model="Lancair IV"
-        
-    # if model=="B300":
-    #     norm_model="King Air"
-
-    # return norm_model
-
-    # Finally, actually apply normalization
-    # for sample in dataset.exists("model"):
-    #     norm_model = normalizeModel(sample["model"].label)
-    #     if norm_model != None:
-    #         sample["norm_model"] = fo.Classification(label=norm_model)
-    #         sample.save()
-    #     else:
-    #         print("Match not found for: {}".format(sample["model"].label))
-
-    #     #addPlaneData(sample)
+    return normalized_model_value

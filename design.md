@@ -7,6 +7,9 @@
 - Coordinates will be in **Decimal Degrees**
 
 
+## Design
+
+
 ## MQTT Topics and Message Formats
 
 

@@ -154,7 +154,7 @@ cp env-example .env
 nano .env
 ```
 
-## Add Dcoker
+## Add Docker
 
 Install the following prerequisites:
 
@@ -172,7 +172,7 @@ Start the Docker service:
 
 `systemctl start docker.service`
 
-Verify that Docker is installed and running:
+Verify that Docker is installed and running (You may need to log out and log back in so that your group membership is re-evaluated):
 
 `docker info`
 
@@ -212,6 +212,19 @@ And then remove the kernel module from memory, in case it already got loaded:
 sudo rmmod rtl2832_sdr
 sudo rmmod dvb_usb_rtl28xxu
 sudo rmmod rtl2832
+```
+
+## Configure GPS
+Some GPS devices seem to be sensitive to tty echo settings which prevent getting a GPS fix. Use the following command to disable tty echo:
+
+```bash
+stty -F /dev/ttyACM0 -echo -echoe -echok
+```
+
+Use the following command to verify the GPS device is working:
+
+```bash
+gpscat /dev/ttyACM0 | gpsdecode
 ```
 
 ## Wrap it up...
