@@ -1,7 +1,11 @@
 """Functions for training an object detection model."""
 
 import json
-import subprocess
+import logging
+import math
+import os
+
+import fiftyone as fo
 
 
 def train_detection_model(training_name, chosen_model):
@@ -13,6 +17,13 @@ def train_detection_model(training_name, chosen_model):
     Returns:
         ...
     """
+
+    #TODO: cover corner case where user restarts training
+
+    # enforce unique model name
+    if os.path.isdir("/tf/ml-model/dataset-export/" + training_name):
+        logging.error("Must use unique model name.")
+        os.exit(1)
 
     base_models = load_base_models_json()
 
@@ -79,10 +90,41 @@ def set_filenames(base_models, training_name, chosen_model):
     return filepaths
 
 
-def clone_tensorflow_repo():
-    """Git clone tensorflow."""
-    # deterministically download tensorflow v2.5.0
-    # note: this command will fail on OS X catalina without further changes. Use
-    # a linux machine to avoid this problem.
-    command = "git clone --depth 1 https://github.com/tensorflow/models/tree/v2.5.0 /tf/models"
-    subprocess.run(command.split())
+def export_voxel51_dataset_to_tfrecords(
+    dataset_name, filepaths, label_field, training_percentage=0.8
+):
+    """Export the voxel51 dataset to TensorFlow records.
+
+    Args:
+        dataset_name (str) - voxel51 dataset name
+        filepaths (dict) - filename values created by set_filenames
+        label_field (str) - label field set in config
+        training_percentage (float) - percentage of sample for training
+
+    Returns:
+        None
+    """
+    # load voxel51 dataset and create a view
+    dataset = fo.load_dataset(dataset_name)
+    view = dataset.match_tags("training").shuffle(seed=51)
+
+    # calculate size of training and validation set
+    sample_len = len(view)
+    train_len = math.floor(sample_len * training_percentage)
+    val_len = math.floor(sample_len * (1 - training_percentage))
+
+    # extract training and validation records
+    val_view = view.take(val_len)
+    train_view = view.skip(val_len).take(train_len)
+
+    # Export the validation and training datasets
+    val_view.export(
+        export_dir=filepaths["val_export_dir"],
+        dataset_type=fo.types.TFObjectDetectionDataset,
+        label_field=label_field,
+    )
+    train_view.export(
+        export_dir=filepaths["train_export_dir"],
+        dataset_type=fo.types.TFObjectDetectionDataset,
+        label_field=label_field,
+    )
