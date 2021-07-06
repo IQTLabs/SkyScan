@@ -22,4 +22,6 @@ def setup_and_install_tensorflow_utilities():
     packages from tensorflow object detection module via a bash
     script.
     """
-    subprocess.run("./install_tf_utils.sh", shell=True)
+    # removed Shell=True to avoid security problems
+    # https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess/3172488#3172488
+    subprocess.run("./install_tf_utils.sh")
