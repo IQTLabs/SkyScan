@@ -3,7 +3,7 @@
 import json
 import logging
 import math
-import os
+import sys
 
 import fiftyone as fo
 
@@ -23,7 +23,7 @@ def train_detection_model(training_name, chosen_model):
     # enforce unique model name
     if os.path.isdir("/tf/ml-model/dataset-export/" + training_name):
         logging.error("Must use unique model name.")
-        os.exit(1)
+        sys.exit(1)
 
     base_models = load_base_models_json()
 
