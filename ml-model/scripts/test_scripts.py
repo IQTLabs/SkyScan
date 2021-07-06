@@ -11,7 +11,11 @@ from customvox51 import (
     create_voxel51_dataset,
     normalize_single_model_value,
 )
-from detection import load_base_models_json, set_filenames
+from detection import (
+    export_voxel51_dataset_to_tfrecords,
+    load_base_models_json,
+    set_filenames,
+)
 
 # from labelbox_utils import merge_labelbox_dataset_with_voxel51
 from main import read_config
@@ -117,4 +121,20 @@ def test_set_filenames():
     assert (
         test_filepaths["pipeline_file"]
         == "/tf/models/research/deploy/ssd_mobilenet_v2_320x320_coco17_tpu-8.config"
+    )
+
+
+def test_export_voxel51_dataset_to_tfrecords():
+    """Test export_voxel51_dataset_to_tfrecords()."""
+    # needed for set up
+    create_voxel51_dataset("test")
+    test_base_models = load_base_models_json()
+    TEST_TRAINING_NAME = "luke_burnt"
+    TEST_CHOSEN_MODEL = "ssd_mobilenet_v2"
+    test_filepaths = set_filenames(
+        test_base_models, TEST_TRAINING_NAME, TEST_CHOSEN_MODEL
+    )
+
+    export_voxel51_dataset_to_tfrecords(
+        "test", test_filepaths, label_field="detections"
     )
