@@ -3,9 +3,15 @@
 import json
 import logging
 import math
+import os
 import sys
 
 import fiftyone as fo
+from google.protobuf import text_format
+from object_detection.protos.string_int_label_map_pb2 import (
+    StringIntLabelMap,
+    StringIntLabelMapItem,
+)
 
 
 def train_detection_model(training_name, chosen_model):
@@ -18,7 +24,7 @@ def train_detection_model(training_name, chosen_model):
         ...
     """
 
-    #TODO: cover corner case where user restarts training
+    # TODO: cover corner case where user restarts training
 
     # enforce unique model name
     if os.path.isdir("/tf/ml-model/dataset-export/" + training_name):
@@ -128,3 +134,78 @@ def export_voxel51_dataset_to_tfrecords(
         dataset_type=fo.types.TFObjectDetectionDataset,
         label_field=label_field,
     )
+
+
+def create_detection_mapping(dataset_name, label_field):
+    """Create mapping from labels to IDs.
+
+    This function creates a mapping necessary for tensorflow
+    object detection.
+
+    Args:
+        dataset_name (str) - voxel51 dataset name
+        label_field (str) - label field set in config
+
+    Returns:
+        mapping (str) - mapping of labels to IDs
+    """
+    # pylint: disable=invalid-name,no-member,redefined-builtin
+
+    logging.info("Creating detection classes to ID mapping.")
+
+    # load voxel51 dataset and create a view
+    dataset = fo.load_dataset(dataset_name)
+    view = dataset.match_tags("training").shuffle(seed=2021)
+
+    # create a list of all class names
+    class_names = _create_list_of_class_names(view, label_field)
+
+    # convert list of class names to a mapping data structure
+    # this mapping data structure uses a name as one field and a unique
+    # integer id in the other field. It helps the model map a string label
+    # name to an id number.
+    # for detailed info, see here:
+    # https://github.com/tensorflow/models/blob/master/research/object_detection/protos/string_int_label_map.proto
+    msg = StringIntLabelMap()
+    for id, name in enumerate(class_names, start=1):  # start counting at 1, not 0
+        msg.item.append(StringIntLabelMapItem(id=id, name=name))
+    mapping = str(text_format.MessageToBytes(msg, as_utf8=True), "utf-8")
+    logging.info("Finished creating detection classes to ID mapping.")
+
+    return mapping
+
+
+def _create_list_of_class_names(view, label_field):
+    """Create list of class names from the label field.
+
+    Args:
+        view (voxel51 view object) - the voxel51 dataset
+        label_field (str) - label field set in config
+
+    Returns:
+        class_names (list)
+    """
+    logging.info("Extracting class names from label field.")
+    class_names = []
+    for sample in view.select_fields(label_field):
+        if sample[label_field] is not None:
+            for detection in sample[label_field].detections:
+                label = detection["label"]
+                if label not in class_names:
+                    class_names.append(label)
+    logging.info("Finished extracting class names from label field.")
+    return class_names
+
+
+def save_mapping_to_file(mapping, filepaths):
+    """Save detection classes to ID mapping file.
+
+    Args:
+        mapping - the mapping to save
+        filepaths (dict) - filename values created by set_filenames
+
+    """
+    logging.info("Creating detection classes to ID mapping file.")
+    with open(filepaths["label_map_file"], "w") as f:
+        f.write(mapping)
+    logging.info("Finished creating detection classes to ID mapping file.")
