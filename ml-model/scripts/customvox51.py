@@ -79,7 +79,7 @@ def create_voxel51_dataset(dataset_name):
     return dataset
 
 
-def add_sample_images_to_voxel51_dataset(image_list, dataset):
+def add_sample_images_to_voxel51_dataset(image_list, dataset, datasource_name=None):
     """Add sample images to a voxel51 dataset.
 
     # TODO: Add check to make sure you can't add the same image twice
@@ -87,7 +87,8 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset):
     Args:
         image_list - list of image data dicts
         dataset - a voxel51 dataset object
-
+        datasource_name - an optional string that allows for and identifying 
+                tag to be added to the batch of images being imported
     Returns:
         dataset (voxel51 dataset object)
     """
@@ -100,7 +101,8 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset):
         sample["elevation"] = fo.Classification(label=image["elevation"])
         sample["distance"] = fo.Classification(label=image["distance"])
         sample["icao24"] = fo.Classification(label=image["icao24"])
-
+        if datasource_name is not None and len(datasource_name) > 0:
+            sample.tags.append(datasource_name)
         dataset.add_sample(sample)
 
     # return modified dataset
