@@ -12,9 +12,12 @@ from customvox51 import (
     normalize_single_model_value,
 )
 from detection import (
+    create_detection_mapping,
     export_voxel51_dataset_to_tfrecords,
     load_base_models_json,
+    save_mapping_to_file,
     set_filenames,
+    _create_list_of_class_names,
 )
 
 # from labelbox_utils import merge_labelbox_dataset_with_voxel51
@@ -22,9 +25,13 @@ from main import read_config
 
 # pylint: disable=C0103, W0107
 
-# delete dataset first to create repeatable test environment
+# delete datasets first to create repeatable test environment
 try:
     fo.load_dataset("test").delete()
+except ValueError:
+    pass
+try:
+    fo.load_dataset("test_detection_mapping").delete()
 except ValueError:
     pass
 
@@ -138,3 +145,95 @@ def test_export_voxel51_dataset_to_tfrecords():
     export_voxel51_dataset_to_tfrecords(
         "test", test_filepaths, label_field="detections"
     )
+
+
+def test__create_list_of_class_names():
+    """Test _create_list_of_class_names."""
+    # credit to voxel51 crew for a helpful test suite from which this test borrows
+    # https://github.com/voxel51/fiftyone/blob/a7c2b36a4f101330fa8edec35a9bdee841886f96/tests/unittests/view_tests.py#L59
+    dataset = fo.Dataset()
+    dataset.add_sample(
+        fo.Sample(
+            filepath="filepath1.jpg",
+            tags=["test"],
+            test_dets=fo.Detections(
+                detections=[
+                    fo.Detection(
+                        label="friend",
+                        confidence=0.9,
+                        bounding_box=[0, 0, 0.5, 0.5],
+                    ),
+                    fo.Detection(
+                        label="stopper",
+                        confidence=0.1,
+                        bounding_box=[0, 0, 0.5, 0.5],
+                    ),
+                    fo.Detection(
+                        label="big bro",
+                        confidence=0.6,
+                        bounding_box=[0, 0, 0.1, 0.5],
+                    ),
+                ]
+            ),
+            another_field=51,
+        )
+    )
+    test_list = _create_list_of_class_names(dataset, label_field="test_dets")
+    assert set(test_list) == set(["friend", "stopper", "big bro"])
+
+
+def test_create_detection_mapping():
+    """Test create_detection_mapping()."""
+    # credit to voxel51 crew for a helpful test suite from which this test borrows
+    # https://github.com/voxel51/fiftyone/blob/a7c2b36a4f101330fa8edec35a9bdee841886f96/tests/unittests/view_tests.py#L59
+    dataset = fo.Dataset(name="test_detection_mapping")
+    dataset.add_sample(
+        fo.Sample(
+            filepath="filepath1.jpg",
+            tags=["training"],
+            test_dets=fo.Detections(
+                detections=[
+                    fo.Detection(
+                        label="friend",
+                        confidence=0.9,
+                        bounding_box=[0, 0, 0.5, 0.5],
+                    ),
+                    fo.Detection(
+                        label="stopper",
+                        confidence=0.1,
+                        bounding_box=[0, 0, 0.5, 0.5],
+                    ),
+                ]
+            ),
+            another_field=51,
+        )
+    )
+    test_output = create_detection_mapping(
+        "test_detection_mapping", label_field="test_dets"
+    )
+    assert isinstance(test_output, str)
+    assert (
+        test_output
+        == 'item {\n  name: "friend"\n  id: 1\n}\nitem {\n  name: "stopper"\n  id: 2\n}\n'
+    )
+
+
+def test_save_mapping_to_file():
+    """Test save_mapping_to_file()."""
+    test_base_models = load_base_models_json()
+    TEST_TRAINING_NAME = "luke_burnt"
+    TEST_CHOSEN_MODEL = "ssd_mobilenet_v2"
+    test_filepaths = set_filenames(
+        test_base_models, TEST_TRAINING_NAME, TEST_CHOSEN_MODEL
+    )
+    test_mapping = str(
+        'item {\n  name: "friend"\n  id: 1\n}\nitem {\n  name: "stopper"\n  id: 2\n}\n'
+    )
+
+    save_mapping_to_file(test_mapping, test_filepaths)
+
+    with open(test_filepaths["label_map_file"], "r") as test_file:
+        assert (
+            test_file.read()
+            == 'item {\n  name: "friend"\n  id: 1\n}\nitem {\n  name: "stopper"\n  id: 2\n}\n'
+        )
