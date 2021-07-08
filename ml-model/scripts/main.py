@@ -88,7 +88,7 @@ if __name__ == "__main__":
             logging.info("Entering 'prepare data' route.")
             image_list = build_image_list(config["file_locations"]["image_directory"])
             dataset = create_voxel51_dataset(config["file_names"]["dataset_name"])
-            modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset)
+            modified_dataset = add_sample_images_to_voxel51_dataset(image_list, dataset, config["import"]["datasource_name"])
             dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
                 config["file_names"]["dataset_name"],
                 "../data/faa_master.txt",
