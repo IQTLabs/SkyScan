@@ -57,9 +57,10 @@ def test_add_sample_images_to_voxel51_dataset():
     test_image_list = build_image_list("test")
     test_dataset = create_voxel51_dataset("test")
     modified_dataset = add_sample_images_to_voxel51_dataset(
-        test_image_list, test_dataset
+        test_image_list, test_dataset, "test-data"
     )
     assert isinstance(modified_dataset, fo.core.dataset.Dataset)
+    assert modified_dataset.first()["tags"] == ["test-data"]
 
 
 def test_add_faa_data_to_voxel51_dataset():
