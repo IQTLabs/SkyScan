@@ -13,6 +13,7 @@ from customvox51 import (
 )
 from detection import (
     create_detection_mapping,
+    download_base_training_config,
     export_voxel51_dataset_to_tfrecords,
     load_base_models_json,
     save_mapping_to_file,
@@ -238,3 +239,18 @@ def test_save_mapping_to_file():
             test_file.read()
             == 'item {\n  name: "friend"\n  id: 1\n}\nitem {\n  name: "stopper"\n  id: 2\n}\n'
         )
+
+
+def test_download_base_training_config():
+    """Test download_base_training_config()."""
+    # pylint: disable=line-too-long
+    test_base_models = load_base_models_json()
+    TEST_TRAINING_NAME = "luke_burnt"
+    TEST_CHOSEN_MODEL = "ssd_mobilenet_v2"
+    test_filepaths = set_filenames(
+        test_base_models, TEST_TRAINING_NAME, TEST_CHOSEN_MODEL
+    )
+    download_base_training_config(test_filepaths)
+    assert os.path.isfile(
+        "/tf/models/research/deploy/" + test_filepaths["base_pipeline_file"]
+    )

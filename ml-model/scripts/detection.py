@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+import subprocess
 import sys
 
 import fiftyone as fo
@@ -89,6 +90,7 @@ def set_filenames(base_models, training_name, chosen_model):
     filepaths["fine_tune_checkpoint"] = (
         "/tf/models/research/deploy/" + model_name + "/checkpoint/ckpt-0"
     )
+    filepaths["base_pipeline_file"] = base_pipeline_file
     # TODO: Return to this later. Is this a bug or not? Will find out later when
     # I get further into this module.
     # filepaths["pipeline_file"] = "/tf/models/research/deploy/pipeline_file.config"
@@ -209,3 +211,34 @@ def save_mapping_to_file(mapping, filepaths):
     with open(filepaths["label_map_file"], "w") as f:
         f.write(mapping)
     logging.info("Finished creating detection classes to ID mapping file.")
+
+
+def download_base_training_config(filepaths):
+    """Download base training configuration file.
+
+    Args:
+        filepaths (dict) - filename values created by set_filenames
+
+    Returns:
+        None
+    """
+    # pylint: disable=line-too-long
+    logging.info("Downloading base training configuration file.")
+    # specify configuration file URL
+    config_file_url = (
+        "https://raw.githubusercontent.com/tensorflow/models/master/research/object_detection/configs/tf2/"
+        + filepaths["base_pipeline_file"]
+    )
+
+    # run bash script to keep using same commands as jupyter notebook taken
+    # from Google. This bash script could be implemented in Python.
+    
+    # TODO: capture the return value from the bash script. If the wget command
+    # fails then abort the script. Or add an asert that kills the script if
+    # the excpected file is not there.
+    subprocess.run(
+        "./install_base_training_config.sh {}".format(config_file_url).split(),
+        check=True,
+    )
+
+    logging.info("Finished downloading base training configuration file.")
