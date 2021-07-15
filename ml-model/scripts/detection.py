@@ -6,6 +6,7 @@ import math
 import os
 import subprocess
 import sys
+import tarfile
 
 import fiftyone as fo
 from google.protobuf import text_format
@@ -213,7 +214,6 @@ def save_mapping_to_file(mapping, filepaths):
         f.write(mapping)
     logging.info("Finished creating detection classes to ID mapping file.")
 
-
 def get_num_classes_from_label_map(filepaths):
     """Retrieve number of classes from label map file.
 
@@ -232,7 +232,27 @@ def get_num_classes_from_label_map(filepaths):
     num_classes = len(category_index.keys())
     logging.info("Finished calculating number of classes in label map file.")
     return num_classes
+  
+  
+def download_pretrained_model(filepaths):
+    """Download pretrained machine learning model.
+    logging.info("Downloading pretrained model.")
+    # specify url and download model .tar
+    download_tar = (
+        "http://download.tensorflow.org/models/object_detection/tf2/20200711/"
+        + filepaths["pretrained_checkpoint"]
+        
+    subprocess.run(
+        "./install_pretrained_model.sh {}".format(download_tar).split(), check=True
+    )
 
+    # open and extract tarfile
+    tar_filepath = "/tf/models/research/deploy/" + filepaths["pretrained_checkpoint"]
+    with tarfile.open(tar_filepath) as tar:
+        tar.extractall()
+
+    logging.info("Finished downloading pretrained model.")    
+        
   
 def download_base_training_config(filepaths):
     """Download base training configuration file.

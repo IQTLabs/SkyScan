@@ -13,6 +13,7 @@ from customvox51 import (
 )
 from detection import (
     create_detection_mapping,
+    download_pretrained_model,
     download_base_training_config,
     export_voxel51_dataset_to_tfrecords,
     get_num_classes_from_label_map,
@@ -242,6 +243,19 @@ def test_save_mapping_to_file():
         )
 
 
+def test_download_pretrained_model():
+    """Test download_pretrained_model()."""
+    test_base_models = load_base_models_json()
+    TEST_TRAINING_NAME = "luke_burnt"
+    TEST_CHOSEN_MODEL = "ssd_mobilenet_v2"
+    test_filepaths = set_filenames(
+        test_base_models, TEST_TRAINING_NAME, TEST_CHOSEN_MODEL
+    )
+    download_pretrained_model(test_filepaths)
+    assert os.path.isfile(
+        "/tf/models/research/deploy/" + test_filepaths["pretrained_checkpoint"]
+    
+    
 def test_get_num_classes_from_label_map():
     """Test get_num_classes_from_label_map()."""
     # dummy filepaths dict for simple setup
