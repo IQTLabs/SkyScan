@@ -13,6 +13,7 @@ from object_detection.protos.string_int_label_map_pb2 import (
     StringIntLabelMap,
     StringIntLabelMapItem,
 )
+from object_detection.utils import label_map_util
 
 
 def train_detection_model(training_name, chosen_model):
@@ -213,6 +214,26 @@ def save_mapping_to_file(mapping, filepaths):
     logging.info("Finished creating detection classes to ID mapping file.")
 
 
+def get_num_classes_from_label_map(filepaths):
+    """Retrieve number of classes from label map file.
+
+    Args:
+        mapping_filename (str)
+
+    Returns:
+        num_classes (int)
+    """
+    logging.info("Calculating number of classes in label map file.")
+    label_map = label_map_util.load_labelmap(filepaths["label_map_file"])
+    categories = label_map_util.convert_label_map_to_categories(
+        label_map, max_num_classes=90, use_display_name=True
+    )
+    category_index = label_map_util.create_category_index(categories)
+    num_classes = len(category_index.keys())
+    logging.info("Finished calculating number of classes in label map file.")
+    return num_classes
+
+  
 def download_base_training_config(filepaths):
     """Download base training configuration file.
 

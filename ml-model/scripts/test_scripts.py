@@ -15,6 +15,7 @@ from detection import (
     create_detection_mapping,
     download_base_training_config,
     export_voxel51_dataset_to_tfrecords,
+    get_num_classes_from_label_map,
     load_base_models_json,
     save_mapping_to_file,
     set_filenames,
@@ -241,6 +242,15 @@ def test_save_mapping_to_file():
         )
 
 
+def test_get_num_classes_from_label_map():
+    """Test get_num_classes_from_label_map()."""
+    # dummy filepaths dict for simple setup
+    filepaths = {}
+    filepaths["label_map_file"] = "test/test_map.txt"
+    test_num_classes = get_num_classes_from_label_map(filepaths)
+    assert test_num_classes == 2
+
+    
 def test_download_base_training_config():
     """Test download_base_training_config()."""
     # pylint: disable=line-too-long
