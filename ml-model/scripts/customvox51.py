@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import subprocess
 
 import pandas as pd
 import fiftyone as fo
@@ -87,7 +88,7 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset, datasource_name=No
     Args:
         image_list - list of image data dicts
         dataset - a voxel51 dataset object
-        datasource_name - an optional string that allows for and identifying 
+        datasource_name - an optional string that allows for and identifying
                 tag to be added to the batch of images being imported
     Returns:
         dataset (voxel51 dataset object)
@@ -122,6 +123,8 @@ def add_faa_data_to_voxel51_dataset(
     Returns:
         dataset (voxel51 dataset object)
     """
+    subprocess.run("./install_faa_data.sh", check=True)
+
     # import master dataset and strip white space from beacon column
     planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
     planes_master.index = planes_master.index.str.strip()
