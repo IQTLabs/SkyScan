@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -283,3 +284,117 @@ def download_base_training_config(filepaths):
     )
 
     logging.info("Finished downloading base training configuration file.")
+
+
+def create_custom_training_config_file(
+    base_models, filepaths, num_classes, num_training_steps
+):
+    """Download base training configuration file.
+
+    Args:
+        base_models (dict) - possible pre-trained models
+        filepaths (dict) - filename values created by
+        num_classes (int) - number of classes on which to do object detection
+
+    Returns:
+        None
+    """
+    # pylint: disable=anomalous-backslash-in-string,line-too-long,invalid-name
+    logging.info("writing custom configuration file")
+
+    os.chdir("/tf/models/research/deploy")
+
+    with open(filepaths["pipeline_fname"]) as f:
+        s = f.read()
+
+    with open("pipeline_file.config", "w") as f:
+
+        # fine_tune_checkpoint
+        s = re.sub(
+            'fine_tune_checkpoint: ".*?"',
+            'fine_tune_checkpoint: "{}"'.format(filepaths["fine_tune_checkpoint"]),
+            s,
+        )
+
+        # tfrecord files train and test.
+        s = re.sub(
+            '(input_path: ".*?)(PATH_TO_BE_CONFIGURED/train)(.*?")',
+            'input_path: "{}"'.format(filepaths["train_record_file"]),
+            s,
+        )
+        s = re.sub(
+            '(input_path: ".*?)(PATH_TO_BE_CONFIGURED/val)(.*?")',
+            'input_path: "{}"'.format(filepaths["val_record_file"]),
+            s,
+        )
+
+        # label_map_path
+        s = re.sub(
+            'label_map_path: ".*?"',
+            'label_map_path: "{}"'.format(filepaths["label_map_file"]),
+            s,
+        )
+
+        # Set training batch_size.
+        s = re.sub(
+            "batch_size: [0-9]+", "batch_size: {}".format(base_models["batch_size"]), s
+        )
+
+        # Set training steps, num_steps
+        s = re.sub("num_steps: [0-9]+", "num_steps: {}".format(num_training_steps), s)
+
+        # Set learning_rate_base in learning_rate, sane default
+        #     s = re.sub('learning_rate_base: [.0-9]+',
+        #                'learning_rate_base: {}'.format("8e-2"), s)
+
+        # Set warmup_learning_rate in learning_rate, sane default
+        s = re.sub(
+            "warmup_learning_rate: [.0-9]+", "warmup_learning_rate: {}".format(0.001), s
+        )
+
+        # Set warmup_steps in learning_rate, sane default
+        s = re.sub("warmup_steps: [.0-9]+", "warmup_steps: {}".format(2500), s)
+
+        # Set total_steps in learning_rate, num_steps
+        s = re.sub(
+            "total_steps: [0-9]+", "total_steps: {}".format(num_training_steps), s
+        )
+
+        # Set number of classes num_classes.
+        s = re.sub("num_classes: [0-9]+", "num_classes: {}".format(num_classes), s)
+
+        # Setup the data augmentation preprocessor - not sure if this is a good one to use, commenting out for now and going with defaults.
+        # s = re.sub('random_scale_crop_and_pad_to_square {\s+output_size: 896\s+scale_min: 0.1\s+scale_max: 2.0\s+}',
+        #           'random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.75\n\tmax_aspect_ratio: 1.5\n\tmin_area: 0.25\n\tmax_area: 0.875\n\toverlap_thresh: 0.5\n\trandom_coef: 0.125\n}',s, flags=re.MULTILINE)
+
+        # s = re.sub('ssd_random_crop {\s+}',
+        #           'random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.75\n\tmax_aspect_ratio: 1.5\n\tmin_area: 0.10\n\tmax_area: 0.75\n\toverlap_thresh: 0.5\n\trandom_coef: 0.125\n}',s, flags=re.MULTILINE)
+
+        # replacing the default data augmentation with something more comprehensive
+        # the available options are listed here: https://github.com/tensorflow/models/blob/master/research/object_detection/protos/preprocessor.proto
+
+        data_augmentation = (
+            "data_augmentation_options {\n random_distort_color: { \n } \n}\n\n"
+            "data_augmentation_options {\n random_horizontal_flip: { \n } \n}\n\n"
+            "data_augmentation_options {\n random_vertical_flip: { \n } \n}\n\n"
+            "data_augmentation_options {\n random_rotation90: { \n } \n}\n\n"
+            "data_augmentation_options {\n random_jitter_boxes: { \n } \n}\n\n"
+            "data_augmentation_options {\n random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.95\n\tmax_aspect_ratio: 1.05\n\tmin_area: 0.25\n\tmax_area: 0.875\n\toverlap_thresh: 0.9\n\trandom_coef: 0.5\n}\n}\n\n"
+            "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 40\n\tmax_jpeg_quality: 90\n } \n}\n\n"
+        )
+
+        s = re.sub(
+            "data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}\s* data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}",
+            data_augmentation,
+            s,
+            flags=re.MULTILINE,
+        )
+
+        # fine-tune checkpoint type
+        s = re.sub(
+            'fine_tune_checkpoint_type: "classification"',
+            'fine_tune_checkpoint_type: "{}"'.format("detection"),
+            s,
+        )
+
+        f.write(s)
