@@ -128,7 +128,9 @@ def add_faa_data_to_voxel51_dataset(
     # import master dataset and strip white space from beacon column
     planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
     planes_master.index = planes_master.index.str.strip()
-    planes_reference = pd.read_csv(faa_reference_dataset_path)
+    print(planes_master.columns)
+    planes_reference = pd.read_csv(faa_reference_dataset_path, index_col="CODE", encoding='utf-8-sig')
+    print(planes_reference.columns)
     dataset = fo.load_dataset(voxel51_dataset_name)
 
     for row in dataset:
@@ -137,27 +139,31 @@ def add_faa_data_to_voxel51_dataset(
         # find plane model code associated with the icao24 code, i.e. mode s code hex
         try:
             model_code = planes_master.loc[
-                planes_master.index == plane_icao24, "MFR MDL CODE"
-            ].values[0]
+                plane_icao24, "MFR MDL CODE"
+            ]
         except IndexError:
             logging.info(
                 "Plane ID not found in master dataset. Plane ID: %s", plane_icao24
             )
             continue
-
+        except KeyError:
+            logging.info(
+                "Plane ID not found in master dataset. Plane ID: %s", plane_icao24
+            )
+            continue
         # find reference row with all relevant model data
         plane_reference_row = planes_reference.loc[
-            planes_reference["CODE"] == model_code
+            model_code
         ]
         # exract all relevant data from plane_reference_row
         # convert all fields to string
-        manufacturer = str(plane_reference_row["MFR"].values[0])
-        model_name = str(plane_reference_row["MODEL"].values[0])
-        aircraft_type = str(plane_reference_row["TYPE-ACFT"].values[0])
-        engine_type = str(plane_reference_row["TYPE-ENG"].values[0])
-        num_engines = str(plane_reference_row["NO-ENG"].values[0])
-        num_seats = str(plane_reference_row["NO-SEATS"].values[0])
-        aircraft_weight = str(plane_reference_row["AC-WEIGHT"].values[0])
+        manufacturer = str(plane_reference_row["MFR"])
+        model_name = str(plane_reference_row["MODEL"])
+        aircraft_type = str(plane_reference_row["TYPE-ACFT"])
+        engine_type = str(plane_reference_row["TYPE-ENG"])
+        num_engines = str(plane_reference_row["NO-ENG"])
+        num_seats = str(plane_reference_row["NO-SEATS"])
+        aircraft_weight = str(plane_reference_row["AC-WEIGHT"])
 
         # store values in voxel51 dataset row
         row["model_code"] = fo.Classification(label=model_code)

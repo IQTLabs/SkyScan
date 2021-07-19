@@ -31,12 +31,14 @@ def upload_vox51_dataset_to_labelbox(
     Returns:
         None
     """
+    # TODO: Some sort of problem related to labelbox ID
     logging.info("Uploading voxel51 dataset to Labelbox.")
 
     # set up voxel51 and labelbox connections
     dataset = fo.load_dataset(voxel51_dataset_name)
     client = Client(labelbox_api_key)
-    projects = client.get_projects(where=Project.name == labelbox_project_name)
+    # must convert PaginatedCollection to list in order to count length
+    projects = list(client.get_projects(where=Project.name == labelbox_project_name))
 
     # ensure there is only labelbox project of specified name
     num_labelbox_projects = len(projects)
@@ -51,7 +53,8 @@ def upload_vox51_dataset_to_labelbox(
     project = list(projects)[0]
 
     # select proper labelbox dataset
-    labelbox_datasets = project.datasets(where=Dataset.name == labelbox_dataset_name)
+    # must convert PaginatedCollection to list in order to count length
+    labelbox_datasets = list(project.datasets(where=Dataset.name == labelbox_dataset_name))
 
     # ensure there is only one labelbox dataset of specified name
     num_labelbox_datasets = len(labelbox_datasets)
@@ -92,7 +95,6 @@ def merge_labelbox_dataset_with_voxel51(
     Returns:
         None
     """
-
     dataset = fo.load_dataset(voxel51_dataset_name)
 
     foul.import_from_labelbox(
