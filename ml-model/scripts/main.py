@@ -14,6 +14,7 @@ from customvox51 import (
 )
 
 from labelbox_utils import (
+    resume_upload_vox51_dataset_to_labelbox,
     upload_vox51_dataset_to_labelbox,
     merge_labelbox_dataset_with_voxel51,
 )
@@ -62,6 +63,12 @@ def parse_command_line_arguments():
         default=False,  # default value is False
         action="store_true",
         help="Upload dataset to labelbox.",
+    )
+    parser.add_argument(
+        "--resume_upload",
+        default=False,  # default value is False
+        action="store_true",
+        help="Resume upload dataset to labelbox.",
     )
     parser.add_argument(
         "--download",
@@ -128,6 +135,32 @@ if __name__ == "__main__":
                 labelbox project name or voxel51 dataset name."""
             )
             sys.exit(1)  # exit program
+
+    # check if user selected resume_upload to labelbox stage
+    if args.resume_upload:
+        if all(
+            [
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+            ]
+        ):
+            logging.info("Entering 'resume upload dataset to labelbox' route.")
+            resume_upload_vox51_dataset_to_labelbox(
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+            )
+            logging.info("Exiting 'resume upload dataset to labelbox' route.")
+        else:
+            logging.info(
+                """Missing config file value for labelbox API key, lablebox dataset name,
+                labelbox project name or voxel51 dataset name."""
+            )
+            sys.exit(1)  # exit program
+
 
     # check if user selected download from labelbox stage
     if args.download:
