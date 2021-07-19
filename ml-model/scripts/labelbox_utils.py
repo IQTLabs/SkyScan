@@ -71,7 +71,7 @@ def upload_vox51_dataset_to_labelbox(
     # add a "training" tag to all of the samples being sent to labelbox
     for sample in view:
         sample.tags.append("training")
-        sample.save() 
+        sample.save()
 
     foul.upload_media_to_labelbox(labelbox_dataset, view, labelbox_id_field)
 
