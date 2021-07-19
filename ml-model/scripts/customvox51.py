@@ -128,7 +128,7 @@ def add_faa_data_to_voxel51_dataset(
     # import master dataset and strip white space from beacon column
     planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
     planes_master.index = planes_master.index.str.strip()
-    planes_reference = pd.read_csv(faa_reference_dataset_path, index_col="CODE")
+    planes_reference = pd.read_csv(faa_reference_dataset_path)
     dataset = fo.load_dataset(voxel51_dataset_name)
 
     for row in dataset:
