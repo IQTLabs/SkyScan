@@ -254,8 +254,9 @@ def test_download_pretrained_model():
     download_pretrained_model(test_filepaths)
     assert os.path.isfile(
         "/tf/models/research/deploy/" + test_filepaths["pretrained_checkpoint"]
-    
-    
+    )
+
+
 def test_get_num_classes_from_label_map():
     """Test get_num_classes_from_label_map()."""
     # dummy filepaths dict for simple setup
@@ -264,7 +265,7 @@ def test_get_num_classes_from_label_map():
     test_num_classes = get_num_classes_from_label_map(filepaths)
     assert test_num_classes == 2
 
-    
+
 def test_download_base_training_config():
     """Test download_base_training_config()."""
     # pylint: disable=line-too-long
