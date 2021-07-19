@@ -288,6 +288,24 @@ def download_base_training_config(filepaths):
     logging.info("Finished downloading base training configuration file.")
 
 
+def call_train_model(pipeline_file, model_dir, num_train_steps, num_eval_steps):
+    """Call model to initiate training."""
+    command = """python /tf/models/research/object_detection/model_main_tf2.py \
+    --pipeline_config_path={pipeline_file} \
+    --model_dir={model_dir} \
+    --alsologtostderr \
+    --num_train_steps={num_train_steps} \
+    --sample_1_of_n_eval_examples=1 \
+    --num_eval_steps={num_eval_steps}""".format(
+        pipeline_file=pipeline_file,
+        model_dir=model_dir,
+        num_train_steps=num_train_steps,
+        num_eval_steps=num_eval_steps,
+    )
+
+    subprocess.run(command.split(), check=True)
+
+    
 def create_custom_training_config_file(
     base_models, filepaths, num_classes, num_training_steps
 ):
