@@ -55,8 +55,7 @@ def read_config(config_file=os.path.join("config", "config.ini")):
         "tile_string": "1920x1080,768x768",
         "tile_overlap": 50,
         "iou_threshold": 0,
-        "upload_tag": "training",
-        "num_upload_samples": 500
+        "upload_num_samples": 500
     }
     config.read(config_file)
     logging.info("Finished reading config file.")
@@ -76,17 +75,28 @@ def parse_command_line_arguments():
         help="Prepare voxel51 dataset.",
     )
     parser.add_argument(
-        "--upload",
-        "--upload_to_labelbox",
+        "--upload_train",
         default=False,  # default value is False
         action="store_true",
-        help="Upload dataset to labelbox.",
+        help="Upload train samples to labelbox.",
     )
     parser.add_argument(
-        "--resume_upload",
+        "--resume_upload_train",
         default=False,  # default value is False
         action="store_true",
-        help="Resume upload dataset to labelbox.",
+        help="Resume uploading train samples to labelbox.",
+    )
+    parser.add_argument(
+        "--upload_eval",
+        default=False,  # default value is False
+        action="store_true",
+        help="Upload eval samples to labelbox.",
+    )
+    parser.add_argument(
+        "--resume_upload_eval",
+        default=False,  # default value is False
+        action="store_true",
+        help="Resume uploading eval samples to labelbox.",
     )
     parser.add_argument(
         "--download",
@@ -108,6 +118,13 @@ def parse_command_line_arguments():
         default=False,  # default value is False
         action="store_true",
         help="Model prediction.",
+    )
+
+    parser.add_argument(
+        "--evaluate",
+        default=False,  # default value is False
+        action="store_true",
+        help="Model evaluation.",
     )
 
     parser.add_argument(
@@ -157,8 +174,8 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
-    # check if user selected upload to labelbox stage
-    if args.upload:
+    # check if user selected upload train to labelbox stage
+    if args.upload_train:
         if all(
             [
                 config["labelbox"]["api_key"],
@@ -167,16 +184,17 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
             ]
         ):
-            logging.info("Entering 'upload dataset to labelbox' route.")
+            logging.info("Entering 'upload train samples to labelbox' route.")
             upload_vox51_dataset_to_labelbox(
                 config["labelbox"]["api_key"],
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                config["upload"]["upload_num_samples"],
-                config["upload"]["upload_tag"]
+                int(config["upload"]["upload_num_samples"]),
+                "train",
+                "eval"
             )
-            logging.info("Exiting 'upload dataset to labelbox' route.")
+            logging.info("Exiting 'upload train samples to labelbox' route.")
         else:
             logging.info(
                 """Missing config file value for labelbox API key, lablebox dataset name,
@@ -184,8 +202,63 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
-    # check if user selected resume_upload to labelbox stage
-    if args.resume_upload:
+    # check if user selected upload eval to labelbox stage
+    if args.upload_eval:
+        if all(
+            [
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+            ]
+        ):
+            logging.info("Entering 'upload eval samples to labelbox' route.")
+            upload_vox51_dataset_to_labelbox(
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+                int(config["upload"]["upload_num_samples"]),
+                "eval"
+                "train"
+            )
+            logging.info("Exiting 'upload eval samples to labelbox' route.")
+        else:
+            logging.info(
+                """Missing config file value for labelbox API key, lablebox dataset name,
+                labelbox project name or voxel51 dataset name."""
+            )
+            sys.exit(1)  # exit program
+
+
+    # check if user selected resume_upload_train to labelbox stage
+    if args.resume_upload_train:
+        if all(
+            [
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+            ]
+        ):
+            logging.info("Entering 'resume uploading train samples to labelbox' route.")
+            resume_upload_vox51_dataset_to_labelbox(
+                config["labelbox"]["api_key"],
+                config["labelbox"]["dataset_name"],
+                config["labelbox"]["project_name"],
+                config["file_names"]["dataset_name"],
+                "train"
+            )
+            logging.info("Exiting 'resume uploading train samples to labelbox' route.")
+        else:
+            logging.info(
+                """Missing config file value for labelbox API key, lablebox dataset name,
+                labelbox project name or voxel51 dataset name."""
+            )
+            sys.exit(1)  # exit program
+
+    # check if user selected resume_upload_eval to labelbox stage
+    if args.resume_upload_eval:
         if all(
             [
                 config["labelbox"]["api_key"],
@@ -200,7 +273,7 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                config["upload"]["upload_tag"]
+                "eval"
             )
             logging.info("Exiting 'resume upload dataset to labelbox' route.")
         else:
@@ -209,6 +282,7 @@ if __name__ == "__main__":
                 labelbox project name or voxel51 dataset name."""
             )
             sys.exit(1)  # exit program
+
 
 
     # check if user selected download from labelbox stage
@@ -227,6 +301,59 @@ if __name__ == "__main__":
             logging.info(
                 """Missing config file value for voxel51 dataset name and
                 labelbox exported JSON path."""
+            )
+            sys.exit(1)  # exit program
+
+    # check if user selected train model stage
+    if args.train:
+        if all ([
+            config["file_names"]["dataset_name"],
+            config["model"]["training_name"],
+            config["model"]["base_model"],
+            config["model"]["num_train_steps"]
+        ]
+        ):
+            logging.info("Entering 'train model' route.")
+            train_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"],
+                int(config["model"]["num_train_steps"]),
+                config["model"]["label_field"],
+                int(config["model"]["num_eval_steps"])
+            )
+            logging.info("Exiting 'train model' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for training:
+                - file_names / dataset_name
+                - model / training_name
+                - model / base_model
+                - model / num_train_steps"""
+            )
+            sys.exit(1)  # exit program
+
+    # check if user selected export model stage
+    if args.export_model:
+        if all ([
+            config["file_names"]["dataset_name"],
+            config["model"]["training_name"],
+            config["model"]["base_model"]
+        ]
+        ):
+            logging.info("Entering 'export model' route.")
+            export_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"]
+            )
+            logging.info("Exiting 'export model' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for exporting a model:
+                - file_names / dataset_name
+                - model / training_name
+                - model / base_model"""
             )
             sys.exit(1)  # exit program
 
@@ -270,8 +397,8 @@ if __name__ == "__main__":
                 config["model"]["training_name"],
                 config["prediction"]["prediction_field"],
                 config["prediction"]["tile_string"],
-                config["prediction"]["tile_overlap"],
-                config["prediction"]["iou_threshold"]
+                int(config["prediction"]["tile_overlap"]),
+                float(config["prediction"]["iou_threshold"])
             )
             logging.info("Exiting 'model prediction tiled' route.")
         else:
@@ -283,59 +410,28 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
-
-
-
-
-    # check if user selected train model stage
-    if args.train:
+    # check if user selected evaluate model stage
+    if args.evaluate:
         if all ([
             config["file_names"]["dataset_name"],
-            config["model"]["training_name"],
-            config["model"]["base_model"],
-            config["model"]["num_train_steps"]
+            config["prediction"]["prediction_field"],
+            config["evaluation"]["evaluation_key"]
         ]
         ):
-            logging.info("Entering 'train model' route.")
-            train_detection_model(
-                config["file_names"]["dataset_name"],
-                config["model"]["training_name"],
-                config["model"]["base_model"],
-                config["model"]["num_train_steps"],
-                config["model"]["label_field"],
-                config["model"]["num_eval_steps"]
+            logging.info("Entering 'model evaluation' route.")
+            evaluate_detection_model(
+            config["file_names"]["dataset_name"],
+            config["prediction"]["prediction_field"],
+            config["evaluation"]["evaluation_key"]
             )
-            logging.info("Exiting 'train model' route.")
+            logging.info("Exiting 'model evaluation' route.")
         else:
             logging.info(
-                """Missing one or more config file values required for training:
+                """Missing one or more config file values required for evaluation:
                 - file_names / dataset_name
-                - model / training_name
-                - model / base_model
-                - model / num_train_steps"""
+                - prediction / prediction_field
+                - evaluation / evaluation_key"""
             )
             sys.exit(1)  # exit program
 
-    # check if user selected export model stage
-    if args.export_model:
-        if all ([
-            config["file_names"]["dataset_name"],
-            config["model"]["training_name"],
-            config["model"]["base_model"]
-        ]
-        ):
-            logging.info("Entering 'export model' route.")
-            export_detection_model(
-                config["file_names"]["dataset_name"],
-                config["model"]["training_name"],
-                config["model"]["base_model"]
-            )
-            logging.info("Exiting 'export model' route.")
-        else:
-            logging.info(
-                """Missing one or more config file values required for exporting a model:
-                - file_names / dataset_name
-                - model / training_name
-                - model / base_model"""
-            )
-            sys.exit(1)  # exit program
+
