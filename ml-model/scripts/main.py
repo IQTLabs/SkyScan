@@ -24,6 +24,10 @@ from detection import (
     train_detection_model
 )
 
+from prediction import (
+    run_detection_model
+)
+
 # pylint: disable=C0330, W0621
 
 
@@ -47,7 +51,10 @@ def read_config(config_file=os.path.join("config", "config.ini")):
     config = configparser.ConfigParser()
     config['DEFAULT'] = {
         "num_eval_steps": 500,
-        "label_field": "detections"
+        "label_field": "detections",
+        "tile_string": "1920x1080,768x768",
+        "tile_overlap": 50,
+        "iou_threshold": 0
     }
     config.read(config_file)
     logging.info("Finished reading config file.")
@@ -92,6 +99,20 @@ def parse_command_line_arguments():
         default=False,  # default value is False
         action="store_true",
         help="Train a model.",
+    )
+
+    parser.add_argument(
+        "--predict",
+        default=False,  # default value is False
+        action="store_true",
+        help="Model prediction.",
+    )
+
+    parser.add_argument(
+        "--predict_tiled",
+        default=False,  # default value is False
+        action="store_true",
+        help="Tiled model prediction.",
     )
 
     parser.add_argument(
@@ -203,6 +224,60 @@ if __name__ == "__main__":
                 labelbox exported JSON path."""
             )
             sys.exit(1)  # exit program
+
+
+    # check if user selected model prediction stage
+    if args.predict:
+        if all ([
+            config["file_names"]["dataset_name"],
+            config["model"]["training_name"],
+            config["prediction"]["prediction_field"]
+        ]
+        ):
+            logging.info("Entering 'model prediction' route.")
+            run_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["prediction"]["prediction_field"]
+            )
+            logging.info("Exiting 'model prediction' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for prediction:
+                - file_names / dataset_name
+                - model / training_name
+                - prediction / prediction_field"""
+            )
+            sys.exit(1)  # exit program
+
+
+    # check if user selected model prediction tiled stage
+    if args.predict_tiled:
+        if all ([
+            config["file_names"]["dataset_name"],
+            config["model"]["training_name"],
+            config["prediction"]["prediction_field"]
+        ]
+        ):
+            logging.info("Entering 'model prediction tiled' route.")
+            run_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["prediction"]["prediction_field"],
+                config["prediction"]["tile_string"],
+                config["prediction"]["tile_overlap"],
+                config["prediction"]["iou_threshold"]
+            )
+            logging.info("Exiting 'model prediction tiled' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for prediction tiled:
+                - file_names / dataset_name
+                - model / training_name
+                - prediction / prediction_field"""
+            )
+            sys.exit(1)  # exit program
+
 
 
 
