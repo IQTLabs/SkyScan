@@ -19,6 +19,10 @@ from labelbox_utils import (
     merge_labelbox_dataset_with_voxel51,
 )
 
+from detection import (
+    train_detection_model
+)
+
 # pylint: disable=C0330, W0621
 
 
@@ -40,6 +44,10 @@ def read_config(config_file=os.path.join("config", "config.ini")):
 
     logging.info("Starting to read config file.")
     config = configparser.ConfigParser()
+    config['DEFAULT'] = {
+        "num_eval_steps": 500,
+        "label_field": "detections"
+    }
     config.read(config_file)
     logging.info("Finished reading config file.")
     return config
@@ -76,6 +84,13 @@ def parse_command_line_arguments():
         default=False,  # default value is False
         action="store_true",
         help="Download dataset from labelbox.",
+    )
+
+    parser.add_argument(
+        "--train",
+        default=False,  # default value is False
+        action="store_true",
+        help="Train a model.",
     )
     return parser.parse_args()
 
@@ -178,5 +193,37 @@ if __name__ == "__main__":
             logging.info(
                 """Missing config file value for voxel51 dataset name and
                 labelbox exported JSON path."""
+            )
+            sys.exit(1)  # exit program
+
+
+
+
+    # check if user selected train model stage
+    if args.train:
+        if all ([
+            config["file_names"]["dataset_name"],
+            config["model"]["training_name"],
+            config["model"]["base_model"],
+            config["model"]["num_train_steps"]
+        ]
+        ):
+            logging.info("Entering 'train model' route.")
+            train_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"],
+                config["model"]["num_train_steps"],
+                config["model"]["label_field"],
+                config["model"]["num_eval_steps"]
+            )
+            logging.info("Exiting 'train model' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for training:
+                - file_names / dataset_name
+                - model / training_name
+                - model / base_model
+                - model / num_train_steps"""
             )
             sys.exit(1)  # exit program

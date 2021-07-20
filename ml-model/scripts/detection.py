@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+import os.path
 import re
 import subprocess
 import sys
@@ -18,7 +19,7 @@ from object_detection.protos.string_int_label_map_pb2 import (
 from object_detection.utils import label_map_util
 
 
-def train_detection_model(training_name, chosen_model):
+def train_detection_model(dataset_name, training_name, chosen_model,num_train_steps,label_field="detections", num_eval_steps=500):
     """Train an object detection model.
 
     Args:
@@ -37,8 +38,21 @@ def train_detection_model(training_name, chosen_model):
 
     base_models = load_base_models_json()
 
-    set_filenames(base_models, training_name, chosen_model)
+    filepaths = set_filenames(base_models, training_name, chosen_model)
 
+    export_voxel51_dataset_to_tfrecords(dataset_name, filepaths,label_field)
+
+    detection_mapping = create_detection_mapping(dataset_name, label_field)
+    
+    save_mapping_to_file(detection_mapping, filepaths)
+
+    download_base_training_config(filepaths)
+
+    download_pretrained_model(filepaths)
+
+    create_custom_training_config_file(base_models, chosen_model, filepaths,  num_train_steps)
+
+    call_train_model(filepaths, num_train_steps, num_eval_steps)
 
 def load_base_models_json(filename="base_models.json"):
     """Load base models json to allow selecting pre-trained model.
@@ -94,9 +108,8 @@ def set_filenames(base_models, training_name, chosen_model):
         "/tf/models/research/deploy/" + model_name + "/checkpoint/ckpt-0"
     )
     filepaths["base_pipeline_file"] = base_pipeline_file
-    # TODO: Return to this later. Is this a bug or not? Will find out later when
-    # I get further into this module.
-    # filepaths["pipeline_file"] = "/tf/models/research/deploy/pipeline_file.config"
+    filepaths["base_pipeline_dir"] = "/tf/models/research/deploy/"
+    filepaths["pipeline_file"] = "/tf/dataset-export/" + training_name + "/pipeline_file.config"
 
     return filepaths
 
@@ -115,6 +128,11 @@ def export_voxel51_dataset_to_tfrecords(
     Returns:
         None
     """
+
+
+    if os.path.isfile(filepaths["val_export_dir"] + "tf.records"):
+        logging.info("TF Records already exist, skipping export.")
+        return
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
     view = dataset.match_tags("training").shuffle(seed=51)
@@ -238,6 +256,11 @@ def get_num_classes_from_label_map(filepaths):
 
 def download_pretrained_model(filepaths):
     """Download pretrained machine learning model."""
+
+    if os.path.isfile("/tf/models/research/deploy/" + filepaths["pretrained_checkpoint"]):
+        logging.info("Pretrained model already downloaded.")
+        return
+
     logging.info("Downloading pretrained model.")
     # specify url and download model .tar
     download_tar = (
@@ -252,7 +275,7 @@ def download_pretrained_model(filepaths):
     # open and extract tarfile
     tar_filepath = "/tf/models/research/deploy/" + filepaths["pretrained_checkpoint"]
     with tarfile.open(tar_filepath) as tar:
-        tar.extractall()
+        tar.extractall(path="/tf/models/research/deploy/")
 
     logging.info("Finished downloading pretrained model.")
 
@@ -266,6 +289,11 @@ def download_base_training_config(filepaths):
     Returns:
         None
     """
+
+    if os.path.isfile(filepaths["base_pipeline_dir"] + filepaths["base_pipeline_file"]):
+        logging.info("Base training configuration file already exists, skipping download.")
+        return
+
     # pylint: disable=line-too-long
     logging.info("Downloading base training configuration file.")
     # specify configuration file URL
@@ -287,27 +315,9 @@ def download_base_training_config(filepaths):
 
     logging.info("Finished downloading base training configuration file.")
 
-
-def call_train_model(pipeline_file, model_dir, num_train_steps, num_eval_steps):
-    """Call model to initiate training."""
-    command = """python /tf/models/research/object_detection/model_main_tf2.py \
-    --pipeline_config_path={pipeline_file} \
-    --model_dir={model_dir} \
-    --alsologtostderr \
-    --num_train_steps={num_train_steps} \
-    --sample_1_of_n_eval_examples=1 \
-    --num_eval_steps={num_eval_steps}""".format(
-        pipeline_file=pipeline_file,
-        model_dir=model_dir,
-        num_train_steps=num_train_steps,
-        num_eval_steps=num_eval_steps,
-    )
-
-    subprocess.run(command.split(), check=True)
-
     
 def create_custom_training_config_file(
-    base_models, filepaths, num_classes, num_training_steps
+    base_models, chosen_model, filepaths,  num_train_steps
 ):
     """Download base training configuration file.
 
@@ -319,15 +329,16 @@ def create_custom_training_config_file(
     Returns:
         None
     """
+    num_classes = get_num_classes_from_label_map(filepaths)
+    
     # pylint: disable=anomalous-backslash-in-string,line-too-long,invalid-name
     logging.info("writing custom configuration file")
 
-    os.chdir("/tf/models/research/deploy")
 
-    with open(filepaths["pipeline_fname"]) as f:
+    with open(filepaths["base_pipeline_dir"] + filepaths["base_pipeline_file"]) as f:
         s = f.read()
 
-    with open("pipeline_file.config", "w") as f:
+    with open(filepaths["pipeline_file"], "w") as f:
 
         # fine_tune_checkpoint
         s = re.sub(
@@ -357,11 +368,11 @@ def create_custom_training_config_file(
 
         # Set training batch_size.
         s = re.sub(
-            "batch_size: [0-9]+", "batch_size: {}".format(base_models["batch_size"]), s
+            "batch_size: [0-9]+", "batch_size: {}".format(base_models[chosen_model]["batch_size"]), s
         )
 
         # Set training steps, num_steps
-        s = re.sub("num_steps: [0-9]+", "num_steps: {}".format(num_training_steps), s)
+        s = re.sub("num_steps: [0-9]+", "num_steps: {}".format(num_train_steps), s)
 
         # Set learning_rate_base in learning_rate, sane default
         #     s = re.sub('learning_rate_base: [.0-9]+',
@@ -377,7 +388,7 @@ def create_custom_training_config_file(
 
         # Set total_steps in learning_rate, num_steps
         s = re.sub(
-            "total_steps: [0-9]+", "total_steps: {}".format(num_training_steps), s
+            "total_steps: [0-9]+", "total_steps: {}".format(num_train_steps), s
         )
 
         # Set number of classes num_classes.
@@ -418,3 +429,23 @@ def create_custom_training_config_file(
         )
 
         f.write(s)
+
+def call_train_model(filepaths, num_train_steps, num_eval_steps):
+    """Call model to initiate training."""
+    pipeline_file = filepaths["pipeline_file"]
+    model_dir = filepaths["model_dir"]
+
+    command = """python /tf/models/research/object_detection/model_main_tf2.py \
+    --pipeline_config_path={pipeline_file} \
+    --model_dir={model_dir} \
+    --alsologtostderr \
+    --num_train_steps={num_train_steps} \
+    --sample_1_of_n_eval_examples=1 \
+    --num_eval_steps={num_eval_steps}""".format(
+        pipeline_file=pipeline_file,
+        model_dir=model_dir,
+        num_train_steps=num_train_steps,
+        num_eval_steps=num_eval_steps,
+    )
+    
+    subprocess.run(command.split(), check=True)
