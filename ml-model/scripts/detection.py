@@ -19,6 +19,30 @@ from object_detection.protos.string_int_label_map_pb2 import (
 from object_detection.utils import label_map_util
 
 
+def export_detection_model(dataset_name, training_name, chosen_model):
+    base_models = load_base_models_json()
+
+    filepaths = set_filenames(base_models, training_name, chosen_model)
+
+    logging.info("Exporting detection model to: {}".format(filepaths["image_tensor_model_export_dir"]))
+
+    """Call model to initiate training."""
+    pipeline_file = filepaths["pipeline_file"]
+    model_dir = filepaths["model_dir"]
+    image_tensor_model_export_dir = filepaths["image_tensor_model_export_dir"]
+
+    command = """python /tf/models/research/object_detection/exporter_main_v2.py \
+    --input_type image_tensor \
+    --trained_checkpoint_dir={model_dir} \
+    --pipeline_config_path={pipeline_file} \
+    --output_directory {image_tensor_model_export_dir}""".format(
+        model_dir=model_dir,
+        pipeline_file=pipeline_file,
+        image_tensor_model_export_dir=image_tensor_model_export_dir,
+    )
+    
+    subprocess.run(command.split(), check=True)
+
 def train_detection_model(dataset_name, training_name, chosen_model,num_train_steps,label_field="detections", num_eval_steps=500):
     """Train an object detection model.
 
@@ -96,6 +120,7 @@ def set_filenames(base_models, training_name, chosen_model):
     filepaths["val_export_dir"] = "/tf/dataset-export/" + training_name + "/val/"
     filepaths["train_export_dir"] = "/tf/dataset-export/" + training_name + "/train/"
     filepaths["model_export_dir"] = "/tf/model-export/" + training_name + "/"
+    filepaths["image_tensor_model_export_dir"] = "/tf/model-export/" + training_name + "/image_tensor_saved_model/"
     filepaths["label_map_file"] = (
         "/tf/dataset-export/" + training_name + "/label_map.pbtxt"
     )

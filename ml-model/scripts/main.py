@@ -20,6 +20,7 @@ from labelbox_utils import (
 )
 
 from detection import (
+    export_detection_model,
     train_detection_model
 )
 
@@ -91,6 +92,13 @@ def parse_command_line_arguments():
         default=False,  # default value is False
         action="store_true",
         help="Train a model.",
+    )
+
+    parser.add_argument(
+        "--export_model",
+        default=False,  # default value is False
+        action="store_true",
+        help="Export a trained model.",
     )
     return parser.parse_args()
 
@@ -225,5 +233,29 @@ if __name__ == "__main__":
                 - model / training_name
                 - model / base_model
                 - model / num_train_steps"""
+            )
+            sys.exit(1)  # exit program
+
+    # check if user selected export model stage
+    if args.export_model:
+        if all ([
+            config["file_names"]["dataset_name"],
+            config["model"]["training_name"],
+            config["model"]["base_model"]
+        ]
+        ):
+            logging.info("Entering 'export model' route.")
+            export_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"]
+            )
+            logging.info("Exiting 'export model' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for exporting a model:
+                - file_names / dataset_name
+                - model / training_name
+                - model / base_model"""
             )
             sys.exit(1)  # exit program
