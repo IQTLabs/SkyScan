@@ -54,7 +54,9 @@ def read_config(config_file=os.path.join("config", "config.ini")):
         "label_field": "detections",
         "tile_string": "1920x1080,768x768",
         "tile_overlap": 50,
-        "iou_threshold": 0
+        "iou_threshold": 0,
+        "upload_tag": "training",
+        "num_upload_samples": 500
     }
     config.read(config_file)
     logging.info("Finished reading config file.")
@@ -171,6 +173,8 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
+                config["upload"]["upload_num_samples"],
+                config["upload"]["upload_tag"]
             )
             logging.info("Exiting 'upload dataset to labelbox' route.")
         else:
@@ -196,6 +200,7 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
+                config["upload"]["upload_tag"]
             )
             logging.info("Exiting 'resume upload dataset to labelbox' route.")
         else:

@@ -135,7 +135,6 @@ def _get_resize(input_size, img_size):
 
 def run_detection_model(dataset_name, training_name, prediction_field):
     model_path = "/tf/model-export/" + training_name + "/image_tensor_saved_model/saved_model"
-
     min_score = 0.8 # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
 
 

@@ -164,7 +164,8 @@ def add_faa_data_to_voxel51_dataset(
         num_engines = str(plane_reference_row["NO-ENG"])
         num_seats = str(plane_reference_row["NO-SEATS"])
         aircraft_weight = str(plane_reference_row["AC-WEIGHT"])
-
+        #norm_model = normalize_single_model_value(model_name)
+        
         # store values in voxel51 dataset row
         row["model_code"] = fo.Classification(label=model_code)
         row["manufacturer"] = fo.Classification(label=manufacturer)
@@ -174,6 +175,9 @@ def add_faa_data_to_voxel51_dataset(
         row["num_engines"] = fo.Classification(label=num_engines)
         row["num_seats"] = fo.Classification(label=num_seats)
         row["aircraft_weight"] = fo.Classification(label=aircraft_weight)
+                
+        #if norm_model is not None:
+        #    sample["norm_model"] = fo.Classification(label=norm_model)
         row.save()
 
     return dataset
