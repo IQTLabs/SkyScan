@@ -8,7 +8,7 @@ def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
 
     dataset = fo.load_dataset(dataset_name) 
 
-    view = dataset.match_tags(evaluation_name)
+    view = dataset.match_tags("eval")
 
     # setting an empty detections field if there isn't one
     for sample in view:
