@@ -319,9 +319,9 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
                 config["model"]["base_model"],
-                config["model"]["num_train_steps"],
+                config.getint("model","num_train_steps"),
                 config["model"]["label_field"],
-                config["model"]["num_eval_steps"]
+                config.getint("model","num_eval_steps"),
             )
             logging.info("Exiting 'train model' route.")
         else:
