@@ -178,7 +178,7 @@ def export_voxel51_dataset_to_tfrecords(
         return
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags("training").shuffle(seed=51)
+    view = dataset.match_tags("train").shuffle(seed=51)
 
     # calculate size of training and validation set
     sample_len = len(view)
@@ -221,7 +221,7 @@ def create_detection_mapping(dataset_name, label_field):
 
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags("training").shuffle(seed=2021)
+    view = dataset.match_tags("train").shuffle(seed=2021)
 
     # create a list of all class names
     class_names = _create_list_of_class_names(view, label_field)
@@ -460,6 +460,10 @@ def create_custom_training_config_file(
             "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 40\n\tmax_jpeg_quality: 90\n } \n}\n\n"
         )
 
+        #data_augmentation = (
+        #    "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
+        #)
+
         s = re.sub(
             "data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}\s* data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}",
             data_augmentation,
@@ -494,5 +498,5 @@ def call_train_model(filepaths, num_train_steps, num_eval_steps):
         num_train_steps=num_train_steps,
         num_eval_steps=num_eval_steps,
     )
-
+    print(command)
     subprocess.run(command.split(), check=True)
