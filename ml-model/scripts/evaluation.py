@@ -4,9 +4,10 @@ from fiftyone import ViewField as F
 import os
 import numpy as np
 
+
 def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
 
-    dataset = fo.load_dataset(dataset_name) 
+    dataset = fo.load_dataset(dataset_name)
 
     view = dataset.match_tags("eval")
 
@@ -15,8 +16,10 @@ def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
         if sample["detections"] == None:
             sample["detections"] = fo.Detections(detections=[])
             sample.save()
-    
-    results = view.evaluate_detections( prediction_field, gt_field="detections", eval_key=evaluation_key)
+
+    results = view.evaluate_detections(
+        prediction_field, gt_field="detections", eval_key=evaluation_key
+    )
 
     # Get the 10 most common classes in the dataset
     counts = view.count_values("detections.detections.label")
@@ -32,8 +35,7 @@ def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
 
     # Create a view that has samples with the most false positives first, and
     # only includes false positive boxes in the `predictions` field
-    eval_view = (view
-        .sort_by(evaluation_key + "_fp", reverse=True)
-        .filter_labels(prediction_field, F(evaluation_key) == "fp")
+    eval_view = view.sort_by(evaluation_key + "_fp", reverse=True).filter_labels(
+        prediction_field, F(evaluation_key) == "fp"
     )
     logging.info("mAP: {}".format(results.mAP()))

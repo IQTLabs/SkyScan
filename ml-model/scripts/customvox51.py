@@ -123,13 +123,15 @@ def add_faa_data_to_voxel51_dataset(
     Returns:
         dataset (voxel51 dataset object)
     """
-    #subprocess.run("./install_faa_data.sh", check=True)
+    # subprocess.run("./install_faa_data.sh", check=True)
 
     # import master dataset and strip white space from beacon column
     planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
     planes_master.index = planes_master.index.str.strip()
     print(planes_master.columns)
-    planes_reference = pd.read_csv(faa_reference_dataset_path, index_col="CODE", encoding='utf-8-sig')
+    planes_reference = pd.read_csv(
+        faa_reference_dataset_path, index_col="CODE", encoding="utf-8-sig"
+    )
     print(planes_reference.columns)
     dataset = fo.load_dataset(voxel51_dataset_name)
 
@@ -138,9 +140,7 @@ def add_faa_data_to_voxel51_dataset(
         plane_icao24 = row["icao24"].label.upper()
         # find plane model code associated with the icao24 code, i.e. mode s code hex
         try:
-            model_code = planes_master.loc[
-                plane_icao24, "MFR MDL CODE"
-            ]
+            model_code = planes_master.loc[plane_icao24, "MFR MDL CODE"]
         except IndexError:
             logging.info(
                 "Plane ID not found in master dataset. Plane ID: %s", plane_icao24
@@ -152,9 +152,7 @@ def add_faa_data_to_voxel51_dataset(
             )
             continue
         # find reference row with all relevant model data
-        plane_reference_row = planes_reference.loc[
-            model_code
-        ]
+        plane_reference_row = planes_reference.loc[model_code]
         # exract all relevant data from plane_reference_row
         # convert all fields to string
         manufacturer = str(plane_reference_row["MFR"])
@@ -164,8 +162,8 @@ def add_faa_data_to_voxel51_dataset(
         num_engines = str(plane_reference_row["NO-ENG"])
         num_seats = str(plane_reference_row["NO-SEATS"])
         aircraft_weight = str(plane_reference_row["AC-WEIGHT"])
-        #norm_model = normalize_single_model_value(model_name)
-        
+        # norm_model = normalize_single_model_value(model_name)
+
         # store values in voxel51 dataset row
         row["model_code"] = fo.Classification(label=model_code)
         row["manufacturer"] = fo.Classification(label=manufacturer)
@@ -175,8 +173,8 @@ def add_faa_data_to_voxel51_dataset(
         row["num_engines"] = fo.Classification(label=num_engines)
         row["num_seats"] = fo.Classification(label=num_seats)
         row["aircraft_weight"] = fo.Classification(label=aircraft_weight)
-                
-        #if norm_model is not None:
+
+        # if norm_model is not None:
         #    sample["norm_model"] = fo.Classification(label=norm_model)
         row.save()
 

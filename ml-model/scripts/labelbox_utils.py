@@ -18,7 +18,7 @@ def upload_vox51_dataset_to_labelbox(
     upload_num_samples=500,
     upload_tag="train",
     avoid_tag="eval",
-    labelbox_id_field="labelbox_id"
+    labelbox_id_field="labelbox_id",
 ):
     """Upload a voxel51 dataset to labelbox.
 
@@ -56,7 +56,9 @@ def upload_vox51_dataset_to_labelbox(
 
     # select proper labelbox dataset
     # must convert PaginatedCollection to list in order to count length
-    labelbox_datasets = list(project.datasets(where=Dataset.name == labelbox_dataset_name))
+    labelbox_datasets = list(
+        project.datasets(where=Dataset.name == labelbox_dataset_name)
+    )
 
     # ensure there is only one labelbox dataset of specified name
     num_labelbox_datasets = len(labelbox_datasets)
@@ -81,6 +83,7 @@ def upload_vox51_dataset_to_labelbox(
 
     foul.upload_media_to_labelbox(labelbox_dataset, view, labelbox_id_field)
 
+
 def resume_upload_vox51_dataset_to_labelbox(
     labelbox_api_key,
     labelbox_dataset_name,
@@ -88,7 +91,6 @@ def resume_upload_vox51_dataset_to_labelbox(
     voxel51_dataset_name,
     upload_tag="training",
     labelbox_id_field="labelbox_id",
-
 ):
     """Upload a voxel51 dataset to labelbox.
 
@@ -126,7 +128,9 @@ def resume_upload_vox51_dataset_to_labelbox(
 
     # select proper labelbox dataset
     # must convert PaginatedCollection to list in order to count length
-    labelbox_datasets = list(project.datasets(where=Dataset.name == labelbox_dataset_name))
+    labelbox_datasets = list(
+        project.datasets(where=Dataset.name == labelbox_dataset_name)
+    )
 
     # ensure there is only one labelbox dataset of specified name
     num_labelbox_datasets = len(labelbox_datasets)

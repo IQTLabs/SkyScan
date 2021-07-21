@@ -24,7 +24,11 @@ def export_detection_model(dataset_name, training_name, chosen_model):
 
     filepaths = set_filenames(base_models, training_name, chosen_model)
 
-    logging.info("Exporting detection model to: {}".format(filepaths["image_tensor_model_export_dir"]))
+    logging.info(
+        "Exporting detection model to: {}".format(
+            filepaths["image_tensor_model_export_dir"]
+        )
+    )
 
     """Call model to initiate training."""
     pipeline_file = filepaths["pipeline_file"]
@@ -40,10 +44,18 @@ def export_detection_model(dataset_name, training_name, chosen_model):
         pipeline_file=pipeline_file,
         image_tensor_model_export_dir=image_tensor_model_export_dir,
     )
-    
+
     subprocess.run(command.split(), check=True)
 
-def train_detection_model(dataset_name, training_name, chosen_model,num_train_steps,label_field="detections", num_eval_steps=500):
+
+def train_detection_model(
+    dataset_name,
+    training_name,
+    chosen_model,
+    num_train_steps,
+    label_field="detections",
+    num_eval_steps=500,
+):
     """Train an object detection model.
 
     Args:
@@ -64,19 +76,22 @@ def train_detection_model(dataset_name, training_name, chosen_model,num_train_st
 
     filepaths = set_filenames(base_models, training_name, chosen_model)
 
-    export_voxel51_dataset_to_tfrecords(dataset_name, filepaths,label_field)
+    export_voxel51_dataset_to_tfrecords(dataset_name, filepaths, label_field)
 
     detection_mapping = create_detection_mapping(dataset_name, label_field)
-    
+
     save_mapping_to_file(detection_mapping, filepaths)
 
     download_base_training_config(filepaths)
 
     download_pretrained_model(filepaths)
 
-    create_custom_training_config_file(base_models, chosen_model, filepaths,  num_train_steps)
+    create_custom_training_config_file(
+        base_models, chosen_model, filepaths, num_train_steps
+    )
 
     call_train_model(filepaths, num_train_steps, num_eval_steps)
+
 
 def load_base_models_json(filename="base_models.json"):
     """Load base models json to allow selecting pre-trained model.
@@ -120,7 +135,9 @@ def set_filenames(base_models, training_name, chosen_model):
     filepaths["val_export_dir"] = "/tf/dataset-export/" + training_name + "/val/"
     filepaths["train_export_dir"] = "/tf/dataset-export/" + training_name + "/train/"
     filepaths["model_export_dir"] = "/tf/model-export/" + training_name + "/"
-    filepaths["image_tensor_model_export_dir"] = "/tf/model-export/" + training_name + "/image_tensor_saved_model/"
+    filepaths["image_tensor_model_export_dir"] = (
+        "/tf/model-export/" + training_name + "/image_tensor_saved_model/"
+    )
     filepaths["label_map_file"] = (
         "/tf/dataset-export/" + training_name + "/label_map.pbtxt"
     )
@@ -134,7 +151,9 @@ def set_filenames(base_models, training_name, chosen_model):
     )
     filepaths["base_pipeline_file"] = base_pipeline_file
     filepaths["base_pipeline_dir"] = "/tf/models/research/deploy/"
-    filepaths["pipeline_file"] = "/tf/dataset-export/" + training_name + "/pipeline_file.config"
+    filepaths["pipeline_file"] = (
+        "/tf/dataset-export/" + training_name + "/pipeline_file.config"
+    )
 
     return filepaths
 
@@ -153,7 +172,6 @@ def export_voxel51_dataset_to_tfrecords(
     Returns:
         None
     """
-
 
     if os.path.isfile(filepaths["val_export_dir"] + "tf.records"):
         logging.info("TF Records already exist, skipping export.")
@@ -282,7 +300,9 @@ def get_num_classes_from_label_map(filepaths):
 def download_pretrained_model(filepaths):
     """Download pretrained machine learning model."""
 
-    if os.path.isfile("/tf/models/research/deploy/" + filepaths["pretrained_checkpoint"]):
+    if os.path.isfile(
+        "/tf/models/research/deploy/" + filepaths["pretrained_checkpoint"]
+    ):
         logging.info("Pretrained model already downloaded.")
         return
 
@@ -316,7 +336,9 @@ def download_base_training_config(filepaths):
     """
 
     if os.path.isfile(filepaths["base_pipeline_dir"] + filepaths["base_pipeline_file"]):
-        logging.info("Base training configuration file already exists, skipping download.")
+        logging.info(
+            "Base training configuration file already exists, skipping download."
+        )
         return
 
     # pylint: disable=line-too-long
@@ -340,9 +362,9 @@ def download_base_training_config(filepaths):
 
     logging.info("Finished downloading base training configuration file.")
 
-    
+
 def create_custom_training_config_file(
-    base_models, chosen_model, filepaths,  num_train_steps
+    base_models, chosen_model, filepaths, num_train_steps
 ):
     """Download base training configuration file.
 
@@ -355,10 +377,9 @@ def create_custom_training_config_file(
         None
     """
     num_classes = get_num_classes_from_label_map(filepaths)
-    
+
     # pylint: disable=anomalous-backslash-in-string,line-too-long,invalid-name
     logging.info("writing custom configuration file")
-
 
     with open(filepaths["base_pipeline_dir"] + filepaths["base_pipeline_file"]) as f:
         s = f.read()
@@ -393,7 +414,9 @@ def create_custom_training_config_file(
 
         # Set training batch_size.
         s = re.sub(
-            "batch_size: [0-9]+", "batch_size: {}".format(base_models[chosen_model]["batch_size"]), s
+            "batch_size: [0-9]+",
+            "batch_size: {}".format(base_models[chosen_model]["batch_size"]),
+            s,
         )
 
         # Set training steps, num_steps
@@ -412,9 +435,7 @@ def create_custom_training_config_file(
         s = re.sub("warmup_steps: [.0-9]+", "warmup_steps: {}".format(2500), s)
 
         # Set total_steps in learning_rate, num_steps
-        s = re.sub(
-            "total_steps: [0-9]+", "total_steps: {}".format(num_train_steps), s
-        )
+        s = re.sub("total_steps: [0-9]+", "total_steps: {}".format(num_train_steps), s)
 
         # Set number of classes num_classes.
         s = re.sub("num_classes: [0-9]+", "num_classes: {}".format(num_classes), s)
@@ -455,6 +476,7 @@ def create_custom_training_config_file(
 
         f.write(s)
 
+
 def call_train_model(filepaths, num_train_steps, num_eval_steps):
     """Call model to initiate training."""
     pipeline_file = filepaths["pipeline_file"]
@@ -472,5 +494,5 @@ def call_train_model(filepaths, num_train_steps, num_eval_steps):
         num_train_steps=num_train_steps,
         num_eval_steps=num_eval_steps,
     )
-    
+
     subprocess.run(command.split(), check=True)

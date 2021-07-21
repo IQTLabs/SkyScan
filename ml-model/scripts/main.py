@@ -19,14 +19,9 @@ from labelbox_utils import (
     merge_labelbox_dataset_with_voxel51,
 )
 
-from detection import (
-    export_detection_model,
-    train_detection_model
-)
+from detection import export_detection_model, train_detection_model
 
-from prediction import (
-    run_detection_model
-)
+from prediction import run_detection_model
 
 # pylint: disable=C0330, W0621
 
@@ -49,13 +44,13 @@ def read_config(config_file=os.path.join("config", "config.ini")):
 
     logging.info("Starting to read config file.")
     config = configparser.ConfigParser()
-    config['DEFAULT'] = {
+    config["DEFAULT"] = {
         "num_eval_steps": 500,
         "label_field": "detections",
         "tile_string": "1920x1080,768x768",
         "tile_overlap": 50,
         "iou_threshold": 0,
-        "upload_num_samples": 500
+        "upload_num_samples": 500,
     }
     config.read(config_file)
     logging.info("Finished reading config file.")
@@ -192,7 +187,7 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 int(config["upload"]["upload_num_samples"]),
                 "train",
-                "eval"
+                "eval",
             )
             logging.info("Exiting 'upload train samples to labelbox' route.")
         else:
@@ -219,8 +214,7 @@ if __name__ == "__main__":
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
                 int(config["upload"]["upload_num_samples"]),
-                "eval"
-                "train"
+                "eval" "train",
             )
             logging.info("Exiting 'upload eval samples to labelbox' route.")
         else:
@@ -229,7 +223,6 @@ if __name__ == "__main__":
                 labelbox project name or voxel51 dataset name."""
             )
             sys.exit(1)  # exit program
-
 
     # check if user selected resume_upload_train to labelbox stage
     if args.resume_upload_train:
@@ -247,7 +240,7 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                "train"
+                "train",
             )
             logging.info("Exiting 'resume uploading train samples to labelbox' route.")
         else:
@@ -273,7 +266,7 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                "eval"
+                "eval",
             )
             logging.info("Exiting 'resume upload dataset to labelbox' route.")
         else:
@@ -282,8 +275,6 @@ if __name__ == "__main__":
                 labelbox project name or voxel51 dataset name."""
             )
             sys.exit(1)  # exit program
-
-
 
     # check if user selected download from labelbox stage
     if args.download:
@@ -306,12 +297,13 @@ if __name__ == "__main__":
 
     # check if user selected train model stage
     if args.train:
-        if all ([
-            config["file_names"]["dataset_name"],
-            config["model"]["training_name"],
-            config["model"]["base_model"],
-            config["model"]["num_train_steps"]
-        ]
+        if all(
+            [
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"],
+                config["model"]["num_train_steps"],
+            ]
         ):
             logging.info("Entering 'train model' route.")
             train_detection_model(
@@ -320,7 +312,7 @@ if __name__ == "__main__":
                 config["model"]["base_model"],
                 int(config["model"]["num_train_steps"]),
                 config["model"]["label_field"],
-                int(config["model"]["num_eval_steps"])
+                int(config["model"]["num_eval_steps"]),
             )
             logging.info("Exiting 'train model' route.")
         else:
@@ -335,17 +327,18 @@ if __name__ == "__main__":
 
     # check if user selected export model stage
     if args.export_model:
-        if all ([
-            config["file_names"]["dataset_name"],
-            config["model"]["training_name"],
-            config["model"]["base_model"]
-        ]
+        if all(
+            [
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"],
+            ]
         ):
             logging.info("Entering 'export model' route.")
             export_detection_model(
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
-                config["model"]["base_model"]
+                config["model"]["base_model"],
             )
             logging.info("Exiting 'export model' route.")
         else:
@@ -357,20 +350,20 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
-
     # check if user selected model prediction stage
     if args.predict:
-        if all ([
-            config["file_names"]["dataset_name"],
-            config["model"]["training_name"],
-            config["prediction"]["prediction_field"]
-        ]
+        if all(
+            [
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["prediction"]["prediction_field"],
+            ]
         ):
             logging.info("Entering 'model prediction' route.")
             run_detection_model(
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
-                config["prediction"]["prediction_field"]
+                config["prediction"]["prediction_field"],
             )
             logging.info("Exiting 'model prediction' route.")
         else:
@@ -382,14 +375,14 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
-
     # check if user selected model prediction tiled stage
     if args.predict_tiled:
-        if all ([
-            config["file_names"]["dataset_name"],
-            config["model"]["training_name"],
-            config["prediction"]["prediction_field"]
-        ]
+        if all(
+            [
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["prediction"]["prediction_field"],
+            ]
         ):
             logging.info("Entering 'model prediction tiled' route.")
             run_detection_model(
@@ -398,7 +391,7 @@ if __name__ == "__main__":
                 config["prediction"]["prediction_field"],
                 config["prediction"]["tile_string"],
                 int(config["prediction"]["tile_overlap"]),
-                float(config["prediction"]["iou_threshold"])
+                float(config["prediction"]["iou_threshold"]),
             )
             logging.info("Exiting 'model prediction tiled' route.")
         else:
@@ -412,17 +405,18 @@ if __name__ == "__main__":
 
     # check if user selected evaluate model stage
     if args.evaluate:
-        if all ([
-            config["file_names"]["dataset_name"],
-            config["prediction"]["prediction_field"],
-            config["evaluation"]["evaluation_key"]
-        ]
+        if all(
+            [
+                config["file_names"]["dataset_name"],
+                config["prediction"]["prediction_field"],
+                config["evaluation"]["evaluation_key"],
+            ]
         ):
             logging.info("Entering 'model evaluation' route.")
             evaluate_detection_model(
-            config["file_names"]["dataset_name"],
-            config["prediction"]["prediction_field"],
-            config["evaluation"]["evaluation_key"]
+                config["file_names"]["dataset_name"],
+                config["prediction"]["prediction_field"],
+                config["evaluation"]["evaluation_key"],
             )
             logging.info("Exiting 'model evaluation' route.")
         else:
@@ -433,5 +427,3 @@ if __name__ == "__main__":
                 - evaluation / evaluation_key"""
             )
             sys.exit(1)  # exit program
-
-
