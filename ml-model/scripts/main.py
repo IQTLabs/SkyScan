@@ -14,7 +14,6 @@ from customvox51 import (
 )
 
 from labelbox_utils import (
-    resume_upload_vox51_dataset_to_labelbox,
     upload_vox51_dataset_to_labelbox,
     merge_labelbox_dataset_with_voxel51,
 )
@@ -24,7 +23,6 @@ from detection import export_detection_model, train_detection_model
 from prediction import run_detection_model
 
 # pylint: disable=C0330, W0621
-
 
 def read_config(config_file=os.path.join("config", "config.ini")):
     """Read in config file values.
@@ -185,9 +183,10 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                int(config["upload"]["upload_num_samples"]),
+                config.getint("upload","upload_num_samples"),
                 "train",
                 "eval",
+                False
             )
             logging.info("Exiting 'upload train samples to labelbox' route.")
         else:
@@ -213,8 +212,10 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                int(config["upload"]["upload_num_samples"]),
-                "eval" "train",
+                config.getint("upload","upload_num_samples"),
+                "eval", 
+                "train",
+                False
             )
             logging.info("Exiting 'upload eval samples to labelbox' route.")
         else:
@@ -235,12 +236,15 @@ if __name__ == "__main__":
             ]
         ):
             logging.info("Entering 'resume uploading train samples to labelbox' route.")
-            resume_upload_vox51_dataset_to_labelbox(
+            upload_vox51_dataset_to_labelbox(
                 config["labelbox"]["api_key"],
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
+                config.getint("upload","upload_num_samples"),
                 "train",
+                "eval",
+                True
             )
             logging.info("Exiting 'resume uploading train samples to labelbox' route.")
         else:
@@ -261,12 +265,15 @@ if __name__ == "__main__":
             ]
         ):
             logging.info("Entering 'resume upload dataset to labelbox' route.")
-            resume_upload_vox51_dataset_to_labelbox(
+            upload_vox51_dataset_to_labelbox(
                 config["labelbox"]["api_key"],
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
+                config.getint("upload","upload_num_samples"),
+                "train",
                 "eval",
+                False
             )
             logging.info("Exiting 'resume upload dataset to labelbox' route.")
         else:
@@ -310,9 +317,9 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
                 config["model"]["base_model"],
-                int(config["model"]["num_train_steps"]),
+                config.getint("model","num_train_steps"),
                 config["model"]["label_field"],
-                int(config["model"]["num_eval_steps"]),
+                config.getint("model","num_eval_steps"),
             )
             logging.info("Exiting 'train model' route.")
         else:
@@ -390,8 +397,8 @@ if __name__ == "__main__":
                 config["model"]["training_name"],
                 config["prediction"]["prediction_field"],
                 config["prediction"]["tile_string"],
-                int(config["prediction"]["tile_overlap"]),
-                float(config["prediction"]["iou_threshold"]),
+                config.getint("prediction","tile_overlap"),
+                config.getfloat("prediction","iou_threshold"),
             )
             logging.info("Exiting 'model prediction tiled' route.")
         else:

@@ -29,7 +29,7 @@ def _load_label_map(training_name):
     return label_map_util.create_category_index(categories)
 
 
-def _tiles_location_gen(img_size, tile_size, overlap):
+def _tiles_location_gen(img_size:int, tile_size:int, overlap:int):
     """Generates location of tiles after splitting the given image according the tile_size and overlap.
     Args:
       img_size (int, int): size of original image as width x height.
@@ -211,10 +211,19 @@ def run_detection_model_tiled(
     training_name,
     prediction_field,
     tile_string,
-    tile_overlap,
-    iou_threshold,
+    tile_overlap:int,
+    iou_threshold:float,
 ):
-
+    """Runs the detection model over the entire dataset using a tiling approach
+    Args:
+      interpreter: The ``tf.lite.Interpreter`` to update.
+      size (tuple): The original image size as (width, height) tuple.
+      resize: A function that takes a (width, height) tuple, and returns an
+        image resized to those dimensions.
+    Returns:
+      The resized tensor with zero-padding as tuple
+      (resized_tensor, resize_ratio).
+    """
     model_path = (
         "/tf/model-export/" + training_name + "/image_tensor_saved_model/saved_model"
     )

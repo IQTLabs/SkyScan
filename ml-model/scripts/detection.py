@@ -54,7 +54,7 @@ def train_detection_model(
     chosen_model,
     num_train_steps,
     label_field="detections",
-    num_eval_steps=500,
+    num_eval_steps:int=500,
 ):
     """Train an object detection model.
 
