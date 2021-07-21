@@ -22,6 +22,8 @@ from detection import export_detection_model, train_detection_model
 
 from prediction import run_detection_model
 
+from evaluation import evaluate_detection_model
+
 # pylint: disable=C0330, W0621
 
 def read_config(config_file=os.path.join("config", "config.ini")):
