@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tarfile
+import shutil
 
 import fiftyone as fo
 from google.protobuf import text_format
@@ -47,6 +48,8 @@ def export_detection_model(dataset_name, training_name, chosen_model):
 
     subprocess.run(command.split(), check=True)
 
+    # copy the label_map file into the model export directory
+    shutil.copyfile(filepaths["label_map_file"], filepaths["model_export_dir"] + "label_map.pbtxt")
 
 def train_detection_model(
     dataset_name,
@@ -460,9 +463,10 @@ def create_custom_training_config_file(
             "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 40\n\tmax_jpeg_quality: 90\n } \n}\n\n"
         )
 
-        #data_augmentation = (
-        #    "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
-        #)
+        #https://github.com/tensorflow/models/issues/9379
+        data_augmentation = (
+            "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
+        )
 
         s = re.sub(
             "data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}\s* data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}",
@@ -498,5 +502,5 @@ def call_train_model(filepaths, num_train_steps, num_eval_steps):
         num_train_steps=num_train_steps,
         num_eval_steps=num_eval_steps,
     )
-    print(command)
+
     subprocess.run(command.split(), check=True)

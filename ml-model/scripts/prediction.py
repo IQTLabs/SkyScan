@@ -21,7 +21,7 @@ def _find_class_name(category_index, class_id):
 
 
 def _load_label_map(training_name):
-    label_map_file = "/tf/dataset-export/" + training_name + "/label_map.pbtxt"
+    label_map_file = "/tf/model-export/" + training_name + "/label_map.pbtxt"
     label_map = label_map_util.load_labelmap(label_map_file)
     categories = label_map_util.convert_label_map_to_categories(
         label_map, max_num_classes=100
