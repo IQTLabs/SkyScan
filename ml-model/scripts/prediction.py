@@ -174,12 +174,12 @@ def run_detection_model(dataset_name, training_name, prediction_field):
             if detectScore > min_score:
                 print(
                     "\t- {}: {}".format(
-                        findClassName(int(detections["detection_classes"][0][i])),
+                        _find_class_name(category_index, int(detections["detection_classes"][0][i])),
                         detections["detection_scores"][0][i],
                     )
                 )
 
-                label = _find_class_name(int(detections["detection_classes"][0][i]))
+                label = _find_class_name(category_index, int(detections["detection_classes"][0][i]))
                 confidence = detections["detection_scores"][0][i]
                 # TF Obj Detect bounding boxes are: [ymin, xmin, ymax, xmax]
 

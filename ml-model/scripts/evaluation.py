@@ -3,7 +3,7 @@ import fiftyone as fo
 from fiftyone import ViewField as F
 import os
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
 
@@ -18,7 +18,7 @@ def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
             sample.save()
 
     results = view.evaluate_detections(
-        prediction_field, gt_field="detections", eval_key=evaluation_key
+        prediction_field, gt_field="detections", eval_key=evaluation_key, compute_mAP=True
     )
 
     # Get the 10 most common classes in the dataset
@@ -39,3 +39,9 @@ def evaluate_detection_model(dataset_name, prediction_field, evaluation_key):
         prediction_field, F(evaluation_key) == "fp"
     )
     logging.info("mAP: {}".format(results.mAP()))
+
+    plot = results.plot_pr_curves(classes=["plane"],backend="matplotlib")
+    plot.savefig( "/tf/dataset-export/"+ evaluation_key + '_pr_curves.png')
+
+    plot = results.plot_confusion_matrix(classes=["plane"],backend="matplotlib")
+    plot.savefig( "/tf/dataset-export/"+ evaluation_key + '_confusion_matrix.png')

@@ -20,7 +20,7 @@ from labelbox_utils import (
 
 from detection import export_detection_model, train_detection_model
 
-from prediction import run_detection_model
+from prediction import (run_detection_model, run_detection_model_tiled)
 
 from evaluation import evaluate_detection_model
 
@@ -246,7 +246,7 @@ if __name__ == "__main__":
                 config.getint("upload","upload_num_samples"),
                 "train",
                 "eval",
-                True
+                resume=True
             )
             logging.info("Exiting 'resume uploading train samples to labelbox' route.")
         else:
@@ -275,7 +275,7 @@ if __name__ == "__main__":
                 config.getint("upload","upload_num_samples"),
                 "train",
                 "eval",
-                False
+                resume=False
             )
             logging.info("Exiting 'resume upload dataset to labelbox' route.")
         else:
@@ -394,7 +394,7 @@ if __name__ == "__main__":
             ]
         ):
             logging.info("Entering 'model prediction tiled' route.")
-            run_detection_model(
+            run_detection_model_tiled(
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
                 config["prediction"]["prediction_field"],
