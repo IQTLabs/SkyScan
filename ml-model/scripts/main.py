@@ -11,20 +11,21 @@ from customvox51 import (
     add_sample_images_to_voxel51_dataset,
     build_image_list,
     create_voxel51_dataset,
+    normalize_model_values
 )
 
 from labelbox_utils import (
-    resume_upload_vox51_dataset_to_labelbox,
     upload_vox51_dataset_to_labelbox,
     merge_labelbox_dataset_with_voxel51,
 )
 
 from detection import export_detection_model, train_detection_model
 
-from prediction import run_detection_model
+from prediction import (run_detection_model, run_detection_model_tiled)
+
+from evaluation import evaluate_detection_model
 
 # pylint: disable=C0330, W0621
-
 
 def read_config(config_file=os.path.join("config", "config.ini")):
     """Read in config file values.
@@ -123,6 +124,14 @@ def parse_command_line_arguments():
     )
 
     parser.add_argument(
+        "--normalize",
+        default=False,  # default value is False
+        action="store_true",
+        help="Normalize plane data",
+    )
+
+
+    parser.add_argument(
         "--predict_tiled",
         default=False,  # default value is False
         action="store_true",
@@ -169,6 +178,36 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
+    # check if user selected data normalization stage
+    if args.normalize:
+        # check that config file contains both dataset name
+        if (
+            config["file_names"]["dataset_name"]
+        ):
+            logging.info("Entering 'normalize data' route.")
+
+            # we should be able to remove this function - I had to do it
+            # after the fact this time because some of the files were 
+            # imported via the Jupyter script
+            #dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
+            #    config["file_names"]["dataset_name"],
+            #    "../data/faa_master.txt",
+            #    "../data/faa_aircraft_reference.txt",
+            #)
+
+
+            normalize_model_values(config["file_names"]["dataset_name"])
+            
+            logging.info("Exiting 'normalize data' route.")
+        # exit if config file does not contain the dataset name.
+        else:
+            logging.info(
+                "Missing config file value image for the dataset_name."
+            )
+            sys.exit(1)  # exit program
+
+
+
     # check if user selected upload train to labelbox stage
     if args.upload_train:
         if all(
@@ -185,9 +224,10 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                int(config["upload"]["upload_num_samples"]),
+                config.getint("upload","upload_num_samples"),
                 "train",
                 "eval",
+                False
             )
             logging.info("Exiting 'upload train samples to labelbox' route.")
         else:
@@ -213,8 +253,10 @@ if __name__ == "__main__":
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
-                int(config["upload"]["upload_num_samples"]),
-                "eval" "train",
+                config.getint("upload","upload_num_samples"),
+                "eval", 
+                "train",
+                False
             )
             logging.info("Exiting 'upload eval samples to labelbox' route.")
         else:
@@ -235,12 +277,15 @@ if __name__ == "__main__":
             ]
         ):
             logging.info("Entering 'resume uploading train samples to labelbox' route.")
-            resume_upload_vox51_dataset_to_labelbox(
+            upload_vox51_dataset_to_labelbox(
                 config["labelbox"]["api_key"],
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
+                config.getint("upload","upload_num_samples"),
                 "train",
+                "eval",
+                resume=True
             )
             logging.info("Exiting 'resume uploading train samples to labelbox' route.")
         else:
@@ -261,12 +306,15 @@ if __name__ == "__main__":
             ]
         ):
             logging.info("Entering 'resume upload dataset to labelbox' route.")
-            resume_upload_vox51_dataset_to_labelbox(
+            upload_vox51_dataset_to_labelbox(
                 config["labelbox"]["api_key"],
                 config["labelbox"]["dataset_name"],
                 config["labelbox"]["project_name"],
                 config["file_names"]["dataset_name"],
+                config.getint("upload","upload_num_samples"),
+                "train",
                 "eval",
+                resume=False
             )
             logging.info("Exiting 'resume upload dataset to labelbox' route.")
         else:
@@ -310,9 +358,9 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
                 config["model"]["base_model"],
-                int(config["model"]["num_train_steps"]),
+                config.getint("model","num_train_steps"),
                 config["model"]["label_field"],
-                int(config["model"]["num_eval_steps"]),
+                config.getint("model","num_eval_steps"),
             )
             logging.info("Exiting 'train model' route.")
         else:
@@ -385,13 +433,13 @@ if __name__ == "__main__":
             ]
         ):
             logging.info("Entering 'model prediction tiled' route.")
-            run_detection_model(
+            run_detection_model_tiled(
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
                 config["prediction"]["prediction_field"],
                 config["prediction"]["tile_string"],
-                int(config["prediction"]["tile_overlap"]),
-                float(config["prediction"]["iou_threshold"]),
+                config.getint("prediction","tile_overlap"),
+                config.getfloat("prediction","iou_threshold"),
             )
             logging.info("Exiting 'model prediction tiled' route.")
         else:

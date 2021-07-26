@@ -128,11 +128,11 @@ def add_faa_data_to_voxel51_dataset(
     # import master dataset and strip white space from beacon column
     planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")
     planes_master.index = planes_master.index.str.strip()
-    print(planes_master.columns)
+
     planes_reference = pd.read_csv(
         faa_reference_dataset_path, index_col="CODE", encoding="utf-8-sig"
     )
-    print(planes_reference.columns)
+
     dataset = fo.load_dataset(voxel51_dataset_name)
 
     for row in dataset:
@@ -155,8 +155,8 @@ def add_faa_data_to_voxel51_dataset(
         plane_reference_row = planes_reference.loc[model_code]
         # exract all relevant data from plane_reference_row
         # convert all fields to string
-        manufacturer = str(plane_reference_row["MFR"])
-        model_name = str(plane_reference_row["MODEL"])
+        manufacturer = str(plane_reference_row["MFR"]).rstrip()
+        model_name = str(plane_reference_row["MODEL"]).rstrip()
         aircraft_type = str(plane_reference_row["TYPE-ACFT"])
         engine_type = str(plane_reference_row["TYPE-ENG"])
         num_engines = str(plane_reference_row["NO-ENG"])
@@ -181,7 +181,7 @@ def add_faa_data_to_voxel51_dataset(
     return dataset
 
 
-def normalize_model_values(dataset):
+def normalize_model_values(dataset_name):
     """Standardize plane model string values.
 
     The plane model string values received from ADS-B broadcasts
@@ -196,14 +196,24 @@ def normalize_model_values(dataset):
         dataset - a voxel51 dataset object
     """
     # TODO: Need to add testing.
+
+    dataset = fo.load_dataset(dataset_name)
+
+    # json file storing plane model strings as key and standardized model
+    # as value
+    with open("plane_model_dict.json", "r") as file_path:
+        plane_model_dict = json.load(file_path)
+
     # Loop thru each row of model column
-    for sample in dataset.exists("model"):
-        norm_model = normalize_single_model_value(sample["model"].label)
+    for sample in dataset.exists("model_name"):
+        model = sample["model_name"].label
+        norm_model = plane_model_dict.get(model, None)
+        #print("{} = {}".format(model, norm_model))
         if norm_model is not None:
             sample["norm_model"] = fo.Classification(label=norm_model)
             sample.save()
         else:
-            logging.info("Match not found for: %s", sample["model"].label)
+            logging.info("Match not found for: %s", model)
 
     return dataset
 
@@ -226,3 +236,14 @@ def normalize_single_model_value(model):
     normalized_model_value = plane_model_dict.get(model, None)
 
     return normalized_model_value
+
+def add_normalized_model_to_plane_detection(dataset_name, prediction_field, output_field):
+    dataset = fo.load_dataset(dataset_name)
+    for sample in dataset.exists("norm_model"):
+        new_detections = sample[prediction_field].copy()
+
+        for detection in new_detections["detections"]:
+            detection["label"] = sample["norm_model"]["label"]
+        
+        sample[output_field] = new_detections
+        sample.save()

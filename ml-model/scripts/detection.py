@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tarfile
+import shutil
 
 import fiftyone as fo
 from google.protobuf import text_format
@@ -47,6 +48,8 @@ def export_detection_model(dataset_name, training_name, chosen_model):
 
     subprocess.run(command.split(), check=True)
 
+    # copy the label_map file into the model export directory
+    shutil.copyfile(filepaths["label_map_file"], filepaths["model_export_dir"] + "label_map.pbtxt")
 
 def train_detection_model(
     dataset_name,
@@ -54,7 +57,7 @@ def train_detection_model(
     chosen_model,
     num_train_steps,
     label_field="detections",
-    num_eval_steps=500,
+    num_eval_steps:int=500,
 ):
     """Train an object detection model.
 
@@ -145,7 +148,6 @@ def set_filenames(base_models, training_name, chosen_model):
     filepaths["pretrained_checkpoint"] = base_models[chosen_model][
         "pretrained_checkpoint"
     ]
-    filepaths["pipeline_file"] = "/tf/models/research/deploy/" + base_pipeline_file
     filepaths["fine_tune_checkpoint"] = (
         "/tf/models/research/deploy/" + model_name + "/checkpoint/ckpt-0"
     )
@@ -178,7 +180,7 @@ def export_voxel51_dataset_to_tfrecords(
         return
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags("training").shuffle(seed=51)
+    view = dataset.match_tags("train").shuffle(seed=51)
 
     # calculate size of training and validation set
     sample_len = len(view)
@@ -221,7 +223,7 @@ def create_detection_mapping(dataset_name, label_field):
 
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags("training").shuffle(seed=2021)
+    view = dataset.match_tags("train").shuffle(seed=2021)
 
     # create a list of all class names
     class_names = _create_list_of_class_names(view, label_field)
@@ -458,6 +460,11 @@ def create_custom_training_config_file(
             "data_augmentation_options {\n random_jitter_boxes: { \n } \n}\n\n"
             "data_augmentation_options {\n random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.95\n\tmax_aspect_ratio: 1.05\n\tmin_area: 0.25\n\tmax_area: 0.875\n\toverlap_thresh: 0.9\n\trandom_coef: 0.5\n}\n}\n\n"
             "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 40\n\tmax_jpeg_quality: 90\n } \n}\n\n"
+        )
+
+        #https://github.com/tensorflow/models/issues/9379
+        data_augmentation = (
+            "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
         )
 
         s = re.sub(
