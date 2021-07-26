@@ -11,6 +11,7 @@ from customvox51 import (
     add_sample_images_to_voxel51_dataset,
     build_image_list,
     create_voxel51_dataset,
+    normalize_model_values
 )
 
 from labelbox_utils import (
@@ -123,6 +124,14 @@ def parse_command_line_arguments():
     )
 
     parser.add_argument(
+        "--normalize",
+        default=False,  # default value is False
+        action="store_true",
+        help="Normalize plane data",
+    )
+
+
+    parser.add_argument(
         "--predict_tiled",
         default=False,  # default value is False
         action="store_true",
@@ -168,6 +177,36 @@ if __name__ == "__main__":
                 "Missing config file value image for image directory or dataset_name."
             )
             sys.exit(1)  # exit program
+
+    # check if user selected data normalization stage
+    if args.normalize:
+        # check that config file contains both dataset name
+        if (
+            config["file_names"]["dataset_name"]
+        ):
+            logging.info("Entering 'normalize data' route.")
+
+            # we should be able to remove this function - I had to do it
+            # after the fact this time because some of the files were 
+            # imported via the Jupyter script
+            #dataset_with_faa_data = add_faa_data_to_voxel51_dataset(
+            #    config["file_names"]["dataset_name"],
+            #    "../data/faa_master.txt",
+            #    "../data/faa_aircraft_reference.txt",
+            #)
+
+
+            normalize_model_values(config["file_names"]["dataset_name"])
+            
+            logging.info("Exiting 'normalize data' route.")
+        # exit if config file does not contain the dataset name.
+        else:
+            logging.info(
+                "Missing config file value image for the dataset_name."
+            )
+            sys.exit(1)  # exit program
+
+
 
     # check if user selected upload train to labelbox stage
     if args.upload_train:
