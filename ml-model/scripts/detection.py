@@ -148,7 +148,6 @@ def set_filenames(base_models, training_name, chosen_model):
     filepaths["pretrained_checkpoint"] = base_models[chosen_model][
         "pretrained_checkpoint"
     ]
-    filepaths["pipeline_file"] = "/tf/models/research/deploy/" + base_pipeline_file
     filepaths["fine_tune_checkpoint"] = (
         "/tf/models/research/deploy/" + model_name + "/checkpoint/ckpt-0"
     )

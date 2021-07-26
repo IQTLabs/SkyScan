@@ -131,7 +131,7 @@ def test_set_filenames():
     )
     assert (
         test_filepaths["pipeline_file"]
-        == "/tf/models/research/deploy/ssd_mobilenet_v2_320x320_coco17_tpu-8.config"
+        == "/tf/dataset-export/luke_burnt/pipeline_file.config"
     )
 
 
@@ -194,7 +194,7 @@ def test_create_detection_mapping():
     dataset.add_sample(
         fo.Sample(
             filepath="filepath1.jpg",
-            tags=["training"],
+            tags=["train"],
             test_dets=fo.Detections(
                 detections=[
                     fo.Detection(
