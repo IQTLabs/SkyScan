@@ -11,7 +11,9 @@ from customvox51 import (
     add_sample_images_to_voxel51_dataset,
     build_image_list,
     create_voxel51_dataset,
-    normalize_model_values
+    normalize_model_values,
+    build_multi_class_train_eval_dataset,
+    add_normalized_model_to_plane_detection
 )
 
 from labelbox_utils import (
@@ -110,6 +112,13 @@ def parse_command_line_arguments():
     )
 
     parser.add_argument(
+        "--train_multi_class",
+        default=False,  # default value is False
+        action="store_true",
+        help="Train a multi-class model.",
+    )
+
+    parser.add_argument(
         "--predict",
         default=False,  # default value is False
         action="store_true",
@@ -130,12 +139,18 @@ def parse_command_line_arguments():
         help="Normalize plane data",
     )
 
-
     parser.add_argument(
         "--predict_tiled",
         default=False,  # default value is False
         action="store_true",
         help="Tiled model prediction.",
+    )
+
+    parser.add_argument(
+        "--build_multi_class_dataset",
+        default=False,  # default value is False
+        action="store_true",
+        help="Build multi-class dataset.",
     )
 
     parser.add_argument(
@@ -343,6 +358,25 @@ if __name__ == "__main__":
             )
             sys.exit(1)  # exit program
 
+    # check if user selected build multi-class dataset stage
+    if args.build_multi_class_dataset:
+        if (
+            config["file_names"]["dataset_name"],
+            config["prediction"]["prediction_field"]
+        ):
+            logging.info("Entering 'build multi-class dataset' route.")
+            #add_normalized_model_to_plane_detection(config["file_names"]["dataset_name"], config["prediction"]["prediction_field"], "multi_class_detections")
+            build_multi_class_train_eval_dataset(
+                config["file_names"]["dataset_name"]
+            )
+            logging.info("Exiting 'build multi-class dataset' route.")
+        else:
+            logging.info(
+                """Missing config file value for voxel51 dataset name."""
+            )
+            sys.exit(1)  # exit program
+
+
     # check if user selected train model stage
     if args.train:
         if all(
@@ -359,8 +393,7 @@ if __name__ == "__main__":
                 config["model"]["training_name"],
                 config["model"]["base_model"],
                 config.getint("model","num_train_steps"),
-                config["model"]["label_field"],
-                config.getint("model","num_eval_steps"),
+                label_field="detections"
             )
             logging.info("Exiting 'train model' route.")
         else:
@@ -372,6 +405,40 @@ if __name__ == "__main__":
                 - model / num_train_steps"""
             )
             sys.exit(1)  # exit program
+
+
+    # check if user selected train multi-class model stage
+    if args.train_multi_class:
+        if all(
+            [
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"],
+                config["model"]["num_train_steps"],
+            ]
+        ):
+            logging.info("Entering 'train multi-class model' route.")
+            train_detection_model(
+                config["file_names"]["dataset_name"],
+                config["model"]["training_name"],
+                config["model"]["base_model"],
+                config.getint("model","num_train_steps"),
+                label_field = "multi_class_detections",
+                training_tag = "multi_class_train"
+            )
+            logging.info("Exiting 'train model' route.")
+        else:
+            logging.info(
+                """Missing one or more config file values required for training:
+                - file_names / dataset_name
+                - model / training_name
+                - model / base_model
+                - model / num_train_steps"""
+            )
+            sys.exit(1)  # exit program
+
+
+
 
     # check if user selected export model stage
     if args.export_model:

@@ -147,7 +147,7 @@ def test_export_voxel51_dataset_to_tfrecords():
     )
 
     export_voxel51_dataset_to_tfrecords(
-        "test", test_filepaths, label_field="detections"
+        "test", test_filepaths, label_field="detections", training_tag="train"
     )
 
 
@@ -213,7 +213,7 @@ def test_create_detection_mapping():
         )
     )
     test_output = create_detection_mapping(
-        "test_detection_mapping", label_field="test_dets"
+        "test_detection_mapping", label_field="test_dets", training_tag="train"
     )
     assert isinstance(test_output, str)
     assert (

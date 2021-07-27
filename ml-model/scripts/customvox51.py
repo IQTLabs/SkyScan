@@ -7,7 +7,7 @@ import subprocess
 
 import pandas as pd
 import fiftyone as fo
-
+from fiftyone import ViewField as F
 # pylint: disable=C0330,R0914
 
 
@@ -108,6 +108,33 @@ def add_sample_images_to_voxel51_dataset(image_list, dataset, datasource_name=No
 
     # return modified dataset
     return dataset
+
+def _tag_samples_by_icao24(dataset, icao24, tag):
+    """Adds a tag to all samples with a matching ICAO24
+    Args:
+        dataset (Voxel51 Dataset): Dataset to work with 
+        icao24 (string): the ICAO24 identifier to search for
+        tag (string): Tag to add
+    """    
+    view = dataset.filter_labels("icao24", (F("label") == icao24))
+    for sample in view:
+        sample.tags.append(tag)
+        sample.save() 
+
+def build_multi_class_train_eval_dataset(dataset_name):   
+    dataset = fo.load_dataset(dataset_name)
+    norm_models = dataset.distinct("norm_model.label")
+    for norm_model in norm_models:
+        view = dataset.filter_labels("norm_model", (F("label") == norm_model)).select_fields("icao24")
+        unique_aircraft = view.distinct("icao24.label")
+        num_unique_aircrarft = len(unique_aircraft)
+        if num_unique_aircrarft > 1:
+            _tag_samples_by_icao24(dataset,unique_aircraft[0], "multi_class_train")
+            for icao24 in unique_aircraft[1:]:
+                _tag_samples_by_icao24(dataset,icao24, "multi_class_eval")
+            print("{}: {}".format(norm_model,len(unique_aircraft)))
+            print("\tTrain:{}".format(unique_aircraft[0]))
+            print("\tEval:{}".format(unique_aircraft[1:]))
 
 
 def add_faa_data_to_voxel51_dataset(
