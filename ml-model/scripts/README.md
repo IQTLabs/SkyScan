@@ -48,7 +48,76 @@ attempts to create a standardized model identifier for each plane.
 python main.py --normalize
 ```
 
+## Upload training or evaluation dataset to Labelbox
 
+To upload training or evaluation images to Labelbox for manual labeling, use the appropriate command below.
+
+```
+python main.py --upload_train
+```
+
+```
+python main.py --upload_eval
+```
+
+Users must provide in the config their Labelbox API key, the Labelbox dataset name, the Labelbox project name, and the
+name of the local dataset to be uploaded. The user will first need to create a Labelbox account, project, and dataset.
+
+## Resume uploading training or evaluation dataset to Labelbox
+
+Similar to the command above but in the event that the upload is disrupted or paused. Use one of these commands:
+
+```
+python main.py --resume_upload_train
+```
+
+```
+python main.py --resume_upload_eval
+```
+
+The same configuration arguments as above are used.
+
+## Download annotated dataset from Labelbox
+
+After using Labelbox to do hand annotation, you then then merge the annotations with the Voxel51 dataset. First, download
+the labels from Labelbox in a JSON format. Then run:
+
+```
+python main.py --download
+```
+
+The configuration file must contain values for the local Voxel51 dataset name and also the path of the JSON exported from Labelbox.
+
+## Train a detection model
+
+Train a deep learning model to do detection of plane objects.
+
+```
+python main.py --train
+```
+
+The configuration file must contain the dataset_name, the model's training_name, the base_model, and the num_train_steps.
+
+## Export the model
+
+Export the trained deep learning model.
+
+```
+python main.py --export_model
+```
+
+The configuration file must contain the dataset_name, the model's training_name, and the model's base_model.
+
+## Make predictions with trained model
+
+To use a trained deep learning model to make predictions, use:
+
+```
+python main.py --predict
+```
+
+The configuration file must contain the dataset_name, the model's training_name, and the prediction_field.
+                
 ## To run tests:
 
 ```
