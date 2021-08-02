@@ -13,6 +13,8 @@ from customvox51 import (
     create_voxel51_dataset,
     normalize_model_values,
     build_multi_class_train_eval_dataset,
+    select_multi_class_train_eval_dataset,
+    split_multi_class_train_eval_dataset,
     add_normalized_model_to_plane_detection
 )
 
@@ -361,12 +363,11 @@ if __name__ == "__main__":
     # check if user selected build multi-class dataset stage
     if args.build_multi_class_dataset:
         if (
-            config["file_names"]["dataset_name"],
-            config["prediction"]["prediction_field"]
+            config["file_names"]["dataset_name"]
         ):
             logging.info("Entering 'build multi-class dataset' route.")
             #add_normalized_model_to_plane_detection(config["file_names"]["dataset_name"], config["prediction"]["prediction_field"], "multi_class_detections")
-            build_multi_class_train_eval_dataset(
+            split_multi_class_train_eval_dataset(
                 config["file_names"]["dataset_name"]
             )
             logging.info("Exiting 'build multi-class dataset' route.")
@@ -525,6 +526,7 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 config["prediction"]["prediction_field"],
                 config["evaluation"]["evaluation_key"],
+                config["evaluation"]["ground_truth_field"],
             ]
         ):
             logging.info("Entering 'model evaluation' route.")
@@ -532,6 +534,7 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 config["prediction"]["prediction_field"],
                 config["evaluation"]["evaluation_key"],
+                config["evaluation"]["ground_truth_field"],
             )
             logging.info("Exiting 'model evaluation' route.")
         else:

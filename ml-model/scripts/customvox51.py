@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import subprocess
+import math
 
 import pandas as pd
 import fiftyone as fo
@@ -135,6 +136,81 @@ def build_multi_class_train_eval_dataset(dataset_name):
             print("{}: {}".format(norm_model,len(unique_aircraft)))
             print("\tTrain:{}".format(unique_aircraft[0]))
             print("\tEval:{}".format(unique_aircraft[1:]))
+
+def select_multi_class_train_eval_dataset(dataset_name, prediction_field, train_size):   
+
+    dataset = fo.load_dataset(dataset_name)
+    train_view = dataset.match_tags("multi_class_train")
+    logging.iinfo("Removing existing multi_class_train tags")
+    for sample in train_view:
+        try:
+            sample.tags = list(filter(lambda x: x != "multi_class_train", sample.tags))
+            sample.save()
+        except ValueError:
+            pass
+    logging.iinfo("Removing existing multi_class_eval tags")
+    eval_view = dataset.match_tags("multi_class_eval")
+    for sample in eval_view:
+        try:
+            sample.tags = list(filter(lambda x: x != "multi_class_eval", sample.tags))
+            sample.save()
+        except ValueError:
+            pass
+
+    norm_models = dataset.distinct("norm_model.label")
+    for norm_model in norm_models:
+        view = dataset.filter_labels("norm_model", (F("label") == norm_model)).match(F("auto_aug_predict_tiled.detections").length()>0).shuffle()
+        print("{}: {}".format(norm_model,len(view)))
+        if len(view) >= 200:
+            for sample in view[:100]:
+                sample.tags.append("multi_class_train")
+                sample.save()
+            for sample in view[100:]:
+                sample.tags.append("multi_class_eval")
+                sample.save()
+
+def split_multi_class_train_eval_dataset(dataset_name):   
+    """Splits the dataset into Training and Eval samples. For aircraft models with
+    more than one example, the aircraft bodies will be divide, 75% to Train and 
+    25% to Eval. The samples are separated using tags.
+
+    Args:
+        dataset_name ([type]): [description]
+    """
+    dataset = fo.load_dataset(dataset_name)
+    train_view = dataset.match_tags("multi_class_train")
+    logging.info("Removing existing multi_class_train tags")
+    for sample in train_view:
+        try:
+            sample.tags = list(filter(lambda x: x != "multi_class_train", sample.tags))
+            sample.save()
+        except ValueError:
+            pass
+    logging.info("Removing existing multi_class_eval tags")
+    eval_view = dataset.match_tags("multi_class_eval")
+    for sample in eval_view:
+        try:
+            sample.tags = list(filter(lambda x: x != "multi_class_eval", sample.tags))
+            sample.save()
+        except ValueError:
+            pass
+
+    norm_models = dataset.distinct("norm_model.label")
+    for norm_model in norm_models:
+        view = dataset.filter_labels("norm_model", (F("label") == norm_model)).select_fields("icao24").shuffle()
+        unique_aircraft = view.distinct("icao24.label")
+        if len(unique_aircraft) > 1:
+            train_aircraft = unique_aircraft[:math.floor(len(unique_aircraft)*.75)]
+            eval_aircraft = unique_aircraft[math.floor(len(unique_aircraft)*.75):]
+            print("{} Total: {} Train: {} Eval: {}".format(norm_model,len(unique_aircraft),len(train_aircraft),len(eval_aircraft)))     
+            
+            for icao24 in train_aircraft:
+                _tag_samples_by_icao24(dataset,icao24, "multi_class_train")
+            for icao24 in eval_aircraft:
+                _tag_samples_by_icao24(dataset,icao24, "multi_class_eval")
+
+
+
 
 
 def add_faa_data_to_voxel51_dataset(

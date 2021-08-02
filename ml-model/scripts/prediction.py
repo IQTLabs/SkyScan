@@ -63,7 +63,8 @@ def _non_max_suppression(objects, threshold):
     """
     if len(objects) == 1:
         return [0]
-
+    if len(objects) == 0:
+        return []
     boxes = np.array([o.bbox for o in objects])
     xmins = boxes[:, 0]
     ymins = boxes[:, 1]
@@ -146,7 +147,7 @@ def run_detection_model(dataset_name, training_name, prediction_field):
     model_path = (
         "/tf/model-export/" + training_name + "/image_tensor_saved_model/saved_model"
     )
-    min_score = 0.8  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
+    min_score = 0.3  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
 
     logging.info("Loading model...")
     start_time = time.time()
@@ -228,7 +229,7 @@ def run_detection_model_tiled(
         "/tf/model-export/" + training_name + "/image_tensor_saved_model/saved_model"
     )
 
-    min_score = 0.8  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
+    min_score = 0.75  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
     input_tensor_size = 512
 
     logging.info("Loading model...")
@@ -257,6 +258,7 @@ def run_detection_model_tiled(
         img_width, img_height = img_size
         objects_by_label = dict()
         exportDetections = []
+        predicted_objects = []
         tile_sizes = []
 
         for tile_size in tile_string.split(","):
@@ -326,25 +328,46 @@ def run_detection_model_tiled(
                         objects_by_label.setdefault(label, []).append(
                             Object(label, confidence, repositioned_bbox)
                         )
+                        predicted_objects.append(Object(label, confidence, repositioned_bbox))
 
-        for label, objects in objects_by_label.items():
-            idxs = _non_max_suppression(objects, iou_threshold)
-            for idx in idxs:
-                x1 = objects[idx].bbox[0] / img_width
-                y1 = objects[idx].bbox[1] / img_height
-                x2 = objects[idx].bbox[2] / img_width
-                y2 = objects[idx].bbox[3] / img_height
+        
+        # for label, objects in objects_by_label.items():
+        #     idxs = _non_max_suppression(objects, iou_threshold)
+        #     for idx in idxs:
+        #         x1 = objects[idx].bbox[0] / img_width
+        #         y1 = objects[idx].bbox[1] / img_height
+        #         x2 = objects[idx].bbox[2] / img_width
+        #         y2 = objects[idx].bbox[3] / img_height
 
-                w = x2 - x1
-                h = y2 - y1
-                bbox = [x1, y1, w, h]
-                exportDetections.append(
-                    fo.Detection(
-                        label=objects[idx].label,
-                        bounding_box=bbox,
-                        confidence=objects[idx].score,
-                    )
+        #         w = x2 - x1
+        #         h = y2 - y1
+        #         bbox = [x1, y1, w, h]
+        #         exportDetections.append(
+        #             fo.Detection(
+        #                 label=objects[idx].label,
+        #                 bounding_box=bbox,
+        #                 confidence=objects[idx].score,
+        #             )
+        #         )
+
+        objects = predicted_objects
+        idxs = _non_max_suppression(objects, iou_threshold)
+        for idx in idxs:
+            x1 = objects[idx].bbox[0] / img_width
+            y1 = objects[idx].bbox[1] / img_height
+            x2 = objects[idx].bbox[2] / img_width
+            y2 = objects[idx].bbox[3] / img_height
+
+            w = x2 - x1
+            h = y2 - y1
+            bbox = [x1, y1, w, h]
+            exportDetections.append(
+                fo.Detection(
+                    label=objects[idx].label,
+                    bounding_box=bbox,
+                    confidence=objects[idx].score,
                 )
+            )
 
         # Store detections in a field name of your choice
         sample[prediction_field] = fo.Detections(detections=exportDetections)
