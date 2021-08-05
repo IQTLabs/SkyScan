@@ -12,11 +12,18 @@ To enable better tracking, most planes broadcast a signal known as [Automatic De
 From the ADS-B transmissions, you can get a plane's location and altitude. If you know where a plane is and where you are, you can do some math and point a camera at the plane and take a picture. If you have a Pan/Tilt camera lying around, you can have it automatically track a plane as it flies by and snap photos.
 
 ## Hardware
-The project works with the following hardware. It should be easy to extended to work with other SDRs or cameras... but that is on you.
-- Raspberry Pi 4
-- [Axis m5525](https://www.axis.com/en-us/products/axis-m5525-e) Axis has a great API for their network cameras, and it should work with any of there PTZ cameras. The m5525 is nice because it supports continuous 360 degree rotation. You can literally have it spin around in circles, giving you complete coverage. It also has 10x optical zoom. Any Axis PTZ camera should be supported. The code has also been tested with the [Axis p5655](https://www.axis.com/en-us/products/axis-p5655-e) camera.
-- [Pan Tilt Hat](https://shop.pimoroni.com/products/pan-tilt-hat?variant=22408353287) & Raspberry Pi Camera - This is the budget option. It is a small kit that uses servo motors to move the Raspberry Pi Cam around. It only has about 170 degrees of panning and the positioning is not that accurate. Since the Pi Cam is used, it is not zoomed in much. If you are in a spot where planes are flying low overhead, this could be a perfect solution. 
-- [RTL-SDR](https://www.nooelec.com/store/sdr/nesdr-smart-sdr.html) This is nice and stable RTL-SDR. It is compact and doesn't block all the other ports on a Pi. Since you are just trying to capture local planes, you can get away with using any antenna you have lying around.
+The project is built around the RaspberryPi 4, an RTL-SDR, and an Axis PTZ security camera. It should easily be extended to work with other SDRs or cameras.
+
+Axis has a great API for their network cameras, and it should work with any of there PTZ cameras. The m5525 is nice because it supports continuous 360 degree rotation. You can literally have it spin around in circles, giving you complete coverage. The code has been tested with the 10x zoom [Axis m5525](https://www.axis.com/en-us/products/axis-m5525-e) and the 30x zoom [Axis p5655](https://www.axis.com/en-us/products/axis-p5655-e) cameras.
+
+We are using the [Nooelec NESDR SMArt v4 SDR](https://www.nooelec.com/store/sdr/nesdr-smart-sdr.html) This is nice and stable RTL-SDR. It is compact and doesn't block all the other ports on a Pi. Since you are just trying to capture local planes, you can get away with using any antenna you have lying around.
+
+### Field System Configurations
+Two configurations were developed for this project, one with AC and one with DC power input.
+
+![configurations](media/hardware1-small.JPG)
+
+See the [Hardware README](hardware/README.md) for additional details including a BOM.
 
 ## Software Architecture
 
