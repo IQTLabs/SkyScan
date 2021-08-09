@@ -147,7 +147,7 @@ def run_detection_model(dataset_name, training_name, prediction_field):
     model_path = (
         "/tf/model-export/" + training_name + "/image_tensor_saved_model/saved_model"
     )
-    min_score = 0.3  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
+    min_score = 0.5  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
 
     logging.info("Loading model...")
     start_time = time.time()
@@ -211,6 +211,7 @@ def run_detection_model_tiled(
     dataset_name,
     training_name,
     prediction_field,
+    sample_tag,
     tile_string,
     tile_overlap:int,
     iou_threshold:float,
@@ -229,7 +230,7 @@ def run_detection_model_tiled(
         "/tf/model-export/" + training_name + "/image_tensor_saved_model/saved_model"
     )
 
-    min_score = 0.75  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
+    min_score = 0.50  # This is the minimum score for adding a prediction. This helps keep out bad predictions but it may need to be adjusted if your model is not that good yet.
     input_tensor_size = 512
 
     logging.info("Loading model...")
@@ -248,7 +249,7 @@ def run_detection_model_tiled(
     dataset = fo.load_dataset(dataset_name)
 
     # Go through all of the samples in the dataset
-    for sample in dataset.select_fields("filepath"):
+    for sample in dataset.match_tags(sample_tag).select_fields("filepath"):
 
         start_time = time.time()
         img = load_img(
@@ -373,4 +374,6 @@ def run_detection_model_tiled(
         sample[prediction_field] = fo.Detections(detections=exportDetections)
         sample.save()
         end_time = time.time()
-        print("Processing {} took: {}s".format(sample.filepath, end_time - start_time))
+        print("{} - Processing {} took: {}s".format(len(exportDetections),sample.filepath, end_time - start_time))
+        for detect in exportDetections:
+            print("\t - {} {}%".format(detect.label,detect.confidence))

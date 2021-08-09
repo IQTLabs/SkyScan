@@ -15,6 +15,7 @@ from customvox51 import (
     build_multi_class_train_eval_dataset,
     select_multi_class_train_eval_dataset,
     split_multi_class_train_eval_dataset,
+    random_multi_class_train_eval_dataset,
     add_normalized_model_to_plane_detection
 )
 
@@ -367,7 +368,7 @@ if __name__ == "__main__":
         ):
             logging.info("Entering 'build multi-class dataset' route.")
             #add_normalized_model_to_plane_detection(config["file_names"]["dataset_name"], config["prediction"]["prediction_field"], "multi_class_detections")
-            split_multi_class_train_eval_dataset(
+            random_multi_class_train_eval_dataset(
                 config["file_names"]["dataset_name"]
             )
             logging.info("Exiting 'build multi-class dataset' route.")
@@ -505,6 +506,7 @@ if __name__ == "__main__":
                 config["file_names"]["dataset_name"],
                 config["model"]["training_name"],
                 config["prediction"]["prediction_field"],
+                "multi_class_eval",
                 config["prediction"]["tile_string"],
                 config.getint("prediction","tile_overlap"),
                 config.getfloat("prediction","iou_threshold"),

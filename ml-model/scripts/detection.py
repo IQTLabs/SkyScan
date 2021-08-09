@@ -427,8 +427,7 @@ def create_custom_training_config_file(
         s = re.sub("num_steps: [0-9]+", "num_steps: {}".format(num_train_steps), s)
 
         # Set learning_rate_base in learning_rate, sane default
-        #     s = re.sub('learning_rate_base: [.0-9]+',
-        #                'learning_rate_base: {}'.format("8e-2"), s)
+        s = re.sub('learning_rate_base: -?[\d.]+(?:e-?\d+)?', 'learning_rate_base: {}'.format("8e-2"), s)
 
         # Set warmup_learning_rate in learning_rate, sane default
         s = re.sub(
@@ -453,6 +452,8 @@ def create_custom_training_config_file(
 
         # replacing the default data augmentation with something more comprehensive
         # the available options are listed here: https://github.com/tensorflow/models/blob/master/research/object_detection/protos/preprocessor.proto
+        # more info here: https://github.com/tensorflow/models/blob/master/research/object_detection/builders/preprocessor_builder.py
+        # and here: https://github.com/tensorflow/models/blob/master/research/object_detection/core/preprocessor.py
 
         data_augmentation = (
             "data_augmentation_options {\n random_distort_color: { \n } \n}\n\n"
@@ -460,11 +461,14 @@ def create_custom_training_config_file(
             "data_augmentation_options {\n random_vertical_flip: { \n } \n}\n\n"
             "data_augmentation_options {\n random_rotation90: { \n } \n}\n\n"
             "data_augmentation_options {\n random_jitter_boxes: { \n } \n}\n\n"
-            "data_augmentation_options {\n random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.95\n\tmax_aspect_ratio: 1.05\n\tmin_area: 0.25\n\tmax_area: 0.875\n\toverlap_thresh: 0.9\n\trandom_coef: 0.5\n}\n}\n\n"
-            "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 40\n\tmax_jpeg_quality: 90\n } \n}\n\n"
+            "data_augmentation_options {\n random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.95\n\tmax_aspect_ratio: 1.05\n\tmin_area: 0.1\n\tmax_area: 0.875\n\toverlap_thresh: 0.9\n\trandom_coef: 0.1\n}\n}\n\n"
+            "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 50\n\tmax_jpeg_quality: 90\n } \n}\n\n"
         )
 
         #https://github.com/tensorflow/models/issues/9379
+        # find where the object detection module was installed: python -c "import object_detection as _; print(_.__path__)"
+        # edit utils/autoaugment_utils.py
+        # /usr/local/lib/python3.6/dist-packages/object_detection/utils
         data_augmentation = (
             "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
         )
