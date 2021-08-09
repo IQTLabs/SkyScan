@@ -255,7 +255,7 @@ def random_multi_class_train_eval_dataset(dataset_name):
             sample.tags.append("multi_class_eval")
             sample.save() 
 
-        print("{} Total: {} Train: {} Eval: {}".format(norm_model,len(unique_aircraft),len(train_aircraft),len(eval_aircraft)))   
+        print("{} Total: {} Train: {} Eval: {}".format(norm_model,len(view),train_count,eval_count))   
 
     view = dataset.match(F("multi_class_detections.detections").length()==0).take(250)
     for sample in view:
