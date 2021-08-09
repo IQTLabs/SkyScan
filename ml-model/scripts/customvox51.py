@@ -258,9 +258,9 @@ def random_multi_class_train_eval_dataset(dataset_name):
         print("{} Total: {} Train: {} Eval: {}".format(norm_model,len(unique_aircraft),len(train_aircraft),len(eval_aircraft)))   
 
     view = dataset.match(F("multi_class_detections.detections").length()==0).take(250)
-        for sample in view:
-            sample.tags.append("multi_class_train")
-            sample.save() 
+    for sample in view:
+        sample.tags.append("multi_class_train")
+        sample.save() 
 
 
 def add_faa_data_to_voxel51_dataset(
