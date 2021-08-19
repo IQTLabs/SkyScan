@@ -95,8 +95,32 @@ sudo raspi-config
 - Camera
 - Enable
 
-## Operations
-Launch the application using docker-compose: 
+## System Operation
+
+### Hardware Setup/Operation
+1. Unpack and connect system components
+
+<img src="media/ac-components-2.jpg" alt="components" title="components" width="400" />
+
+2. Level tripod and adjustable head using bubble levels
+
+<img src="media/ac-components-7.jpg" alt="components" title="components" width="400" />
+
+3. Orient camera so it is pointed north
+
+<img src="media/ac-components-4.jpg" alt="components" title="components" width="400" />
+
+4. Connect the AC adapter to the back of the PoE switch
+
+<img src="media/ac-components-5.jpg" alt="components" title="components" width="400" />
+
+4. Power on the system (optional use of portable battery station for remote operation)
+
+<img src="media/ac-components-6.jpg" alt="components" title="components" width="400" />
+
+### Software Operation
+
+SSH to the RaspberryPi and launch the application using docker-compose: 
 ```bash
 cd ~/Projects/SkyScan
 docker-compose up
@@ -104,7 +128,7 @@ docker-compose up
 
 A web interface will be available on **port 8080**. As pictures of planes are captured they will be saved in folders in the **./capture** directory.
 
-### Testing with pytest
+#### Testing with pytest
 
 To run tests with pytest, run:
 
