@@ -1,14 +1,18 @@
 # SkyScan Hardware
+
 ## Introduction
+
 This directory contains the information to build the AC and DC powered SkyScan Field Systems
-![hardware](../media/hardware1.jpg)
+
+![hardware](../assets/hardware1.jpg)
 
 ## 3D Design Files
 
 [STLs](STL)
+---
 
-![CAD1](../media/CAD1.jpg)
-![CAD2](../media/CAD2.jpg)
+![CAD1](../assets/CAD1.jpg)
+![CAD2](../assets/CAD2.jpg)
 
 ## Hardware License
 
