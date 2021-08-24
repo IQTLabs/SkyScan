@@ -18,3 +18,7 @@
 4. Power on the system (optional use of portable battery station for remote operation)
 
 <img src="assets/ac-components-6.jpg" alt="components" title="components" width="400" />
+
+5. Use the tripod/manfrotto adjustment knobs and the camera web browser video feed to dial-in the aim of the camera
+
+<img src="assets/tiled-windows.jpg" alt="A321" title="A321" width="800" />
