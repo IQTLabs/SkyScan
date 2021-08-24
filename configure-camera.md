@@ -8,6 +8,10 @@
 > AXIS_PASSWORD= # The Password for the Axis camera
 > AXIS_IP= # The IP address of the camera
 
+Confirm your IP, username, and password are correct by connecting to the camera web interface and logging in:
+
+<img src="assets/camera-web-interface.jpg" alt="A321" title="A321" width="800" />
+
 ## (Optional) Enable Raspi-camera
 
 If you are using the Pan Tilt hat, you will need to make sure the Pi Camera has been configured correctly:
