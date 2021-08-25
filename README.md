@@ -6,7 +6,7 @@ Automatically photograph planes that fly by!
 *Airbus A321 at 32,000 feet*
 
 ## Overview
-Building image datasets for machine learning applications can be slow and expensive. SkyScan demonstrates a low-cost system that uses sensors to automate the building of datasets appropriate for computer vision models. SkyScan uses a ground-based camera and software-defined radio to capture images and correlated identity information of commercial aircraft. The SkyScan field kit software runs on a Raspberry Pi and all devices are low-power allowing the system to run for several hours off of a portable battery.
+Building image datasets for machine learning applications can be slow and expensive. SkyScan demonstrates a low-cost system that uses sensors to automate the building of datasets appropriate for computer vision models. SkyScan uses a ground-based camera and software-defined radio to capture images and correlated identity information of commercial aircraft. The SkyScan field kit software runs on a Raspberry Pi and all devices are low-power, allowing the system to run for several hours off of a portable battery.
 
 ## Table of Contents
 1. [How it Works](#how-it-works)
