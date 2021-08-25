@@ -74,11 +74,11 @@ Here is a brief overview of each component. There are additional details in the 
 
 - [mikenye/piaware](https://github.com/mikenye/docker-piaware) - This is a dockerized version of FlightAware's [PiAware](https://flightaware.com/adsb/piaware/) program. PiAware is actually just a wrapper around [dump1090](https://flightaware.com/adsb/piaware/). Dump1090 is a small program that can use an RTL-SDR to receive an ADS-B transmission. The program uses these transmission to track where nearby planes are and display them on a webpage. It also outputs all of the messages it receives on a TCP port for other programs to use. We use this connection to get the plane information. PiAware adds the ability to send the information to FlightAware. You could probably just switch this to only use Dump1090.
 
-- [ADSB-MQTT](adsb-mqtt) Is a small python program that reads in information collected by Dump1090 over a TCP port and publishes all the messages it receives onto the MQTT bus. 
+- [ADSB-MQTT](adsb-mqtt) is a small Python program that reads in information collected by Dump1090 over a TCP port and publishes all the messages it receives onto the MQTT bus. 
 
-- [tracker](tracker) Receives all of the plane's location, determines how far away from the camera each one is and then finds the closest plane. The location and relative position of the closest plane is periodically published as an MQTT messages. Tracker needs to know the location and altitude of the camera in order to determine the planes relative position.
+- [tracker](tracker) receives all of the plane's location, determines how far away from the camera each one is and then finds the closest plane. The location and relative position of the closest plane is periodically published as an MQTT messages. Tracker needs to know the location and altitude of the camera in order to determine the plane's relative position.
 
-- [axis-ptz](axis-ptz) Receives updates on which plane to track over MQTT and then directs the PTZ camera towards the plane and takes a picture.
+- [axis-ptz](axis-ptz) receives updates on which plane to track over MQTT and then directs the PTZ camera towards the plane and takes a picture.
 
 ## ML Pipeline
 
