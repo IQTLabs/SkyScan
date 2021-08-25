@@ -80,11 +80,15 @@ Here is a brief overview of each component. There are additional details in the 
 
 - [axis-ptz](axis-ptz) receives updates on which plane to track over MQTT and then directs the PTZ camera towards the plane and takes a picture.
 
-## ML Pipeline
+## ML Pipelines
 
-[PUT AN ML SUMMARY HERE]
+There are currently three difference machine learning pipelines.
 
-[Build a plane Detector using Labeled Plane data](ml-model/readme.md)
+The first pipeline uses a series of Jupyter notebooks to prepare the image dataset, train object detection and classification models, and then evaluate those models. These notebooks can be found [here](ml-model/notebooks). Instructions for using these notebooks can be found [here](ml-model/readme.md)).
+
+The second pipeline re-packages much of the functionality found in the Jupyter notebooks into a Python script that can be run from the command line. The scripts and directions can be found [here](ml-model/scripts).
+
+The third pipeline uses the [YOLTv4 model](https://github.com/avanetten/yoltv4) to also perform object detection. The relevant notebooks can be found [here](ml-model/yoltv4).
 
 ## Setup and Operation
 
