@@ -96,13 +96,13 @@ Follow the steps below for installing the edge software.
 3. [Configure Camera](./configure-camera.md)
 
 ## System Operation
-After the system has been installed, follow the steps below to setup the hardware and start the software.
+After the system has been installed, follow the steps below to set up the hardware and start the software.
 
 - [Hardware](hardware.md)
 - [Software](software.md)
 
 ## Additional Information
-Other helpful information about this project
+Other helpful information about this project:
 
 - [Setting up dev containers in VS Code](devcontainers.md)
 - [System design notes](design.md)
