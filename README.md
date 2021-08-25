@@ -45,7 +45,7 @@ See the [Hardware README](hardware/README.md) for additional component details i
 
 ## Software Architecture
 
-The different components for this project have been made into Docker containers. This modularity makes it easier to add in new data sources or cameras down the road. We have found containers to work really well on the Pi and the help enforce that you have properly documented all of the software requirements.
+The different components for this project have been made into Docker containers. This modularity makes it easier to add in new data sources or cameras down the road. We have found that containers work really well on the Pi and help enforce that you have properly documented all of the software requirements.
 
 ````
 +-------------+      +-------------+           +---------------+            +--------------+
