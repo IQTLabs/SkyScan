@@ -82,7 +82,7 @@ Here is a brief overview of each component. There are additional details in the 
 
 ## ML Pipelines
 
-There are currently three difference machine learning pipelines.
+There are currently three different machine learning pipelines.
 
 The first pipeline uses a series of Jupyter notebooks to prepare the image dataset, train object detection and classification models, and then evaluate those models. These notebooks can be found [here](ml-model/notebooks). Instructions for using these notebooks can be found [here](ml-model/readme.md)).
 
