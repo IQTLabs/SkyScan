@@ -13,6 +13,7 @@ services:
       - 6007:6007
       - 5151:5151
     volumes:
+      - /home/ubuntu/efs:/tf/efs
       - ./model-export:/tf/model-export 
       - ./dataset-export:/tf/dataset-export
       - ./notebooks:/tf/notebooks

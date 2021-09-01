@@ -246,8 +246,8 @@ def random_multi_class_train_eval_dataset(dataset_name):
         view = dataset.filter_labels("norm_model", (F("label") == norm_model)).match(F("multi_class_detections.detections").length()>0).shuffle()
         unique_aircraft = view.distinct("icao24.label")
 
-        train_count = math.floor(len(unique_aircraft)*.75)
-        eval_count = math.floor(len(unique_aircraft)*.75)
+        train_count = math.floor(len(view)*.75)
+        eval_count = math.floor(len(view)*.25)
         for sample in view[:train_count]:
             sample.tags.append("multi_class_train")
             sample.save() 
