@@ -57,6 +57,7 @@ def train_detection_model(
     chosen_model,
     num_train_steps,
     label_field="detections",
+    training_tag="train",
     num_eval_steps:int=500,
 ):
     """Train an object detection model.
@@ -79,9 +80,9 @@ def train_detection_model(
 
     filepaths = set_filenames(base_models, training_name, chosen_model)
 
-    export_voxel51_dataset_to_tfrecords(dataset_name, filepaths, label_field)
+    export_voxel51_dataset_to_tfrecords(dataset_name, filepaths, label_field, training_tag)
 
-    detection_mapping = create_detection_mapping(dataset_name, label_field)
+    detection_mapping = create_detection_mapping(dataset_name, label_field, training_tag)
 
     save_mapping_to_file(detection_mapping, filepaths)
 
@@ -161,7 +162,7 @@ def set_filenames(base_models, training_name, chosen_model):
 
 
 def export_voxel51_dataset_to_tfrecords(
-    dataset_name, filepaths, label_field, training_percentage=0.8
+    dataset_name, filepaths, label_field, training_tag, training_percentage=0.8
 ):
     """Export the voxel51 dataset to TensorFlow records.
 
@@ -180,7 +181,7 @@ def export_voxel51_dataset_to_tfrecords(
         return
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags("train").shuffle(seed=51)
+    view = dataset.match_tags(training_tag).shuffle(seed=51)
 
     # calculate size of training and validation set
     sample_len = len(view)
@@ -204,7 +205,7 @@ def export_voxel51_dataset_to_tfrecords(
     )
 
 
-def create_detection_mapping(dataset_name, label_field):
+def create_detection_mapping(dataset_name, label_field, training_tag):
     """Create mapping from labels to IDs.
 
     This function creates a mapping necessary for tensorflow
@@ -223,7 +224,7 @@ def create_detection_mapping(dataset_name, label_field):
 
     # load voxel51 dataset and create a view
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags("train").shuffle(seed=2021)
+    view = dataset.match_tags(training_tag)
 
     # create a list of all class names
     class_names = _create_list_of_class_names(view, label_field)
@@ -295,6 +296,7 @@ def get_num_classes_from_label_map(filepaths):
     )
     category_index = label_map_util.create_category_index(categories)
     num_classes = len(category_index.keys())
+    logging.info("Found {} classes".format(num_classes))
     logging.info("Finished calculating number of classes in label map file.")
     return num_classes
 
@@ -425,8 +427,7 @@ def create_custom_training_config_file(
         s = re.sub("num_steps: [0-9]+", "num_steps: {}".format(num_train_steps), s)
 
         # Set learning_rate_base in learning_rate, sane default
-        #     s = re.sub('learning_rate_base: [.0-9]+',
-        #                'learning_rate_base: {}'.format("8e-2"), s)
+        s = re.sub('learning_rate_base: -?[\d.]+(?:e-?\d+)?', 'learning_rate_base: {}'.format("8e-2"), s)
 
         # Set warmup_learning_rate in learning_rate, sane default
         s = re.sub(
@@ -451,6 +452,12 @@ def create_custom_training_config_file(
 
         # replacing the default data augmentation with something more comprehensive
         # the available options are listed here: https://github.com/tensorflow/models/blob/master/research/object_detection/protos/preprocessor.proto
+        # more info here: https://github.com/tensorflow/models/blob/master/research/object_detection/builders/preprocessor_builder.py
+        # and here: https://github.com/tensorflow/models/blob/master/research/object_detection/core/preprocessor.py
+
+
+        #"data_augmentation_options {\n random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.95\n\tmax_aspect_ratio: 1.05\n\tmin_area: 0.1\n\tmax_area: 0.875\n\toverlap_thresh: 0.9\n\trandom_coef: 0.1\n}\n}\n\n"
+            
 
         data_augmentation = (
             "data_augmentation_options {\n random_distort_color: { \n } \n}\n\n"
@@ -458,14 +465,17 @@ def create_custom_training_config_file(
             "data_augmentation_options {\n random_vertical_flip: { \n } \n}\n\n"
             "data_augmentation_options {\n random_rotation90: { \n } \n}\n\n"
             "data_augmentation_options {\n random_jitter_boxes: { \n } \n}\n\n"
-            "data_augmentation_options {\n random_crop_image {\n\tmin_object_covered: 1.0\n\tmin_aspect_ratio: 0.95\n\tmax_aspect_ratio: 1.05\n\tmin_area: 0.25\n\tmax_area: 0.875\n\toverlap_thresh: 0.9\n\trandom_coef: 0.5\n}\n}\n\n"
-            "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 40\n\tmax_jpeg_quality: 90\n } \n}\n\n"
+            "data_augmentation_options {\n ssd_random_crop_fixed_aspect_ratio {\n}\n}\n\n"
+            "data_augmentation_options {\n random_jpeg_quality: {\n\trandom_coef: 0.5\n\tmin_jpeg_quality: 50\n\tmax_jpeg_quality: 90\n } \n}\n\n"
         )
 
         #https://github.com/tensorflow/models/issues/9379
-        data_augmentation = (
-            "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
-        )
+        # find where the object detection module was installed: python -c "import object_detection as _; print(_.__path__)"
+        # edit utils/autoaugment_utils.py
+        # /usr/local/lib/python3.6/dist-packages/object_detection/utils
+        #data_augmentation = (
+        #    "data_augmentation_options {\n autoaugment_image: {\n } \n}\n\n"
+        #)
 
         s = re.sub(
             "data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}\s* data_augmentation_options {[\s\w]*{[\s\w\:\.]*}\s*}",
