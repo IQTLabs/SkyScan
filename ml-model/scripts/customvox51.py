@@ -270,7 +270,7 @@ def export_yolo_multi_class_dataset(dataset_name, label_field, tag, export_name)
     export_dir = "/tf/dataset-export/" + export_title + "/"    
     logging.info("Export samples tagged: {} to {} and labeling them using: {}".format(tag,export_dir,label_field))
     dataset = fo.load_dataset(dataset_name)
-    view = dataset.match_tags(tag)
+    view = dataset.match_tags(tag).sort_by("norm_model.label")
 
     # The type of dataset to export
     # Any subclass of `fiftyone.types.Dataset` is supported
