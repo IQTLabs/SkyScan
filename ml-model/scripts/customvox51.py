@@ -121,6 +121,7 @@ def _tag_samples_by_icao24(dataset, icao24, tag, only_aircraft_detected=True):
         view = dataset.filter_labels("icao24", (F("label") == icao24)).match(F("multi_class_detections.detections").length()>0)
     else:    
         view = dataset.filter_labels("icao24", (F("label") == icao24))
+    logging.info("\t[{}] - Tagging {} aircraft as {}".format(icao24,len(view),tag))
     for sample in view:
         sample.tags.append(tag)
         sample.save() 
@@ -144,14 +145,14 @@ def select_multi_class_train_eval_dataset(dataset_name, prediction_field, train_
 
     dataset = fo.load_dataset(dataset_name)
     train_view = dataset.match_tags("multi_class_train")
-    logging.iinfo("Removing existing multi_class_train tags")
+    logging.info("Removing existing multi_class_train tags")
     for sample in train_view:
         try:
             sample.tags = list(filter(lambda x: x != "multi_class_train", sample.tags))
             sample.save()
         except ValueError:
             pass
-    logging.iinfo("Removing existing multi_class_eval tags")
+    logging.info("Removing existing multi_class_eval tags")
     eval_view = dataset.match_tags("multi_class_eval")
     for sample in eval_view:
         try:
@@ -178,10 +179,12 @@ def split_multi_class_train_eval_dataset(dataset_name):
     25% to Eval. The samples are separated using tags.
 
     Args:
-        dataset_name ([type]): [description]
+        dataset_name (): The name of the Voxel51 dataset to use
     """
     dataset = fo.load_dataset(dataset_name)
     train_view = dataset.match_tags("multi_class_train")
+
+    # Remove any existing tags from the dataset to ensure that you are starting fresh
     logging.info("Removing existing multi_class_train tags")
     for sample in train_view:
         try:
@@ -197,7 +200,7 @@ def split_multi_class_train_eval_dataset(dataset_name):
             sample.save()
         except ValueError:
             pass
-
+    # find all of the unique normalized aircraft models
     norm_models = dataset.distinct("norm_model.label")
     for norm_model in norm_models:
         view = dataset.filter_labels("norm_model", (F("label") == norm_model)).select_fields("icao24").shuffle()
@@ -262,6 +265,23 @@ def random_multi_class_train_eval_dataset(dataset_name):
         sample.tags.append("multi_class_train")
         sample.save() 
 
+def export_yolo_multi_class_dataset(dataset_name, label_field, tag, export_name):
+    export_title = tag + "_" + export_name
+    export_dir = "/tf/dataset-export/" + export_title + "/"    
+    logging.info("Export samples tagged: {} to {} and labeling them using: {}".format(tag,export_dir,label_field))
+    dataset = fo.load_dataset(dataset_name)
+    view = dataset.match_tags(tag)
+
+    # The type of dataset to export
+    # Any subclass of `fiftyone.types.Dataset` is supported
+    dataset_type = fo.types.YOLOv4Dataset
+
+    # Export the dataset!
+    view.export( export_dir=export_dir, dataset_type=dataset_type, label_field=label_field)
+
+    export_file = "/tf/dataset-export/" + export_title + ".tar.gz"
+
+    subprocess.run("/bin/tar -zcvf {} {}".format(export_file, export_dir), shell=True)
 
 def add_faa_data_to_voxel51_dataset(
     voxel51_dataset_name, faa_master_dataset_path, faa_reference_dataset_path

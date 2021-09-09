@@ -16,7 +16,8 @@ from customvox51 import (
     select_multi_class_train_eval_dataset,
     split_multi_class_train_eval_dataset,
     random_multi_class_train_eval_dataset,
-    add_normalized_model_to_plane_detection
+    add_normalized_model_to_plane_detection,
+    export_yolo_multi_class_dataset
 )
 
 from labelbox_utils import (
@@ -56,6 +57,7 @@ def read_config(config_file=os.path.join("config", "config.ini")):
         "tile_string": "1920x1080,1024x1024,512x512",
         "tile_overlap": 50,
         "iou_threshold": 0,
+        "export_name": "by_aircraft",
         "upload_num_samples": 500,
     }
     config.read(config_file)
@@ -155,6 +157,14 @@ def parse_command_line_arguments():
         action="store_true",
         help="Build multi-class dataset.",
     )
+
+    parser.add_argument(
+        "--export_yolo_dataset",
+        default=False,  # default value is False
+        action="store_true",
+        help="Export a YOLO v4 dataset for multi-class train & eval.",
+    )
+
 
     parser.add_argument(
         "--export_model",
@@ -377,6 +387,24 @@ if __name__ == "__main__":
                 """Missing config file value for voxel51 dataset name."""
             )
             sys.exit(1)  # exit program
+
+    # check if user selected build multi-class dataset stage
+    if args.export_yolo_dataset:
+        if (
+            config["file_names"]["dataset_name"]
+        ):
+            logging.info("Entering 'export YOLO multi-class dataset' route.")
+            export_yolo_multi_class_dataset(config["file_names"]["dataset_name"], "multi_class_detections", "multi_class_train", config["export"]["export_name"])
+            export_yolo_multi_class_dataset(config["file_names"]["dataset_name"], "multi_class_detections", "multi_class_eval", config["export"]["export_name"])
+
+            logging.info("Exiting 'export YOLO multi-class dataset' route.")
+        else:
+            logging.info(
+                """Missing config file value for voxel51 dataset name."""
+            )
+            sys.exit(1)  # exit program
+
+
 
 
     # check if user selected train model stage
