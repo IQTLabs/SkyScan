@@ -1,8 +1,12 @@
 # A Few Scripts to Rule Them All
 
-This folder contains scripts that enable an operator or analyst
-to run data- and model-related SkyScan functions from a script
-rather than a series of Jupyter notebooks.
+This folder contains scripts that enable an operator or analyst to run data- and model-related SkyScan
+functions from a script rather than a series of Jupyter notebooks. 
+
+What do these scripts do? They largely implement machine learning-related functionality so that a
+SkyScan user can build trained models that do plane detection and classification. Like many ML
+application, much of the code is related to data preparation rather than simply model training or
+inference.
 
 ## Using the Scripts
 
@@ -118,8 +122,6 @@ python main.py --predict
 ```
 
 The configuration file must contain the dataset_name, the model's training_name, and the prediction_field.
-
-### Any other paths?
 
 ## A Potential Sequence of Commands
 
