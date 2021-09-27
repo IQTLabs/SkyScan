@@ -21,7 +21,7 @@ To enable better tracking, most planes broadcast a signal known as [Automatic De
 
 From the ADS-B transmissions, you can get a plane's location and altitude. If you know where a plane is and where you are, you can do some math, point a camera at the plane and take a picture. If you have a Pan/Tilt camera lying around, you can have it automatically track a plane as it flies by and snap photos.
 
-After a dataset has been collected, a model can be trained to build a plane detector and classifier using the labeled plane data
+After a dataset has been collected, a model can be trained to build a plane detector and classifier using the labeled plane data.
 
 <img src="assets/diagram.jpg" alt="System Diagram" title="System Diagram" width="800" />
 
