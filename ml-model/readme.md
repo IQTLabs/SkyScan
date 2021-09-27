@@ -65,7 +65,7 @@ Here is what the following notebooks help you do and the rough order you want to
 
 
 ### Labeling
-After you have finished uploading the images, go to Labelbox and label the images. Then Export the labels as a JSON file. Download the JSON file and move it to the machine that is running the Docker container that is serving the Notebook.
+After you have finished uploading the images, go to Labelbox and label the images. Then export the labels as a JSON file. Download the JSON file and move it to the machine that is running the Docker container that is serving the Notebook.
 
 
 ### For classification
