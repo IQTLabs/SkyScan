@@ -33,7 +33,7 @@ sudo docker run --name  plane-jupyter \
 Check the logs as it is starting up and look for a token. Select and copy it because you will need to later.
 
 
-Then goto to the IP/domain name for the computer this is running on.... probably localhost. and port 8888 in a browser: `http://localhost:8888`
+Then go to to the IP/domain name for the computer this is running on.... probably localhost. and port 8888 in a browser: `http://localhost:8888`
 
 Once there, paste in the token...
 
