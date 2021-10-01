@@ -15,7 +15,7 @@
         "model_name": "efficientdet_d0_coco17_tpu-32",
         "base_pipeline_file": "ssd_efficientdet_d0_512x512_coco17_tpu-8.config",
         "pretrained_checkpoint": "efficientdet_d0_coco17_tpu-32.tar.gz",
-        "batch_size": 18
+        "batch_size": 12
     },
     "efficientdet-d1": {
         "model_name": "efficientdet_d1_coco17_tpu-32",

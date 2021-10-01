@@ -21,7 +21,7 @@ To enable better tracking, most planes broadcast a signal known as [Automatic De
 
 From the ADS-B transmissions, you can get a plane's location and altitude. If you know where a plane is and where you are, you can do some math, point a camera at the plane and take a picture. If you have a Pan/Tilt camera lying around, you can have it automatically track a plane as it flies by and snap photos.
 
-After a dataset has been collected, a model can be trained to build a plane detector and classifier using the labeled plane data
+After a dataset has been collected, a model can be trained to build a plane detector and classifier using the labeled plane data.
 
 <img src="assets/diagram.jpg" alt="System Diagram" title="System Diagram" width="800" />
 
@@ -84,7 +84,7 @@ Here is a brief overview of each component. There are additional details in the 
 
 There are currently three different machine learning pipelines.
 
-The first pipeline uses a series of Jupyter notebooks to prepare the image dataset, train object detection and classification models, and then evaluate those models. These notebooks can be found [here](ml-model/notebooks). Instructions for using these notebooks can be found [here](ml-model/readme.md)).
+The first pipeline uses a series of Jupyter notebooks to prepare the image dataset, train object detection and classification models, and then evaluate those models. These notebooks can be found [here](ml-model/notebooks). Instructions for using these notebooks can be found [here](ml-model/readme.md).
 
 The second pipeline re-packages much of the functionality found in the Jupyter notebooks into a Python script that can be run from the command line. The scripts and directions can be found [here](ml-model/scripts).
 
