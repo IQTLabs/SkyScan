@@ -14,12 +14,13 @@ First, run the Docker container.
 
 ```
 sudo docker exec -it ml-model_jupyter_1 /bin/bash
+cd scripts
 ```
 
-Next, install required dependencies.
+Next, install required libraries.
 
 ```
-pip install -r requirements.txt
+python install.py
 ```
 
 To get help, type:
@@ -52,6 +53,8 @@ attempts to create a standardized model identifier for each plane.
 ```
 python main.py --normalize
 ```
+
+Edit the **plane_model_dict.json** file to add additional normalizations.
 
 ### Upload training or evaluation dataset to Labelbox
 
@@ -105,7 +108,7 @@ The configuration file must contain the dataset_name, the model's training_name,
 
 ### Export the model
 
-Export the trained deep learning model.
+Export the trained deep learning model. The TF Saved Model format will be used.
 
 ```
 python main.py --export_model
@@ -115,13 +118,57 @@ The configuration file must contain the dataset_name, the model's training_name,
 
 ### Make predictions with trained model
 
-To use a trained deep learning model to make predictions, use:
+This will run the plane detection model against all of the images in the Voxel51 dataset. A new label will be created with the results.
 
 ```
 python main.py --predict
 ```
 
 The configuration file must contain the dataset_name, the model's training_name, and the prediction_field.
+
+### Used a Tiled approach for making predictions
+
+This is similar to --predict, except a windowing approach will be used. This approach chops up the larger image into smaller tiles to improve detection of small objects.
+
+```bash
+python main.py --predict_tiled
+```
+
+### Build a Multiclass Dataset
+
+This command use the results from running the airplane detection model and pulls in the aircraft model information from the FAA to create a dataset of detected aircraft labeled with specific model information.
+
+```bash
+python main.py --build_multi_class_dataset
+```
+
+*Note: there are a couple different approaches for constructing the dataset. They vary on how unique the aircraft bodies are between the Train and Test portions of the dataset. Check out the **customvox51.py** to see the different functions, and update **main.py** if there are other ones you want to use. *
+
+### Export YOLO version of the multiclass dataset
+
+If you would like to use the YOLO notebooks to train a multi-class object detection model, you can export a YOLO version of the dataset:
+
+```bash
+python main.py --export_yolo_dataset
+```
+
+### Train a Aircraft Model Type Detector
+
+This will train a model that can detect different models of aircraft. After the model has finished training, you can **export** the model and then run one of the prediction commands to have it ran against all of the images.
+
+```bash
+python main.py --train_multi_class
+```
+
+
+### Evaluate Multi-Class Performance
+
+If you wanted to see how well the multiclass aircraft model detector works, this command will run it against the Test set of images that were reserved when the dataset was created. Graphs and a confusion matrix will be generated in the **/dataset-export** folder.
+
+```bash
+python main.py --evaluate
+```
+
 
 ## A Potential Sequence of Commands
 
