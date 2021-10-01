@@ -1,6 +1,9 @@
 # Build a plane Detector using Labeled Plane data
 ### Build a Docker container with TF, GPU Support, and Jupyter 
 
+
+This directory contains a collection of [Jupyter Notebooks](notebooks) and [Scripts](scripts) that can be used to build datasets and train a model. The scripts are designed to automate most of the steps in the process. If you want to walk through the process yourself, checkout the notebooks.
+
 ## Requirements 
 Since you will be training a model, an Nvidia GPU is required. In order for a Docker container to access the GPU, the Nvidia Container Toolkit needs to be installed. There are directions for doing that [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker). You can test to make sure everything is installed correctly and working, with the following command:
 
@@ -11,33 +14,17 @@ sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
 ## Build Docker Image
 In the main directory of this repository, run the following command:
 ````
-sudo docker build -t plane-jupyter .
+docker-compose build
 ````
 
 ## Launch the Docker Container
-In the main directory of this repository, the following command will launch the container.
+In the main directory of this repository, use Docker Compose to launch the container:
 
-````
-sudo docker run --name  plane-jupyter \
--v $PWD/model-export:/tf/model-export \
--v $PWD/dataset-export:/tf/dataset-export \
--v $PWD/notebooks:/tf/notebooks \
--v $PWD/testing:/tf/testing \
--v $PWD/media:/tf/media \
--v $PWD/fiftyone-db:/root/.fiftyone \
--v $PWD/models:/tf/models \
--v $PWD/training:/tf/training --gpus all \
--p 8888:8888  -p 6006:6006 -p 6007:6007 -p 5151:5151 \
--it --rm plane-jupyter 
-````
-Check the logs as it is starting up and look for a token. Select and copy it because you will need to later.
+```bash
+docker-compose up
+```
 
 
-Then goto to the IP/domain name for the computer this is running on.... probably localhost. and port 8888 in a browser: `http://localhost:8888`
-
-Once there, paste in the token...
-
-This will bring up the list of folders, go into notebooks.
 
 ## Directories
 The following directories will be created when the container is launched for the first time. 
@@ -51,7 +38,22 @@ Here is what they are used for:
 - **models** The [TF Model repo](https://github.com/tensorflow/models) gets installed here. 
 
 
+# Running Scripts
 
+To run the automated scripts, you will want to attach to a shell inside the container:
+
+```bash
+sudo docker exec -it ml-model_jupyter_1  /bin/bash
+cd scripts
+```
+
+Now you are ready to start running scripts. Check out the documentation [here](scripts/README.md).
+
+# Running Notebooks
+
+Goto to the IP/domain name for the computer this is running on.... probably localhost. and port 8888 in a browser: `http://localhost:8888`
+
+This will bring up the list of folders in the Jupyter client, go into the **notebooks** folder.
 
 ## Notebooks
 Here is what the following notebooks help you do and the rough order you want to do them in:
@@ -102,30 +104,3 @@ python object_detection/model_main_tf2.py \
     --alsologtostderr
 ````
 
-## Edge-TPU Models
-The TF 2 Object Detection API may not be able to generate models that can be compiled to run on the Edge TPU / Coral. 
-https://github.com/tensorflow/models/issues/8935
-
-The fall back plan is to use the TF1 method to generate a model that can work with the EdgeTPU, described here:
-
-https://coral.ai/docs/edgetpu/retrain-detection/#requirements
-
-sudo docker run --name edgetpu-detect \
---rm -it --privileged -p 6006:6006 \
--v $PWD/tf1:/tensorflow/models/research/learn_pet \
--v $PWD/export:/tensorflow/models/research/export \
-detect-tutorial-tf1
-
-
-sudo docker build . -t detect-tutorial-tf1 -f Dockerfile.tf1
-
-# Run this from within the Docker container (at tensorflow/models/research/):
-./prepare_checkpoint_and_dataset.sh --network_type mobilenet_v2_ssd --train_whole_model false
-
-NUM_TRAINING_STEPS=500 && \
-NUM_EVAL_STEPS=100
-
-# From the /tensorflow/models/research/ directory
-./retrain_detection_model.sh \
---num_training_steps ${NUM_TRAINING_STEPS} \
---num_eval_steps ${NUM_EVAL_STEPS}

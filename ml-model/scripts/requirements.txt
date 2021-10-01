@@ -1,4 +1,0 @@
-fiftyone==0.11.1
-labelbox==2.6.0
-pandas==1.1.5
-pytest==6.2.4

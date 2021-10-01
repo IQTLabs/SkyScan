@@ -123,7 +123,7 @@ def add_faa_data_to_voxel51_dataset(
     Returns:
         dataset (voxel51 dataset object)
     """
-    # subprocess.run("./install_faa_data.sh", check=True)
+    subprocess.run("./install_faa_data.sh", check=True)
 
     # import master dataset and strip white space from beacon column
     planes_master = pd.read_csv(faa_master_dataset_path, index_col="MODE S CODE HEX")

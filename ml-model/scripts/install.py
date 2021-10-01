@@ -25,3 +25,6 @@ def setup_and_install_tensorflow_utilities():
     # removed Shell=True to avoid security problems
     # https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess/3172488#3172488
     subprocess.run("./install_tf_utils.sh")
+
+clone_tensorflow_repo()
+setup_and_install_tensorflow_utilities()
