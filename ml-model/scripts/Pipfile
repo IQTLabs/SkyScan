@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fiftyone = "==0.11.1"
+labelbox = "==2.6.0"
+pandas = "==1.1.5"
+pytest = "==6.2.4"
+
+[requires]
+python_version = "3.6"
+
+[dev-packages]

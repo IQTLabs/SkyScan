@@ -1,0 +1,153 @@
+<html>
+
+<head>
+    <title>{{ title }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-light bg-light">
+        <div class="container-fluid">
+          <span class="navbar-brand mb-0 h1">Tracker Status</span>
+        </div>
+      </nav>
+    <div class="container">
+    
+        <h2>Configs</h2>
+        <div class="row justify-content-start">
+            <div class="col-4">
+
+                <h3>Prioritization</h3>
+                <table class="table">
+                    <tr>
+                        <th scope="col"></th>
+                        <th scope="col">Min</th>
+                        <th scope="col">Max</th>
+                    </tr>
+                    <tr>
+                        <th scope="row">Distance</th>
+                        <td>{{config["min_distance"]}}</td>
+                        <td>{{config["max_distance"]}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Altitude</th>
+                        <td>{{config["min_altitude"]}}</td>
+                        <td>{{config["max_altitude"]}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Elevation</th>
+                        <td>{{config["min_elevation"]}}</td>
+                        <td>N/A</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-4">
+
+                <h3>Camera</h3>
+                <table class="table">
+                    <tr>
+                        <th scope="row">Camera Lead</th>
+                        <td>{{config["camera_lead"]}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Camera Altitude</th>
+                        <td>{{config["camera_altitude"]}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Camera Latitude</th>
+                        <td>{{config["camera_latitude"]}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Camera Longitude</th>
+                        <td>{{config["camera_longitude"]}}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-4">
+
+                <h3>System</h3>
+                <table class="table">
+                    <tr>
+                        <th scope="row">Aircraft Pinned</th>
+                        <td>{{config["aircraft_pinned"]}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    
+
+    <h2>Current Observations</h2>
+    <table class="table table-striped">
+        <tr>
+            <th scope="col">Call Sign</th>
+            <th scope="col">ICAO24</th>
+            <th scope="col">Distance</th>
+            <th scope="col">Altitude</th>
+            <th scope="col">Elevation</th>
+            <th scope="col">On Ground</th>
+            <th scope="col">Speed</th>
+            <th scope="col">Vert Rate</th>
+            <th scope="col">Track</th>
+            <th scope="col">Manufacturer</th>
+            <th scope="col">Model</th>
+            <th scope="col">Operator</th>
+        </tr>
+        {% for observation in observations: %}
+        {% if tracking == observation["_Observation__icao24"]: %}
+        <tr class="table-success">
+            {% else %}
+        <tr>
+            {% endif %}
+
+            <td>{{ observation["_Observation__callsign"] }}</td>
+            <td>{{ observation["_Observation__icao24"] }}</td>
+
+            {% if config["max_distance"] != None and config["max_distance"] < observation["_Observation__distance"]: %}
+                <td style="color: red;">
+                {% elif config["min_distance"] != None and config["min_distance"] >
+                observation["_Observation__distance"]: %}
+                <td style="color: red;">
+                    {% else %}
+                <td style="color: green;">
+                    {% endif %}
+                    {{ observation["_Observation__distance"]|int }}</td>
+
+                {% if config["max_altitude"] != None and config["max_altitude"] < observation["_Observation__altitude"]:
+                    %} <td style="color: red;">
+                    {% elif config["min_altitude"] != None and config["min_altitude"] >
+                    observation["_Observation__altitude"]: %}
+                    <td style="color: red;">
+                        {% else %}
+                    <td style="color: green;">
+                        {% endif %}
+                        {{ observation["_Observation__altitude"]|int }}</td>
+
+                    {% if config["min_elevation"] != None and config["min_elevation"] >
+                    observation["_Observation__elevation"]: %}
+                    <td style="color: red;">
+                        {% else %}
+                    <td style="color: green;">
+                        {% endif %}
+                        {{ observation["_Observation__elevation"]|int }}</td>
+
+                    {% if observation["_Observation__onGround"]: %}
+                    <td style="color: red;">
+                        {% else %}
+                    <td style="color: green;">
+                        {% endif %}
+                        {{ observation["_Observation__onGround"] }}</td>
+
+                    <td>{{ observation["_Observation__groundSpeed"]|int }}</td>
+                    <td>{{ observation["_Observation__verticalRate"]|int }}</td>
+                    <td>{{ observation["_Observation__track"]|int }}</td>
+                    <td>{{ observation["_Observation__manufacturer"] }}</td>
+                    <td>{{ observation["_Observation__model"] }}</td>
+                    <td>{{ observation["_Observation__operator"] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

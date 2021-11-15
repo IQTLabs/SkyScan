@@ -1,0 +1,6 @@
+- make sure the `rfkill unblock wifi`
+- switch laptop wifi to **SkyScanMega**
+- To connect to the Pi: `ssh pi@192.168.4.1`
+- To connect the the Camera: `http://192.168.1.221/#view`
+- `cd Projects/SkyScan-Private/`
+- docker-compose up
