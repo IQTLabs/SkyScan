@@ -45,33 +45,30 @@ class GpsPoller(threading.Thread):
     while self.running:
       gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
 
-
-LLA = [38.9510808,-77.3841834,130.1337]
-RPY = [0,0,0]
-
-parser = argparse.ArgumentParser(description='An MQTT based camera controller')
+parser = argparse.ArgumentParser(description='An MQTT based camera controller', 
+epilog="Example: python3 egi_mqtt.py -l 38.87281961220809 -L -77.03190539736168 -a 20.4")
 parser.add_argument('-m', '--mqtt-host', help="MQTT broker hostname", default='127.0.0.1')
-parser.add_argument('-l', '--latitude', help="Latitude (decimal degrees)", default=LLA[0])
-parser.add_argument('-L', '--longitude', help="Longitude (decimal degrees)", default=LLA[1])
-parser.add_argument('-a', '--altitude', help="Altitude (meters)", default=LLA[2])
-parser.add_argument('-r', '--roll', help="Roll Angle of Camera (degrees)", default=RPY[0])
-parser.add_argument('-p', '--pitch', help="Pitch Angle of Camera (degrees)", default=RPY[1])
-parser.add_argument('-y', '--yaw', help="Yaw Angle of Camera (degrees from True North)", default=RPY[2])
+parser.add_argument('-l', '--latitude', help="Latitude (decimal degrees)", required=True)
+parser.add_argument('-L', '--longitude', help="Longitude (decimal degrees)", required=True)
+parser.add_argument('-a', '--altitude', help="Altitude (meters)", required=True)
+parser.add_argument('-r', '--roll', help="Roll Angle of Camera (degrees)", default=0)
+parser.add_argument('-p', '--pitch', help="Pitch Angle of Camera (degrees)", default=0)
+parser.add_argument('-y', '--yaw', help="Yaw Angle of Camera (degrees from True North)", default=0)
 try:
     args = parser.parse_args()
 except:
-    logging.critical("Error in Command Line Argument Parsing.  Are all environment variables set?", exc_info=True)
+    logging.critical("Error in Command Line Argument Parsing.  Are all environment variables set?")
     raise
     
 
 state = {}
-state['time'] = time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
-state['lat'] = float(args.latitude)
-state['long'] = float(args.longitude)
-state['alt'] = float(args.altitude)
-state['roll'] = float(args.roll)
-state['pitch'] = float(args.pitch)
-state['yaw'] = float(args.yaw)
+state['time'] = defaultTime = time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+state['lat'] = defaultLat = float(args.latitude)
+state['long'] = defaultLong = float(args.longitude)
+state['alt'] = defaultAlt = float(args.altitude)
+state['roll'] = defaultRoll = float(args.roll)
+state['pitch'] = defaultPitch = float(args.pitch)
+state['yaw'] = defaultYaw = float(args.yaw)
 state['fix'] = 0
 logging.info("Initial State Array: " + str(state))
 
@@ -113,19 +110,33 @@ try:
     ##                Main Loop                ##
     #############################################
     while Active:
-        state['fix'] = gpsd.fix.status
-        if gpsd.fix.status:
+        state['fix'] = gpsd.fix.mode
+        
+        # check for 3D fix and update GPS state
+        if state['fix']==3: 
             state['time'] = gpsd.fix.time
             state['lat'] = gpsd.fix.latitude
             state['long'] = gpsd.fix.longitude
             state['alt'] = gpsd.fix.altitude
+        else:
+            state['time'] = defaultTime
+            state['lat'] = defaultLat
+            state['long'] = defaultLong
+            state['alt'] = defaultAlt
+        
+        # 10 second mqtt publish interval
         if timeTrigger < time.mktime(time.gmtime()):
+            if state['fix'] != 3:
+                logging.info("No GPS fix. Using EGI values from .env. Check GPS attached on /dev/ACM0 and clear view of sky.")
             timeTrigger = time.mktime(time.gmtime()) + 10
             clientLocal.publish(local_topic,json.dumps(state))
+            
+        # 30 second heartbeat interval
         if timeHeartbeat < time.mktime(time.gmtime()):
             timeHeartbeat = time.mktime(time.gmtime()) + 30
-            logging.info("Current EGI State: " + json.dumps(state))
-    time.sleep(0.01)
+            logging.info("EGI Heartbeat - Current EGI State: " + json.dumps(state))
+        
+        time.sleep(0.01)
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     logging.info("Killing GPS Thread...")
     gpsp.running = False

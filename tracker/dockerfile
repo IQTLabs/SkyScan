@@ -2,8 +2,14 @@ FROM python:3
 
 RUN mkdir -p /app/mqtt_wrapper/
 WORKDIR /app
+# Moves the requirement file in and installs.
+# Building the Py Packages takes forever, so make edits after this
+# --------
 ADD *.txt /app/ 
 RUN pip3 install -r requirements.txt
+# --------
+ADD static /app/static/
+ADD templates /app/templates/
 ADD *.py /app/
 ADD mqtt_wrapper /app/mqtt_wrapper/
 #CMD ./flighttracker.py -H 192.168.1.218 -m broker.hivemq.com  -t skyscan
