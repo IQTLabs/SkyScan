@@ -227,6 +227,14 @@ Use the following command to verify the GPS device is working:
 gpscat /dev/ttyACM0 | gpsdecode
 ```
 
+## Add Aircraft Database
+The Aircraft Database includes a mapping of the ADS-B ID to the make, model, operator, and other info.  This data is from the OpenSky Network, and must be downloaded:
+
+```bash
+mkdir ~/Projects/SkyScan/data
+wget https://opensky-network.org/datasets/metadata/aircraftDatabase.csv -P ~/Projects/SkyScan/data
+```
+
 ## Wrap it up...
 
 Now go back to the readme to finish the config. You will need to get a Flight Aware key.
