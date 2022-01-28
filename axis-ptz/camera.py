@@ -279,7 +279,14 @@ def update_config(config):
 #############################################
 ##         MQTT Callback Function          ##
 #############################################
+
 def on_message(client, userdata, message):
+    try:
+        return on_message_impl(client, userdata, message)
+    except Exception as exc: 
+        logging.exception("Error in MQTT message callback: %s", exc)
+
+def on_message_impl(client, userdata, message):
     global currentPlane
     global object_timeout
     global camera_longitude
@@ -296,13 +303,14 @@ def on_message(client, userdata, message):
         #payload = json.loads(messsage.payload) # you can use json.loads to convert string to json
     except JSONDecodeError as e:
     # do whatever you want
-        print(e)
+        logging.exception("Error decoding message as JSON: %s", e)
     except TypeError as e:
+        logging.exception("Error decoding message as JSON: %s", e)
     # do whatever you want in this case
-        print(e)
     except ValueError as e:
-        print(e)
+        logging.exception("Error decoding message as JSON: %s", e)
     except:
+        logging.exception("Error decoding message as JSON: %s", e)
         print("Caught it!")
     
     if message.topic == object_topic:
