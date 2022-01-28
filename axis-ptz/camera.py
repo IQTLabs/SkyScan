@@ -313,9 +313,9 @@ def on_message(client, userdata, message):
         if "icao24" in update:
             if active is False:
                 logging.info("{}\t[Starting Capture]".format(update["icao24"]))
-            active = True
             logging.info("{}\t[IMAGE]\tBearing: {} \tElv: {} \tDist: {}".format(update["icao24"],int(update["bearing"]),int(update["elevation"]),int(update["distance"])))
             currentPlane = update
+            active = True
         else:
             if active is True:
                 logging.info("{}\t[Stopping Capture]".format(currentPlane["icao24"]))
