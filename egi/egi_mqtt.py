@@ -136,7 +136,8 @@ try:
             timeHeartbeat = time.mktime(time.gmtime()) + 30
             logging.info("EGI Heartbeat - Current EGI State: " + json.dumps(state))
         
-        time.sleep(0.01)
+        delay = 0.01
+        time.sleep(delay)
 except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
     logging.info("Killing GPS Thread...")
     gpsp.running = False

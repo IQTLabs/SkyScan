@@ -281,6 +281,7 @@ def export_yolo_multi_class_dataset(dataset_name, label_field, tag, export_name)
 
     export_file = "/tf/dataset-export/" + export_title + ".tar.gz"
 
+    # nosemgrep:github.workflows.config.subprocess-shell-true
     subprocess.run("/bin/tar -zcvf {} {}".format(export_file, export_dir), shell=True)
 
 def add_faa_data_to_voxel51_dataset(

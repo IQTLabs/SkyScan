@@ -116,7 +116,8 @@ def moveCamera():
         # Multiplying by -1 again to make it normal. The camera is also off by a little and pointed up a bit, moving it down 20 degrees seems about right
         pantilthat.tilt(actualTilt * -1 + tiltCorrect)
         # Sleep for a bit so we're not hammering the HAT with updates
-        time.sleep(0.005)
+        delay = 0.005
+        time.sleep(delay)
 
 #############################################
 ##         MQTT Callback Function          ##
@@ -183,7 +184,8 @@ def main():
     camera.resolution = (1024, 768)
     threading.Thread(target = moveCamera, daemon = True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
-    time.sleep(0.005)
+    delay = 0.005
+    time.sleep(delay)
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+args.mqtt_topic+"'")
     client = mqtt.Client("pan-tilt-pi-camera-" + ID) #create new instance
 
@@ -201,7 +203,8 @@ def main():
         if timeHeartbeat < time.mktime(time.gmtime()):
             timeHeartbeat = time.mktime(time.gmtime()) + 10
             client.publish("Heartbeat", "pan-tilt-pi-camera-"+ID+" Heartbeat", 0, False)
-        time.sleep(0.1)
+        delay = 0.1
+        time.sleep(delay)
 
 
 

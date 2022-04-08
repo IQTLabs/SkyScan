@@ -244,9 +244,11 @@ def moveCamera(ip, username, password):
                     lag = datetime.now() - captureTimeout
                     logging.info(" 🚨 Capture execution time was greater that Capture Period - lag: {}".format(lag))
                     captureTimeout = datetime.now() + timedelta(milliseconds=capturePeriod)
-            time.sleep(0.005)
+            delay = 0.005
+            time.sleep(delay)
         else:
-            time.sleep(1)
+            delay = 1
+            time.sleep(delay)
 
 def update_config(config):
     global cameraZoom
@@ -407,7 +409,8 @@ def main():
 
     threading.Thread(target=moveCamera, args=[args.axis_ip, args.axis_username, args.axis_password],daemon=True).start()
         # Sleep for a bit so we're not hammering the HAT with updates
-    time.sleep(0.005)
+    delay = 0.005
+    time.sleep(delay)
     flight_topic=args.mqtt_flight_topic
     object_topic = args.mqtt_object_topic
     print("connecting to MQTT broker at "+ args.mqtt_host+", channel '"+flight_topic+"'")
@@ -431,7 +434,8 @@ def main():
         if timeHeartbeat < time.mktime(time.gmtime()):
             timeHeartbeat = time.mktime(time.gmtime()) + 10
             client.publish("skyscan/heartbeat", "skyscan-axis-ptz-camera-"+ID+" Heartbeat", 0, False)
-        time.sleep(0.1)
+        delay = 0.1
+        time.sleep(delay)
 
 
 

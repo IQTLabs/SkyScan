@@ -1,0 +1,106 @@
+name: semgrep
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+permissions:
+  pull-requests: write
+jobs:
+  docker_scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.ref }}
+    - name: scan
+      id: d_scan
+      run: |
+        export DEBIAN_FRONTEND=noninteractive && \
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \
+        sudo apt-get update && \
+        sudo apt install jq && \
+        python3 -m pip install --upgrade pip && \
+        python3 -m pip install semgrep && \
+        python3 -m pip install --upgrade urllib3 && \
+        mkdir /home/runner/reports/ && \
+        cd ${GITHUB_WORKSPACE}/ && \
+        semgrep --config=.github/workflows/config/semgrep-docker.yml  --json -o /home/runner/reports/semgrep.out \
+        --severity ERROR ./ &&\
+        echo "## Validation Issues Found (Docker) :whale: " >> /home/runner/reports/docker-msg && \
+        cat /home/runner/reports/semgrep.out | jq -r --arg ws "$GITHUB_WORKSPACE" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" '.results[] | "**File:** [\(.path | sub($ws; "."; "g"))](\(.path | sub($ws; $url; "g"))#L\(.start.line)) \n**Line Number:** \(.start.line) \n**Statement(s):** \n``` \n\(.extra.lines) \n``` \n**Rule:** \n\(.extra.message)\n\n"' >> /home/runner/reports/docker-msg && \
+        echo "::set-output name=found-count::$(cat /home/runner/reports/semgrep.out | jq '.results | length')"
+    - name: Fail if found
+      if: steps.d_scan.outputs.found-count != 0
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const fs = require('fs')
+
+          var msg = fs.readFileSync('/home/runner/reports/docker-msg', 'utf8');
+          console.log('${{steps.d_scan.outputs.found-count}} errors found in docker/docker-compose files');
+          github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: msg
+            });
+
+          core.setFailed('Semgrep found errors in Dockerfiles or docker-compose files. Please check the uploaded report');
+    - name: Upload scan reports
+      uses: actions/upload-artifact@v3.0.0
+      if: failure()
+      with:
+        name: semgrep-docker-report
+        path: /home/runner/reports/semgrep.out
+  python_scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.ref }}
+    - name: scan
+      id: py_scan
+      run: |
+        export DEBIAN_FRONTEND=noninteractive && \
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \
+        sudo apt-get update && \
+        sudo apt install jq && \
+        python3 -m pip install --upgrade pip && \
+        python3 -m pip install semgrep && \
+        python3 -m pip install --upgrade urllib3 && \
+        mkdir -p /home/runner/reports/ && \
+        cd ${GITHUB_WORKSPACE}/ && \
+        semgrep --config=.github/workflows/config/semgrep-python.yml  --json -o /home/runner/reports/semgrep.out \
+        --severity ERROR ./ && \
+        echo "## Validation Issues Found (Python) :snake: " >> /home/runner/reports/python-msg && \
+        cat /home/runner/reports/semgrep.out | jq -r --arg ws "$GITHUB_WORKSPACE" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" '.results[] | "**File:** [\(.path | sub($ws; "."; "g"))](\(.path | sub($ws; $url; "g"))#L\(.start.line)) \n**Line Number:** \(.start.line) \n**Statement(s):** \n``` \n\(.extra.lines) \n``` \n**Rule:** \n\(.extra.message)\n\n"' >> /home/runner/reports/python-msg && \
+        echo "::set-output name=python-found-count::$(cat /home/runner/reports/semgrep.out | jq '.results | length')"
+    - name: Fail if found
+      if: steps.py_scan.outputs.python-found-count > 0
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const fs = require('fs')
+
+          var msg = fs.readFileSync('/home/runner/reports/python-msg', 'utf8');
+          console.log('${{steps.py_scan.outputs.python-found-count}} errors found in python files');
+          github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: msg
+            });
+
+          core.setFailed('Semgrep found errors in Python files. Please check the uploaded report');
+    - name: Upload scan reports
+      uses: actions/upload-artifact@v2.3.1
+      if: failure()
+      with:
+        name: semgrep-python-report
+        path: /home/runner/reports/semgrep.out
+  

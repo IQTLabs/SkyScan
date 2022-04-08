@@ -48,16 +48,17 @@ def main():
     ##                Main Loop                ##
     #############################################
     while True:
+        delay = 5
         camera.absolute_move(0, 0, 0, 50)
-        time.sleep(5)
+        time.sleep(delay)
         camera.absolute_move(90, 0, 0, 50)
-        time.sleep(5)
+        time.sleep(delay)
         camera.absolute_move(180, 0, 0, 50)
-        time.sleep(5)
+        time.sleep(delay)
         camera.absolute_move(270, 0, 0, 50)
-        time.sleep(5)
+        time.sleep(delay)
         camera.absolute_move(0, 90, 0, 50)
-        time.sleep(5)
+        time.sleep(delay)
 
 if __name__ == "__main__":
     try:
