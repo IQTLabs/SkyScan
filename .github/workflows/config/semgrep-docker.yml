@@ -1,0 +1,1127 @@
+rules:
+  #docker-compose rules
+  - id: writable-filesystem-service
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+      - pattern-not: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            read_only: true
+    message: "Service '$SERVICE' is running with a writable root filesystem. This
+      may allow malicious applications to download and run additional payloads,
+      or modify container files. If an application inside a container has to
+      save something temporarily consider using a tmpfs. Add 'read_only: true'
+      to this service to prevent this."
+    metadata:
+      references:
+        - https://docs.docker.com/compose/compose-file/compose-file-v3/#domainname-hostname-ipc-mac_address-privileged-read_only-shm_size-stdin_open-tty-user-working_dir
+        - https://blog.atomist.com/security-of-docker-kubernetes/
+        - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html#rule-8-set-filesystem-and-volumes-to-read-only
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: no-new-privileges
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+      - pattern-not: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            security_opt:
+              - ...
+              - no-new-privileges:true
+    message: Service '$SERVICE' allows for privilege escalation via setuid or setgid
+      binaries. Add 'no-new-privileges:true' in 'security_opt' to prevent this.
+    metadata:
+      references:
+        - https://raesene.github.io/blog/2019/06/01/docker-capabilities-and-no-new-privs/
+        - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
+        - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html#rule-4-add-no-new-privileges-flag
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: privileged-service
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            privileged: true
+    message: Service '$SERVICE' is running in privileged mode. This grants the
+      container the equivalent of root capabilities on the host machine. This
+      can lead to container escapes, privilege escalation, and other security
+      concerns. Remove the 'privileged' key to disable this capability.
+    metadata:
+      references:
+        - https://www.trendmicro.com/en_us/research/19/l/why-running-a-privileged-container-in-docker-is-a-bad-idea.html
+        - https://containerjournal.com/topics/container-security/why-running-a-privileged-container-is-not-a-good-idea/
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: seccomp-confinement-disabled
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            security_opt:
+              - ...
+              - seccomp:unconfined
+    message: Service '$SERVICE' is explicitly disabling seccomp confinement. This
+      runs the service in an unrestricted state. Remove 'seccomp:unconfined' to
+      prevent this.
+    metadata:
+      references:
+        - https://docs.docker.com/engine/security/seccomp/
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: selinux-separation-disabled
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            security_opt:
+              - ...
+              - label:disable
+    message: Service '$SERVICE' is explicitly disabling SELinux separation. This
+      runs the service as an unconfined type. Remove 'label:disable' to prevent
+      this.
+    metadata:
+      references:
+        - https://www.projectatomic.io/blog/2016/03/dwalsh_selinux_containers/
+        - https://docs.docker.com/engine/reference/run/#security-configuration
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: exposing-docker-socket-volume
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+      - pattern: |
+          volumes:
+            - ...
+            - /var/run/docker.sock:/var/run/docker.sock
+    message: Exposing host's Docker socket to containers via a volume. The owner of
+      this socket is root. Giving someone access to it is equivalent to giving
+      unrestricted root access to your host. Remove 'docker.sock' from volumes
+      to prevent this.
+    metadata:
+      references:
+        - https://docs.docker.com/compose/compose-file/compose-file-v3/#volume-configuration-reference
+        - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html#rule-1-do-not-expose-the-docker-daemon-socket-even-to-the-containers
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: no-new-privileges
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+      - pattern-not: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            security_opt:
+              - ...
+              - no-new-privileges:true
+    message: Service '$SERVICE' allows for privilege escalation via setuid or setgid
+      binaries. Add 'no-new-privileges:true' in 'security_opt' to prevent this.
+    metadata:
+      references:
+        - https://raesene.github.io/blog/2019/06/01/docker-capabilities-and-no-new-privs/
+        - https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt
+        - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html#rule-4-add-no-new-privileges-flag
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: privileged-service
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            privileged: true
+    message: Service '$SERVICE' is running in privileged mode. This grants the
+      container the equivalent of root capabilities on the host machine. This
+      can lead to container escapes, privilege escalation, and other security
+      concerns. Remove the 'privileged' key to disable this capability.
+    metadata:
+      references:
+        - https://www.trendmicro.com/en_us/research/19/l/why-running-a-privileged-container-in-docker-is-a-bad-idea.html
+        - https://containerjournal.com/topics/container-security/why-running-a-privileged-container-is-not-a-good-idea/
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: seccomp-confinement-disabled
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            security_opt:
+              - ...
+              - seccomp:unconfined
+    message: Service '$SERVICE' is explicitly disabling seccomp confinement. This
+      runs the service in an unrestricted state. Remove 'seccomp:unconfined' to
+      prevent this.
+    metadata:
+      references:
+        - https://docs.docker.com/engine/security/seccomp/
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  - id: selinux-separation-disabled
+    patterns:
+      - pattern-inside: |
+          version: ...
+          ...
+          services:
+            ...
+      - pattern: |
+          $SERVICE:
+            ...
+            image: ...
+            ...
+            security_opt:
+              - ...
+              - label:disable
+    message: Service '$SERVICE' is explicitly disabling SELinux separation. This
+      runs the service as an unconfined type. Remove 'label:disable' to prevent
+      this.
+    metadata:
+      references:
+        - https://www.projectatomic.io/blog/2016/03/dwalsh_selinux_containers/
+        - https://docs.docker.com/engine/reference/run/#security-configuration
+      category: security
+      technology:
+        - docker-compose
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    languages:
+      - yaml
+    severity: WARNING
+  #dockerfile rules
+  - id: avoid-apk-upgrade
+    languages:
+      - generic
+    message: Packages in base images should be up-to-date, removing the need for
+      'apk upgrade'. If packages are out-of-date, consider contacting the base
+      image maintainer.
+    severity: INFO
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3017
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3017
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern: apk upgrade
+  - id: avoid-apt-get-upgrade
+    message: Packages in base containers should be up-to-date, removing the need to
+      upgrade or dist-upgrade. If a package is out of date, contact the
+      maintainers.
+    languages:
+      - generic
+    severity: WARNING
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3005
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3005
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern-either:
+      - pattern: RUN ... apt-get upgrade
+      - pattern: RUN ... apt-get dist-upgrade
+  - id: avoid-dnf-update
+    severity: INFO
+    languages:
+      - generic
+    message: Packages in base images should be up-to-date, removing the need for
+      'dnf update'. If packages are out-of-date, consider contacting the base
+      image maintainer.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3039
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3039
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern: dnf update
+  - id: avoid-latest-version
+    message: Images should be tagged with an explicit version to produce
+      deterministic container images. The 'latest' tag may change the base
+      container without warning.
+    severity: WARNING
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3007
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3007
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern: FROM $IMAGE:latest
+  - id: avoid-platform-with-from
+    severity: INFO
+    languages:
+      - generic
+    pattern: FROM ... --platform= ... $IMAGE
+    message: Using '--platform' with FROM restricts the image to build on a single
+      platform. Further, this must be the same as the build platform. If you
+      intended to specify the target platform, use the utility 'docker buildx
+      --platform=' instead.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3029
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3029
+        - https://docs.docker.com/buildx/working-with-buildx/
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: avoid-yum-update
+    severity: INFO
+    languages:
+      - generic
+    message: Packages in base images should be up-to-date, removing the need for
+      'yum update'. If packages are out-of-date, consider contacting the base
+      image maintainer.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3031
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3031
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern: yum update
+  - id: avoid-zypper-update
+    severity: INFO
+    languages:
+      - generic
+    message: Packages in base images should be up-to-date, removing the need for
+      'zypper update'. If packages are out-of-date, consider contacting the base
+      image maintainer.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3035
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3035
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern: zypper update
+  - id: maintainer-is-deprecated
+    severity: INFO
+    languages:
+      - generic
+    pattern: MAINTAINER
+    message: MAINTAINER has been deprecated.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4000
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL4000
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-apk-no-cache
+    patterns:
+      - pattern: |
+          RUN ... apk $COMMAND ... $SOMETHING
+      - pattern-not-inside: |
+          RUN ... apk $COMMAND ... --no-cache
+    languages:
+      - generic
+    message: This apk command is missing '--no-cache'. This forces apk to use a
+      package index instead of a local package cache, removing the need for
+      '--update' and the deletion of '/var/cache/apk/*'. Add '--no-cache' to
+      your apk command.
+    severity: INFO
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3019
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3019
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-dnf-assume-yes-switch
+    severity: WARNING
+    languages:
+      - generic
+    patterns:
+      - pattern: |
+          RUN ... dnf install ... $SOMETHING
+      - pattern-not-inside: |
+          RUN ... dnf install ... -y
+      - pattern-not-inside: |
+          RUN ... dnf ... --assumeyes
+    message: This 'dnf install' is missing the '-y' switch. This might stall builds
+      because it requires human intervention. Add the '-y' switch.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3038
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3038
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-dnf-clean-all
+    severity: WARNING
+    languages:
+      - generic
+    patterns:
+      - pattern: dnf $COMMAND
+      - pattern-not-inside: RUN ... && dnf clean all
+      - pattern-not-inside: RUN ... && \ dnf clean all
+    message: This dnf command does not end with '&& dnf clean all'. Running 'dnf
+      clean all' will remove cached data and reduce package size. (This must be
+      performed in the same RUN step.)
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3038
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3038
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-no-install-recommends
+    patterns:
+      - pattern: |
+          RUN ... apt-get install ... $SOMETHING
+      - pattern-not-inside: |
+          RUN ... apt-get install ... --no-install-recommends
+    languages:
+      - generic
+    message: This 'apt-get install' is missing '--no-install-recommends'. This
+      prevents unnecessary packages from being installed, thereby reducing image
+      size. Add '--no-install-recommends'.
+    severity: INFO
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3015
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3015
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-pip-no-cache-dir
+    severity: INFO
+    languages:
+      - generic
+    patterns:
+      - patterns:
+          - pattern: |
+              RUN ... $PIP install ... $SOMETHING
+          - pattern-not-inside: |
+              RUN ... $PIP install ... --no-cache-dir
+          - pattern-not-inside: |
+              RUN ... $PIP install . ... $SOMETHING
+          - pattern-not-inside: |
+              ENV ... PIP_NO_CACHE_DIR=...
+              ...
+              ...
+              ...
+          - pattern-not-inside: |
+              ENV ... PIP_NO_CACHE_DIR ...
+              ...
+              ...
+              ...
+      - metavariable-regex:
+          metavariable: $PIP
+          regex: (pip|pip2|pip3|python -m pip)
+    message: This '$PIP install' is missing '--no-cache-dir'. This flag prevents
+      package archives from being kept around, thereby reducing image size. Add
+      '--no-cache-dir'.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3042
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3042
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-yum-assume-yes-switch
+    severity: WARNING
+    languages:
+      - generic
+    patterns:
+      - pattern: |
+          RUN ... yum install ... $SOMETHING
+      - pattern-not-inside: |
+          RUN ... yum install ... -y
+      - pattern-not-inside: |
+          RUN ... yum ... --assumeyes
+    message: This 'yum install' is missing the '-y' switch. This might stall builds
+      because it requires human intervention. Add the '-y' switch.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3030
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3030
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-yum-clean-all
+    severity: WARNING
+    languages:
+      - generic
+    patterns:
+      - pattern: yum $COMMAND
+      - pattern-not-inside: RUN ... && yum clean all
+      - pattern-not-inside: RUN ... && \ yum clean all
+    message: This yum command does not end with '&& yum clean all'. Running 'yum
+      clean all' will remove cached data and reduce package size. (This must be
+      performed in the same RUN step.)
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3032
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3032
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-zypper-clean
+    severity: WARNING
+    languages:
+      - generic
+    patterns:
+      - pattern: zypper $COMMAND
+      - pattern-not-inside: RUN ... && zypper clean
+      - pattern-not-inside: RUN ... && \ zypper clean
+    message: This zypper command does not end with '&& zypper clean'. Running
+      'zypper clean' will remove cached data and reduce package size. (This must
+      be performed in the same RUN step.)
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3036
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3036
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: missing-zypper-no-confirm-switch
+    severity: WARNING
+    languages:
+      - generic
+    patterns:
+      - pattern: |
+          RUN ... zypper install ... $SOMETHING
+      - pattern-not-inside: |
+          RUN ... zypper install ... -y
+      - pattern-not-inside: |
+          RUN ... zypper install ... --no-confirm
+    message: This 'zypper install' is missing the '-y' switch. This might stall
+      builds because it requires human intervention. Add the '-y' switch.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3034
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3034
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: nonsensical-command
+    patterns:
+      - pattern: RUN $CMD
+      - metavariable-regex:
+          metavariable: $CMD
+          regex: (shutdown|service|ps|free|top|kill|mount|ifconfig|nano|vim)
+    message: Some commands such as `$CMD` do not make sense in a container. Do not
+      use these.
+    severity: WARNING
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3001
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3001
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: prefer-apt-get
+    severity: INFO
+    languages:
+      - generic
+    patterns:
+      - pattern: RUN apt
+      - pattern-not-inside: RUN apt-get
+    message: "'apt-get' is preferred as an unattended tool for stability. 'apt' is
+      discouraged."
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3027
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3027
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: prefer-json-notation
+    severity: INFO
+    languages:
+      - generic
+    message: Prefer JSON notation when using CMD or ENTRYPOINT. This allows signals
+      to be passed from the OS.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3025
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3025
+        - https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#cmd
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern-either:
+      - patterns:
+          - pattern: CMD $WORD
+          - pattern-not-inside: CMD [...]
+      - patterns:
+          - pattern: ENTRYPOINT $WORD
+          - pattern-not-inside: ENTRYPOINT [...]
+  - id: remove-package-cache
+    patterns:
+      - pattern: RUN apt-get update
+      - pattern-not-inside: RUN apt-get update ... && apt-get clean
+      - pattern-not-inside: RUN apt-get update ... &&\ apt-get clean
+    message: The package cache was not deleted after running 'apt-get update', which
+      increases the size of the image. Remove the package cache by appending '&&
+      apt-get clean' at the end of apt-get command chain.
+    severity: WARNING
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3009
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3009
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: remove-package-lists
+    patterns:
+      - pattern: RUN apt-get update
+      - pattern-not-inside: RUN apt-get update ... ... ... && ... rm -rf /var/lib/apt/lists/*
+    message: The package lists were not deleted after running 'apt-get update',
+      which increases the size of the image. Remove the package lists by
+      appending '&& rm -rf /var/lib/apt/lists/*' at the end of apt-get command
+      chain.
+    severity: WARNING
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3009
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3009
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: set-pipefail
+    languages:
+      - generic
+    message: Only the exit code from the final command in this RUN instruction will
+      be evaluated unless 'pipefail' is set. If you want to fail the command at
+      any stage in the pipe, set 'pipefail' by including 'SHELL ["/bin/bash",
+      "-o", "pipefail", "-c"] before the command. If you're using alpine and
+      don't have bash installed, communicate this explicitly with `SHELL
+      ["/bin/ash"]`.
+    metadata:
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL4006
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4006
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    patterns:
+      - pattern: RUN $CMD ... | $CMD2
+      - pattern-not-inside: |
+          SHELL [... "pipefail" ...]
+          ...
+          ...
+      - pattern-not-inside: |
+          SHELL ["/bin/ash" ...]
+          ...
+          ...
+    severity: WARNING
+  - id: use-absolute-workdir
+    pattern: WORKDIR $WORD
+    message: Detected a relative WORKDIR. Use absolute paths. This prevents issues
+      based on assumptions about the WORKDIR of previous containers.
+    severity: WARNING
+    languages:
+      - generic
+    fix: WORKDIR /$WORD
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3000
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3000
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: use-either-wget-or-curl
+    severity: INFO
+    languages:
+      - generic
+    message: "'wget' and 'curl' are similar tools. Choose one and do not install the
+      other to decrease image size."
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4001
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL4001
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern-either:
+      - pattern: |
+          RUN wget ...
+          ...
+          RUN curl ...
+      - pattern: |
+          RUN curl ...
+          ...
+          RUN wget ...
+  - id: use-shell-instruction
+    severity: WARNING
+    languages:
+      - generic
+    pattern: |
+      RUN ln ... /bin/sh
+    message: Use the SHELL instruction to set the default shell instead of
+      overwriting '/bin/sh'.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4005
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL4005
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: use-workdir
+    pattern: RUN ... cd
+    message: Use 'WORKDIR' instead of 'RUN cd ...'. Using 'RUN cd ...' may not work
+      as expected in a conatiner.
+    severity: WARNING
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3003
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3003
+      category: best-practice
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: alias-must-be-unique
+    severity: ERROR
+    languages:
+      - generic
+    patterns:
+      - pattern-either:
+          - pattern: |
+              FROM ... as $REF
+              ...
+              ...
+              FROM ... as $REF
+          - pattern: |
+              FROM ... AS $REF
+              ...
+              ...
+              FROM ... AS $REF
+      - pattern-not-inside: |
+          FROM ... as $REF
+          ...
+          ...
+          FROM ... as $REF-
+      - pattern-not-inside: |
+          FROM ... AS $REF
+          ...
+          ...
+          FROM ... AS $REF-
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    message: Image aliases must have a unique name, and '$REF' is used twice. Use
+      another name for '$REF'.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3024
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3024
+      category: correctness
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+  - id: copy-from-own-alias
+    severity: ERROR
+    languages:
+      - generic
+    message: COPY instructions cannot copy from its own alias. The '$REF' alias is
+      used before switching to a new image. If you meant to switch to a new
+      image, include a new 'FROM' statement. Otherwise, remove the '--from=$REF'
+      from the COPY statement.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3023
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3023
+      category: correctness
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern-either:
+      - pattern: |
+          FROM $IMAGE:$TAG as $REF
+          ...
+          COPY --from=$REF
+          ...
+          FROM
+      - pattern: |
+          FROM $IMAGE:$TAG AS $REF
+          ...
+          COPY --from=$REF
+          ...
+          FROM
+  - id: invalid-port
+    message: Detected an invalid port number. Valid ports are 0 through 65535.
+    severity: ERROR
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3011
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3011
+      category: correctness
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+    pattern-either:
+      - patterns:
+          - pattern: EXPOSE $PORT
+          - metavariable-comparison:
+              metavariable: $PORT
+              comparison: $PORT > 65535
+      - pattern: EXPOSE -$PORT
+  - id: missing-assume-yes-switch
+    patterns:
+      - pattern: |
+          RUN ... apt-get install ... $SOMETHING
+      - pattern-not-inside: |
+          RUN ... apt-get install ... -y
+      - pattern-not-inside: |
+          RUN ... apt-get install ... --assume-yes
+      - pattern-not-inside: |
+          RUN ... apt-get install ... --yes
+    languages:
+      - generic
+    message: This 'apt-get install' is missing the '-y' switch. This might stall
+      builds because it requires human intervention. Add the '-y' switch.
+    severity: WARNING
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3014
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3014
+      category: correctness
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: multiple-cmd-instructions
+    severity: ERROR
+    languages:
+      - generic
+    patterns:
+      - pattern-not-inside: |
+          CMD ...
+          ...
+          FROM ...
+          ...
+          CMD ...
+      - pattern: |
+          CMD ...
+          ...
+          ...
+          CMD ...
+    message: Multiple CMD instructions were found. Only the last one will take effect.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4003
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL4003
+        - https://kapeli.com/cheat_sheets/Dockerfile.docset/Contents/Resources/Documents/index#//dash_ref_Instructions/Entry/CMD/0
+      category: correctness
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: multiple-entrypoint-instructions
+    severity: ERROR
+    languages:
+      - generic
+    pattern: |
+      ENTRYPOINT ...
+      ...
+      ENTRYPOINT ...
+    message: Multiple ENTRYPOINT instructions were found. Only the last one will
+      take effect.
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL4004
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL4004
+        - https://kapeli.com/cheat_sheets/Dockerfile.docset/Contents/Resources/Documents/index#//dash_ref_Instructions/Entry/ENTRYPOINT/0
+      category: correctness
+      technology:
+        - dockerfile
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"
+  - id: last-user-is-root
+    patterns:
+      - pattern: USER root
+      - pattern-not-inside: |
+          USER root
+          ...
+          ...
+          USER
+    message: The last user in the container is 'root'. This is a security hazard
+      because if an attacker gains control of the container they will have root
+      access. Switch back to another user after running commands as 'root'.
+    severity: ERROR
+    languages:
+      - generic
+    metadata:
+      source-rule-url: https://github.com/hadolint/hadolint/wiki/DL3002
+      references:
+        - https://github.com/hadolint/hadolint/wiki/DL3002
+      category: security
+      technology:
+        - dockerfile
+      confidence: MEDIUM
+      license: Commons Clause License Condition v1.0[LGPL-2.1-only]
+    paths:
+      include:
+        - "*dockerfile*"
+        - "*Dockerfile*"

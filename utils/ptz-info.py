@@ -33,7 +33,7 @@ class CameraConfiguration:
 
 ip = '11.111.1111.111111'
 login = 'xxxx'
-password = 'xxxx'
+password = 'PLACEHOLDER_FOR_PASSWORD'
 
 cam = CameraConfiguration(ip, login, password)
 print(cam.get_info())

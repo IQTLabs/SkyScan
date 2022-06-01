@@ -37,7 +37,8 @@ class bridge:
                 self.rc = self.client.connect(self.host, self.port, self.keepalive)
             except Exception as e:
                 print("connection failed")
-            time.sleep(2)
+            delay = 2
+            time.sleep(delay)
             self.timeout = self.timeout + 2
 
     def msg_process(self, msg):

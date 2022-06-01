@@ -453,7 +453,8 @@ class FlightTracker(object):
             if not self.__tracking_icao24:
                 retain = False
                 self.__client.publish(self.__flight_topic, notTrackingJson, 0, retain)
-                time.sleep(1)
+                delay = 1
+                time.sleep(delay)
             else:
                 # Check to see if the currently tracked airplane is in the observations
                 if not self.__tracking_icao24 in self.__observations:
@@ -467,11 +468,12 @@ class FlightTracker(object):
                 
 
                 if self.__tracking_distance < 3000:
-                    time.sleep(0.25)
+                    delay = 0.25
                 elif self.__tracking_distance < 6000:
-                    time.sleep(0.5)
+                    delay = 0.5
                 else:
-                    time.sleep(1)
+                    delay = 1
+                time.sleep(delay)
 
     def __whyTrackable(self, observation) -> str:
         """ Returns a string explaining why a Plane can or cannot be tracked """
@@ -595,7 +597,8 @@ class FlightTracker(object):
                     logging.critical("Failed to connect to ADSB receiver on %s:%s, retrying : %s" % (self.__dump1090_host, self.__dump1090_port, e))
                     self.__has_nagged = True
                 self.__dump1090_sock = None
-                time.sleep(5)
+                delay = 5
+                time.sleep(delay)
             return False
         else:
             return True
@@ -748,8 +751,9 @@ class FlightTracker(object):
                             logging.info(self.__whyTrackable(self.__observations[icao24]))
                             self.__tracking_icao24 = None
                             self.__tracking_distance = 999999999
-                                                  
-            time.sleep(0.01)
+            
+            delay = 0.01                                     
+            time.sleep(delay)
 
     def selectNearestObservation(self):
         """Select nearest presentable aircraft

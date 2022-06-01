@@ -13,4 +13,4 @@ ml-model/*.json
 *.env
 ml-model/notebooks/.Trash-0/*
 ml-model/notebooks/*.json
-
+semgrep.out
