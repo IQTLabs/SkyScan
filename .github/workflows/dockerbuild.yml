@@ -43,7 +43,7 @@ jobs:
         do 
           echo "Building $folder"
           docker buildx build $folder --push \
-          --tag ${{ secrets.DOCKER_USERNAME }}/$PROJECT_NAME-$folder:latest \
-          --tag ${{ secrets.DOCKER_USERNAME }}/$PROJECT_NAME-$folder:${{ steps.get_tag.outputs.IMAGE_TAG }} \
+          --tag iqtlabs/$PROJECT_NAME-$folder:latest \
+          --tag iqtlabs/$PROJECT_NAME-$folder:${{ steps.get_tag.outputs.IMAGE_TAG }} \
           --platform linux/arm64,linux/amd64
         done
