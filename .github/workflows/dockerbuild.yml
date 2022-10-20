@@ -1,0 +1,49 @@
+name: Container Processing
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Get tag
+      id: get_tag
+      run: |
+        echo "::set-output name=IMAGE_TAG::$(echo $GITHUB_REF | cut -d / -f 3)"
+    
+    - name: Set up qemu
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        version: latest
+
+    - name: Docker Login
+      run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Build Images
+      env: 
+        # Every folder in the repo that has a Dockerfile within it, comma separated 
+        DOCKERFOLDERS: "tracker,piaware,pan-tilt-pi,notebook-server,mqtt,egi,axis-ptz"
+        PROJECT_NAME: "skyscan"
+      run: |
+        IFS=","
+        read -ra ARR <<< "$DOCKERFOLDERS"
+        for folder in "${ARR[@]}"
+        do 
+          echo "Building $folder"
+          docker buildx build $folder --push \
+          --tag ${{ secrets.DOCKER_USERNAME }}/$PROJECT_NAME-$folder:latest \
+          --tag ${{ secrets.DOCKER_USERNAME }}/$PROJECT_NAME-$folder:${{ steps.get_tag.outputs.IMAGE_TAG }} \
+          --platform linux/arm64,linux/amd64
+        done
