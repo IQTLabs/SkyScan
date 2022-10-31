@@ -43,6 +43,7 @@ cameraZoom = None
 cameraMoveSpeed = None
 cameraDelay = None
 cameraLead = 0 
+inhibitPhotos = False
 active = False
 Active = True
 
@@ -216,7 +217,7 @@ def calculateCameraPosition():
 
 def moveCamera(ip, username, password):
 
-    movePeriod = 250  # milliseconds
+    movePeriod = 100  # milliseconds
     capturePeriod = 1000 # milliseconds
     moveTimeout = datetime.now()
     captureTimeout = datetime.now()
@@ -237,14 +238,15 @@ def moveCamera(ip, username, password):
                     logging.info(" 🚨 Move execution time was greater that Move Period - lag: {}".format(lag))
                     moveTimeout = datetime.now() + timedelta(milliseconds=movePeriod)
 
-            if captureTimeout <= datetime.now():
-                time.sleep(cameraDelay)
-                get_jpeg_request()
-                captureTimeout = captureTimeout + timedelta(milliseconds=capturePeriod)
+            if not inhibitPhotos:
                 if captureTimeout <= datetime.now():
-                    lag = datetime.now() - captureTimeout
-                    logging.info(" 🚨 Capture execution time was greater that Capture Period - lag: {}".format(lag))
-                    captureTimeout = datetime.now() + timedelta(milliseconds=capturePeriod)
+                    time.sleep(cameraDelay)
+                    get_jpeg_request()
+                    captureTimeout = captureTimeout + timedelta(milliseconds=capturePeriod)
+                    if captureTimeout <= datetime.now():
+                        lag = datetime.now() - captureTimeout
+                        logging.info(" 🚨 Capture execution time was greater that Capture Period - lag: {}".format(lag))
+                        captureTimeout = datetime.now() + timedelta(milliseconds=capturePeriod)
             delay = 0.005
             time.sleep(delay)
         else:
@@ -259,6 +261,7 @@ def update_config(config):
     global camera_lead
     global camera_altitude
     global cameraBearingCorrection
+    global inhibitPhotos
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -278,6 +281,13 @@ def update_config(config):
     if "cameraBearingCorrection" in config:
         cameraBearingCorrection = float(config["cameraBearingCorrection"])
         logging.info("Setting Camera Bearing Correction to: {}".format(cameraBearingCorrection))        
+    if "inhibitPhotos" in config:
+        inhibitPhotos= bool(config["inhibitPhotos"])
+        if inhibitPhotos:
+            logging.info("Setting Camera to inhibit photos")
+        else:
+            logging.info("Setting Camera to save photos")
+
 
 #############################################
 ##         MQTT Callback Function          ##
