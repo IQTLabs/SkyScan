@@ -44,6 +44,7 @@ cameraMoveSpeed = None
 cameraDelay = None
 cameraLead = 0 
 inhibitPhotos = False
+capturePeriod = 1000 # milliseconds
 active = False
 Active = True
 
@@ -218,7 +219,6 @@ def calculateCameraPosition():
 def moveCamera(ip, username, password):
 
     movePeriod = 100  # milliseconds
-    capturePeriod = 1000 # milliseconds
     moveTimeout = datetime.now()
     captureTimeout = datetime.now()
     camera = vapix_control.CameraControl(ip, username, password)
@@ -262,6 +262,7 @@ def update_config(config):
     global camera_altitude
     global cameraBearingCorrection
     global inhibitPhotos
+    global capturePeriod
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -287,7 +288,9 @@ def update_config(config):
             logging.info("Setting Camera to inhibit photos")
         else:
             logging.info("Setting Camera to save photos")
-
+    if "capturePeriod" in config:
+        capturePeriod = float(config["capturePeriod"])
+        logging.info("Setting Camera Capture Period (sec) to: {}".format(capturePeriod))  
 
 #############################################
 ##         MQTT Callback Function          ##
