@@ -31,6 +31,12 @@ jobs:
     - name: Docker Login
       run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+    - name: Get Changes
+      id: identify
+      uses: jitterbit/get-changed-files@v1
+    - run: |
+        echo ${{ steps.files.output.all }}
+
     - name: Build Images
       env: 
         # Every folder in the repo that has a Dockerfile within it, comma separated 
