@@ -14,3 +14,4 @@ ml-model/*.json
 ml-model/notebooks/.Trash-0/*
 ml-model/notebooks/*.json
 semgrep.out
+localizer.pt

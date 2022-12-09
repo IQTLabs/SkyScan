@@ -25,7 +25,7 @@ RUN mkdir /data
 
 # Run
 CMD ["bash", "-c", "python sort.py \
---weights data/weights/localizer.pt \
+--weights ../data/weights/localizer.pt \
 --agnostic-nms --nosave --conf 0.25 --img-size 640 --device cpu \
 --source-dir ../data/tosort \
 --plane-dir ../data/plane \
