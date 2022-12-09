@@ -1,10 +1,8 @@
 FROM python:3
 
-RUN mkdir -p /app
+RUN mkdir -p /app/data
 WORKDIR /app
-ADD *.txt /app/ 
+ADD *.txt /app/
 RUN pip3 install -r requirements.txt
 ADD *.py /app/
-
-
-
+ADD data/*.csv /app/data/
