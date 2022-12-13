@@ -36,7 +36,6 @@ jobs:
       uses: jitterbit/get-changed-files@v1
     - run: |
         echo ${{ steps.files.output.all }}
-
     - name: Build Images
       env: 
         # Every folder in the repo that has a Dockerfile within it, comma separated 
@@ -47,9 +46,13 @@ jobs:
         read -ra ARR <<< "$DOCKERFOLDERS"
         for folder in "${ARR[@]}"
         do 
+          IFS="/"
+          read -ra NAMEFOLDER <<< $folder
+          SUBNAME=${NAMEFOLDER[0]}
           echo "Building $folder"
-          docker buildx build $folder --push \
-          --tag iqtlabs/$PROJECT_NAME-$folder:latest \
-          --tag iqtlabs/$PROJECT_NAME-$folder:${{ steps.get_tag.outputs.IMAGE_TAG }} \
-          --platform linux/arm64,linux/amd64
+          echo $SUBNAME
+          docker buildx build "$folder" --push \
+          --tag iqtlabs/$PROJECT_NAME-$SUBNAME:latest \
+          --tag iqtlabs/$PROJECT_NAME-$SUBNAME:${{ steps.get_tag.outputs.IMAGE_TAG }} \
+          --platform linux/arm64,linux/amd64 
         done
