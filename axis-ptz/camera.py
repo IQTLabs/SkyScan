@@ -118,7 +118,9 @@ def get_jpeg_request():  # 5.2.4.1
         "compression": 5,
         "camera": 1,
     }
-    url = "http://" + args.axis_ip + "/axis-cgi/jpg/image.cgi"
+    global args
+
+    url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
     start_time = datetime.now()
     try:
         resp = requests.get(
@@ -133,7 +135,12 @@ def get_jpeg_request():  # 5.2.4.1
 
     disk_time = datetime.now()
     if resp.status_code == 200:
-        captureDir = "capture/{}".format(currentPlane["type"])
+        captureDir = None
+
+        if args.flat_file_structure: 
+            captureDir = "capture/"
+        else:
+            captureDir = "capture/{}".format(currentPlane["type"])
         try:
             os.makedirs(captureDir)
         except OSError as e:
@@ -765,7 +772,18 @@ def main():
         help="The zoom setting for the camera (0-9999)",
         default=9999,
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    parser.add_argument(
+        "-v", 
+        "--verbose", 
+        action="store_true", 
+        help="Verbose output"
+    )
+    parser.add_argument(
+        '-f', 
+        '--flat-file-structure', 
+        action='store_true', 
+        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type."
+    )
 
     args = parser.parse_args()
 
