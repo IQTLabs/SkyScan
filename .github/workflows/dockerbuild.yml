@@ -40,6 +40,7 @@ jobs:
       env: 
         # Every folder in the repo that has a Dockerfile within it, comma separated 
         DOCKERFOLDERS: "edge-detect/ai,tracker,piaware,pan-tilt-pi,notebook-server,mqtt,egi,axis-ptz"
+        DOCKERUSERNAME: ${{ secrets.DOCKER_USERNAME }}
         PROJECT_NAME: "skyscan"
       run: |
         IFS=","
@@ -52,7 +53,7 @@ jobs:
           echo "Building $folder"
           echo $SUBNAME
           docker buildx build "$folder" --push \
-          --tag iqtlabs/$PROJECT_NAME-$SUBNAME:latest \
-          --tag iqtlabs/$PROJECT_NAME-$SUBNAME:${{ steps.get_tag.outputs.IMAGE_TAG }} \
+          --tag $DOCKERUSERNAME/$PROJECT_NAME-$SUBNAME:latest \
+          --tag $DOCKERUSERNAME/$PROJECT_NAME-$SUBNAME:${{ steps.get_tag.outputs.IMAGE_TAG }} \
           --platform linux/arm64,linux/amd64 
         done
