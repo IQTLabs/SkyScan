@@ -1,10 +1,14 @@
 .DS_Store
+.dir-locals.el
 .env
-notes.md
+.idea
+.ipynb
+.pre-commit-config.yaml
+.requirements.txt
+__pycache__
 axis-ptz/*.jpg
 axis-ptz/capture/*
 labelbox-import/labelbox.env
-.ipynb
 ml-model/model-export/*
 ml-model/.ipynb_checkpoints
 ml-model/notebooks/.ipynb_checkpoints
@@ -13,5 +17,6 @@ ml-model/*.json
 *.env
 ml-model/notebooks/.Trash-0/*
 ml-model/notebooks/*.json
+notes.md
 semgrep.out
 localizer.pt
