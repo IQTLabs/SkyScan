@@ -264,11 +264,12 @@ class LoadWebcam:  # for inference
 
 
 class LoadFromDir:  # for inference
-    def __init__(self, path, img_size=640, stride=32):
+    def __init__(self, path, img_size=640, stride=32, log_dir="/data/log"):
         self.path = path
         self.img_size = img_size
         self.stride = stride
         self.mode = 'image'
+        self.log_dir = log_dir
 
     def __iter__(self):
         self.count = 0
@@ -276,18 +277,24 @@ class LoadFromDir:  # for inference
 
     def __next__(self):
         # Check for files in folder, waiting if necessary
+        img0 = None
+        img_path = None
         while True:
             if os.path.isdir(self.path):
                 img_paths = glob.glob(os.path.join(self.path, '*'))
                 if len(img_paths) > 0:
-                    break
+                    img_path = min(img_paths, key=os.path.getctime)
+                    img0 = cv2.imread(img_path)
+                    if os.path.isdir(img_path) or img0 is None:
+                        print("Found non-file object ... moving to logs")
+                        base_folder = os.path.basename(img_path)
+                        shutil.move(img_path, os.path.join(self.log_dir, base_folder))
+                    else:
+                        break
             time.sleep(0.5)
-        img_path = min(img_paths, key=os.path.getctime)
 
         # Process image
         self.count += 1
-        img0 = cv2.imread(img_path)
-        assert img0 is not None, 'Image Not Found ' + img_path
         img = letterbox(img0, self.img_size, stride=self.stride)[0] # Size
         img = img[:, :, ::-1].transpose(2, 0, 1) # BGR to RGB, channel first
         img = np.ascontiguousarray(img)

@@ -3,22 +3,13 @@ version: '3.7'
 services:
   skyscan-edge:
     build: ./ai/
-    command: "python sort.py --weights ../data/weights/localizer.pt --agnostic-nms --nosave --conf 0.25 --img-size 640 --device cpu --source-dir ../data/tosort --plane-dir ../data/plane --noplane-dir ../data/noplane --log-dir ../data/log --save-json"
-    volumes:
-      - ./weights:/data/weights/
-      - /flash/unprocessed:/data/tosort
-      - /flash/processed/plane:/data/plane
-      - /flash/processed/noplane:/data/noplane
-      - /flash/processed/log:/data/log
-    restart: unless-stopped
-
-  file-utils:
-    build: ./filemover/
-    hostname: SkyScan-pinephonepro
-    command: "python3 processFiles.py"
+    command: "python sort.py --weights ../data/weights/localizer.pt --agnostic-nms --nosave --conf 0.25 --img-size 640 --device cpu --source-dir ../data/tosort --plane-dir ../data/plane --noplane-dir ../data/noplane --log-dir ../data/log --save-json & python processFiles.py"
     environment:
       - "HOSTNAME=${HOSTNAME}"
     volumes:
-      - /flash/raw:/flash/raw
-      - /flash/unprocessed:/flash/unprocessed
+      - ./weights:/data/weights/
+      - /flash/raw:/data/tosort
+      - /flash/processed/plane:/data/plane
+      - /flash/processed/noplane:/data/noplane
+      - /flash/processed/log:/data/log
     restart: unless-stopped

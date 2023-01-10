@@ -58,7 +58,7 @@ def dirsort(save_img=False):
     watch_dir = True
     vid_path, vid_writer = None, None
     if watch_dir:
-        dataset = LoadFromDir(source, img_size=imgsz, stride=stride)
+        dataset = LoadFromDir(source, img_size=imgsz, stride=stride, log_dir=opt.log_dir)
     elif webcam:
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference

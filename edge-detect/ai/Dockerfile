@@ -31,5 +31,5 @@ CMD ["bash", "-c", "python sort.py \
 --plane-dir ../data/plane \
 --noplane-dir ../data/noplane \
 --log-dir ../data/log \
---save-json"]
+--save-json" ]
 
