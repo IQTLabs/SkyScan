@@ -538,3 +538,42 @@ def as_vector(q):
     if math.fabs(q.w) > 1e-12:
         raise Exception("Quaternion is not a vector quaternion")
     return np.array([q.x, q.y, q.z])
+
+
+def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
+    """Use the haversine formula to compute the great-circle distance
+    between two points on a sphere given their longitudes and
+    latitudes.
+
+    See:
+        https://en.wikipedia.org/wiki/Haversine_formula
+
+    Parameters
+    ----------
+    varphi_1 : float
+        Latitude [deg]
+    lambda_1 : float
+        Longitude [deg]
+    varphi_2 : float
+        Latitude [deg]
+    lambda_2 : float
+        Longitude [deg]
+
+    Returns
+    -------
+    float
+        Great-circle distance [m]
+
+    """
+    return (
+        2
+        * R_OPLUS
+        * math.asin(
+            math.sqrt(
+                math.sin(math.radians((varphi_2 - varphi_1) / 2.0)) ** 2
+                + math.cos(math.radians(varphi_1))
+                * math.cos(math.radians(varphi_2))
+                * math.sin(math.radians((lambda_2 - lambda_1) / 2.0)) ** 2
+            )
+        )
+    )

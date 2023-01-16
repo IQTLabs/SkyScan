@@ -443,15 +443,13 @@ def calculateCameraPositionB():
     distance3d = np.linalg.norm(r_ENz_a_1_t)
 
     # Compute the distance between the aircraft and the tripod along
-    # the surface of the Earth
-    geod = Geodesic.WGS84
-    g = geod.Inverse(
+    # the surface of a spherical Earth
+    distance2d = utils.compute_great_circle_distance(
         t_varphi,
         t_lambda,
         a_varphi,
         a_lambda,
-    )
-    distance2d = g["s12"]  # [m]
+    )  # [m]
 
     # Compute the bearing from north of the aircraft from the tripod
     bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
