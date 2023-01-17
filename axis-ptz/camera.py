@@ -410,18 +410,15 @@ def calculateCameraPositionB(
     # Assign position of the tripod
     t_varphi = camera_latitude  # [deg]
     t_lambda = camera_longitude  # [deg]
-    # t_h = camera_altitude  # [m]
 
     # Compute position in the XYZ coordinate system of the aircraft
     # relative to the tripod at time zero, the observation time
     r_XYZ_a_0 = utils.compute_r_XYZ(a_lambda, a_varphi, a_h)
-    # r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
     r_XYZ_a_0_t = r_XYZ_a_0 - r_XYZ_t
 
     # Compute position and velocity in the ENz coordinate system of
     # the aircraft relative to the tripod at time zero, and position at
     # slightly later time one
-    # E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
     r_ENz_a_0_t = np.matmul(E_XYZ_to_ENz, r_XYZ_a_0 - r_XYZ_t)
     a_track = math.radians(a_track)
     v_ENz_a_0_t = np.array(
@@ -455,12 +452,6 @@ def calculateCameraPositionB(
     bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
 
     # Compute pan and tilt to point the camera at the aircraft
-    # alpha = 0.0  # [deg]
-    # beta = 0.0  # [deg]
-    # gamma = 0.0  # [deg]
-    # q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
-    #     e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
-    # )
     r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
     rho = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
     tau = math.degrees(
@@ -532,10 +523,14 @@ def moveCamera(ip, username, password):
     t_lambda = camera_longitude  # [deg]
     t_h = camera_altitude  # [m]
 
-    # Compute position in the XYZ coordinate system of the tripod
+    # Compute orthogonal transformation matrix from geocentric to
+    # topocentric coordinates, and position in the XYZ coordinate
+    # system of the tripod
     E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
     r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
+    # Compute the rotations from the XYZ coordinate system to the uvw
+    # (camera housing fixed) coordinate system
     alpha = 0.0  # [deg]
     beta = 0.0  # [deg]
     gamma = 0.0  # [deg]

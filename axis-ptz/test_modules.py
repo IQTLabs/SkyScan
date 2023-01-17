@@ -98,6 +98,8 @@ class TestCameraModule:
         E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
         r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
+        # Compute the rotations from the XYZ coordinate system to the
+        # uvw (camera housing fixed) coordinate system
         alpha = 0.0  # [deg]
         beta = 0.0  # [deg]
         gamma = 0.0  # [deg]
@@ -105,6 +107,7 @@ class TestCameraModule:
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
         )
 
+        # Test each data value
         for index in range(0, data.shape[0]):
             camera.currentPlane = data.iloc[index, :].to_dict()
 
@@ -277,7 +280,7 @@ class TestUtilsModule:
         # Decrease precision to accommodate R_OPLUS [ft]
         assert np.linalg.norm(r_XYZ_act - r_XYZ_exp) < 10000 * PRECISION
 
-    # Construct quaternions from a list or numpy.ndarray
+    # Construct quaternions from a numpy.ndarray
     @pytest.mark.parametrize(
         "s, v, q_exp",
         [
@@ -288,7 +291,7 @@ class TestUtilsModule:
         q_act = utils.as_quaternion(s, v)
         assert np.equal(q_act, q_exp).any()
 
-    # Construct rotation quaternions from a list or numpy.ndarray
+    # Construct rotation quaternions from numpy.ndarrays
     @pytest.mark.parametrize(
         "s, v, r_exp",
         [
@@ -331,6 +334,7 @@ class TestUtilsModule:
         assert n_exp == n_act
 
     # Compute the great-circle distance between two points on a sphere
+    # separated by a quarter circumference
     @pytest.mark.parametrize(
         "varphi_1, lambda_1, varphi_2, lambda_2, d_exp",
         [
