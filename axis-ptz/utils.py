@@ -4,7 +4,6 @@ import math
 from typing import *
 
 import numpy as np
-import quaternion as qn
 
 logger = logging.getLogger("utils")
 logger.setLevel(logging.INFO)
@@ -481,19 +480,15 @@ def as_quaternion(s, v):
     ----------
     s : float
         A scalar value
-    v : list or numpy.ndarray
+    v : numpy.ndarray
         A vector of floats
 
     Returns
     -------
-    quaternion.quaternion
+    numpy.ndarray
         A quaternion with the specified scalar and vector parts
     """
-    if type(s) != float:
-        raise Exception("Scalar part is not a float")
-    if len(v) != 3 or not all([type(e) == float or type(e) == np.float64 for e in v]):
-        raise Exception("Vector part is not an iterable of three floats")
-    return np.quaternion(s, v[0], v[1], v[2])
+    return np.append(s, v)
 
 
 def as_rotation_quaternion(d_omega, u):
@@ -504,41 +499,53 @@ def as_rotation_quaternion(d_omega, u):
     ----------
     d_omega : float
         An angle [deg]
-    u : list or numpy.ndarray
+    u : numpy.ndarray
         A vector of floats
 
     Returns
     -------
-    quaternion.quaternion
+    numpy.ndarray
         A rotation quaternion with the specified angle and direction
     """
-    if type(d_omega) != float:
-        raise Exception("Angle is not a float")
-    if len(u) != 3 or not all([type(e) == float or type(e) == np.float64 for e in u]):
-        raise Exception("Vector part is not an iterable of three floats")
     r_omega = math.radians(d_omega)
-    v = [math.sin(r_omega / 2) * e for e in u]
-    return np.quaternion(math.cos(r_omega / 2), v[0], v[1], v[2])
+    return np.append(math.cos(r_omega / 2.0), math.sin(r_omega / 2.0) * u)
 
 
 def as_vector(q):
-    """Return the vector part of a quaternion, provided the scalar
-    part is nearly zero.
+    """Return the vector part of a .
 
     Parameters
     ----------
-    q : quaternion.quaternion
-        A vector quaternion
+    q : numpy.ndarray
+        A quaternion, assumed to be a vector quaternion with scalar part zero
 
     Returns
     -------
     numpy.ndarray
        A vector of floats
     """
-    if math.fabs(q.w) > 1e-12:
-        raise Exception("Quaternion is not a vector quaternion")
-    return np.array([q.x, q.y, q.z])
+    return q[1:]
 
+def cross(u, v):
+    """Compute the cross product of two vectors.
+
+    Parameters
+    ----------
+    u: numpy.ndarray
+       A vector of floats
+    v: numpy.ndarray
+       A vector of floats
+
+    Returns
+    -------
+    v: numpy.ndarray
+       The cross product vector of floats
+    """
+    w = np.array([0.0, 0.0, 0.0])
+    w[0] = u[1] * v[2] - u[2] * v[1]
+    w[1] = u[2] * v[0] - u[0] * v[2]
+    w[2] = u[0] * v[1] - u[1] * v[0]
+    return w
 
 def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
     """Use the haversine formula to compute the great-circle distance
