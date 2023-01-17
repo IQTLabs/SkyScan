@@ -13,6 +13,11 @@ PRECISION = 1e-12
 RELATIVE_DIFFERENCE = 2  # %
 ANGULAR_DIFFERENCE = 1  # [deg]
 
+
+def qnorm(q):
+    """Compute the quaternion norm."""
+    return math.sqrt((q * q.conjugate()).w)
+
 class TestCameraModule:
     """Test construction of rotations and calculation of camera
     pointing."""
@@ -35,22 +40,22 @@ class TestCameraModule:
 
         # Perform some mental rotation gymnastics (hint: use paper)
         q_alpha_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, -1.0]
+            90.0, np.array([0.0, 0.0, -1.0])
         )  # About -w or -Z
         q_beta_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, -1.0, 0.0]
+            90.0, np.array([0.0, -1.0, 0.0])
         )  # About u_alpha or -Y
         q_gamma_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, 1.0]
+            90.0, np.array([0.0, 0.0, 1.0])
         )  # About v_beta_alpha or Z
         E_XYZ_to_uvw_exp = np.array(
             [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0]]  # [X, Z, -Y]
         )
         q_rho_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 1.0, 0.0]
+            90.0, np.array([0.0, 1.0, 0.0])
         )  # About -t_gamma_beta_alpha or Y
         q_tau_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, -1.0]
+            90.0, np.array([0.0, 0.0, -1.0])
         )  # About r_rho_gamma_beta_alpha or -Z
         E_XYZ_to_rst_exp = np.array(
             [[0.0, 0.0, -1.0], [0.0, -1.0, 0.0], [-1.0, 0.0, 0.0]]  # [-Z, -N, -E]
@@ -68,12 +73,12 @@ class TestCameraModule:
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau
         )
 
-        assert np.linalg.norm(q_alpha_act - q_alpha_exp) < PRECISION
-        assert np.linalg.norm(q_beta_act - q_beta_exp) < PRECISION
-        assert np.linalg.norm(q_gamma_act - q_gamma_exp) < PRECISION
+        assert qnorm(q_alpha_act - q_alpha_exp) < PRECISION
+        assert qnorm(q_beta_act - q_beta_exp) < PRECISION
+        assert qnorm(q_gamma_act - q_gamma_exp) < PRECISION
         assert np.linalg.norm(E_XYZ_to_uvw_act - E_XYZ_to_uvw_exp) < PRECISION
-        assert np.linalg.norm(q_rho_act - q_rho_exp) < PRECISION
-        assert np.linalg.norm(q_tau_act - q_tau_exp) < PRECISION
+        assert qnorm(q_rho_act - q_rho_exp) < PRECISION
+        assert qnorm(q_tau_act - q_tau_exp) < PRECISION
         assert np.linalg.norm(E_XYZ_to_rst_act - E_XYZ_to_rst_exp) < PRECISION
 
     def test_calculateCameraPositionB(self):
@@ -128,7 +133,17 @@ class TestCameraModule:
             cameraPanA = camera.cameraPan
             cameraTiltA = camera.cameraTilt
 
-            camera.calculateCameraPositionB(r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw)
+            camera.calculateCameraPositionB(
+                r_XYZ_t,
+                E_XYZ_to_ENz,
+                e_E_XYZ,
+                e_N_XYZ,
+                e_z_XYZ,
+                alpha,
+                beta,
+                gamma,
+                E_XYZ_to_uvw,
+            )
 
             distance3dB = camera.distance3d
             distance2dB = camera.distance2d
@@ -266,7 +281,7 @@ class TestUtilsModule:
     @pytest.mark.parametrize(
         "s, v, q_exp",
         [
-            (0.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
         ],
     )
     def test_as_quaternion(self, s, v, q_exp):
@@ -277,19 +292,19 @@ class TestUtilsModule:
     @pytest.mark.parametrize(
         "s, v, r_exp",
         [
-            (0.0, np.array([1.0, 2.0, 3.0]), np.array([1.0, 0.0, 0.0, 0.0])),
-            (180.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(1.0, 0.0, 0.0, 0.0)),
+            (180.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
         ],
     )
     def test_as_rotation_quaternion(self, s, v, r_exp):
         r_act = utils.as_rotation_quaternion(s, v)
-        assert np.equal(r_act, r_exp).any()
+        assert qnorm(r_act - r_exp) < PRECISION
 
     # Get the vector part of a vector quaternion
     @pytest.mark.parametrize(
         "q, v_exp",
         [
-            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([1.0, 2.0, 3.0])),
+            (np.quaternion(0.0, 1.0, 2.0, 3.0), np.array([1.0, 2.0, 3.0])),
         ],
     )
     def test_as_vector(self, q, v_exp):
@@ -308,6 +323,13 @@ class TestUtilsModule:
         w_npq = np.cross(u, v)
         assert np.equal(w_npq, w_exp).any()
 
+    # Compute the Euclidean norm of a vector
+    def test_norm(self):
+        v = np.array([3.0, 4.0, 5.0])
+        n_exp = math.sqrt(50)
+        n_act = utils.norm(v)
+        assert n_exp == n_act
+
     # Compute the great-circle distance between two points on a sphere
     @pytest.mark.parametrize(
         "varphi_1, lambda_1, varphi_2, lambda_2, d_exp",
@@ -317,5 +339,7 @@ class TestUtilsModule:
         ],
     )
     def test_great_circle_distance(self, varphi_1, lambda_1, varphi_2, lambda_2, d_exp):
-        d_act = utils.compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2)
+        d_act = utils.compute_great_circle_distance(
+            varphi_1, lambda_1, varphi_2, lambda_2
+        )
         assert math.fabs((d_act - d_exp) / d_exp) < PRECISION
