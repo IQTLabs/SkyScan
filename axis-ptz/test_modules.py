@@ -324,3 +324,15 @@ class TestUtilsModule:
     def test_as_vector(self, q, v_exp):
         with pytest.raises(Exception):
             v_act = utils.as_vector(q)
+
+    # Compute the great-circle distance between two points on a sphere
+    @pytest.mark.parametrize(
+        "varphi_1, lambda_1, varphi_2, lambda_2, d_exp",
+        [
+            (0.0, 0.0, 0.0, 90.0, math.pi * utils.R_OPLUS / 2.0),
+            (0.0, 0.0, 90.0, 0.0, math.pi * utils.R_OPLUS / 2.0),
+        ],
+    )
+    def test_great_circle_distance(self, varphi_1, lambda_1, varphi_2, lambda_2, d_exp):
+        d_act = utils.compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2)
+        assert math.fabs((d_act - d_exp) / d_exp) < PRECISION
