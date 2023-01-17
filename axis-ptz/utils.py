@@ -550,6 +550,26 @@ def cross(u, v):
     w[2] = u[0] * v[1] - u[1] * v[0]
     return w
 
+
+def norm(v):
+    """Compute the Euclidean norm of a vector.
+
+    Parameters
+    ----------
+    v: numpy.ndarray
+       A vector of floats
+
+    Returns
+    -------
+    float
+       the Euclidean norm of the vector
+    """
+    s = 0
+    for i in range(len(v)):
+        s += v[i]**2
+    return math.sqrt(s)
+
+
 def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
     """Use the haversine formula to compute the great-circle distance
     between two points on a sphere given their longitudes and
