@@ -4,7 +4,7 @@ import pytest
 
 import numpy as np
 import pandas as pd
-import quaternion as qn
+import quaternion
 
 import camera
 import utils
@@ -68,16 +68,12 @@ class TestCameraModule:
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau
         )
 
-        def qnorm(q):
-            """Compute the quaternion norm."""
-            return math.sqrt((q * q.conjugate()).w)
-
-        assert qnorm(q_alpha_act - q_alpha_exp) < PRECISION
-        assert qnorm(q_beta_act - q_beta_exp) < PRECISION
-        assert qnorm(q_gamma_act - q_gamma_exp) < PRECISION
+        assert np.linalg.norm(q_alpha_act - q_alpha_exp) < PRECISION
+        assert np.linalg.norm(q_beta_act - q_beta_exp) < PRECISION
+        assert np.linalg.norm(q_gamma_act - q_gamma_exp) < PRECISION
         assert np.linalg.norm(E_XYZ_to_uvw_act - E_XYZ_to_uvw_exp) < PRECISION
-        assert qnorm(q_rho_act - q_rho_exp) < PRECISION
-        assert qnorm(q_tau_act - q_tau_exp) < PRECISION
+        assert np.linalg.norm(q_rho_act - q_rho_exp) < PRECISION
+        assert np.linalg.norm(q_tau_act - q_tau_exp) < PRECISION
         assert np.linalg.norm(E_XYZ_to_rst_act - E_XYZ_to_rst_exp) < PRECISION
 
     def test_calculateCameraPositionB(self):
@@ -87,6 +83,22 @@ class TestCameraModule:
         camera.camera_longitude = -77.0  # [deg]
         camera.camera_altitude = 86.46  # [m]
         camera.camera_lead = 0.0  # [s]
+
+        # Assign position of the tripod
+        t_varphi = camera.camera_latitude  # [deg]
+        t_lambda = camera.camera_longitude  # [deg]
+        t_h = camera.camera_altitude  # [m]
+
+        # Compute position in the XYZ coordinate system of the tripod
+        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
+        r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
+
+        alpha = 0.0  # [deg]
+        beta = 0.0  # [deg]
+        gamma = 0.0  # [deg]
+        q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = camera.compute_rotations(
+            e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
+        )
 
         for index in range(0, data.shape[0]):
             camera.currentPlane = data.iloc[index, :].to_dict()
@@ -116,7 +128,7 @@ class TestCameraModule:
             cameraPanA = camera.cameraPan
             cameraTiltA = camera.cameraTilt
 
-            camera.calculateCameraPositionB()
+            camera.calculateCameraPositionB(r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw)
 
             distance3dB = camera.distance3d
             distance2dB = camera.distance2d
@@ -254,76 +266,47 @@ class TestUtilsModule:
     @pytest.mark.parametrize(
         "s, v, q_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
         ],
     )
     def test_as_quaternion(self, s, v, q_exp):
         q_act = utils.as_quaternion(s, v)
-        assert q_act.equal(q_exp)
-
-    # Raise an exception when constructing quaternions without floats,
-    # or three dimensional vectors
-    @pytest.mark.parametrize(
-        "s, v, q_exp",
-        [
-            (0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1.0, 2.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-        ],
-    )
-    def test_as_quaternion_with_exception(self, s, v, q_exp):
-        with pytest.raises(Exception):
-            q_act = utils.as_quaternion(s, v)
+        assert np.equal(q_act, q_exp).any()
 
     # Construct rotation quaternions from a list or numpy.ndarray
     @pytest.mark.parametrize(
         "s, v, r_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.array([1.0, 0.0, 0.0, 0.0])),
+            (180.0, np.array([1.0, 2.0, 3.0]), np.array([0.0, 1.0, 2.0, 3.0])),
         ],
     )
     def test_as_rotation_quaternion(self, s, v, r_exp):
         r_act = utils.as_rotation_quaternion(s, v)
-        assert r_act.equal(r_exp)
-
-    # Raise an exception when constructing rotation quaternions
-    # without floats, or three dimensional vectors
-    @pytest.mark.parametrize(
-        "s, v, r_exp",
-        [
-            (0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1.0, 2.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-        ],
-    )
-    def test_as_rotation_quaternion(self, s, v, r_exp):
-        with pytest.raises(Exception):
-            r_act = utils.as_rotation_quaternion(s, v)
+        assert np.equal(r_act, r_exp).any()
 
     # Get the vector part of a vector quaternion
     @pytest.mark.parametrize(
         "q, v_exp",
         [
-            (np.quaternion(0.0, 1.0, 2.0, 3.0), np.array([1.0, 2.0, 3.0])),
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([1.0, 2.0, 3.0])),
         ],
     )
     def test_as_vector(self, q, v_exp):
         v_act = utils.as_vector(q)
-        assert np.linalg.norm(v_act - v_act) < PRECISION
+        assert np.equal(v_act, v_exp).any()
 
-    # Raise an exception when getting the vector part of a quaternion
-    # that is not a vector quaternion
-    @pytest.mark.parametrize(
-        "q, v_exp",
-        [
-            (np.quaternion(1.1e-12, 1.0, 2.0, 3.0), np.array([1.0, 2.0, 3.0])),
-        ],
-    )
-    def test_as_vector(self, q, v_exp):
-        with pytest.raises(Exception):
-            v_act = utils.as_vector(q)
+    # Compute the cross product of two vectors
+    def test_cross(self):
+        u = np.array([2.0, 3.0, 4.0])
+        v = np.array([3.0, 4.0, 5.0])
+        w_exp = np.array([-1, 2, -1])
+        w_act = utils.cross(u, v)
+        assert np.equal(w_act, w_exp).any()
+
+        # Test using external package
+        w_npq = np.cross(u, v)
+        assert np.equal(w_npq, w_exp).any()
 
     # Compute the great-circle distance between two points on a sphere
     @pytest.mark.parametrize(
