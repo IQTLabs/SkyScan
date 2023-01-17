@@ -269,17 +269,17 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
 
     Returns
     -------
-    q_alpha : numpy.ndarray
+    q_alpha : quaternion.quaternion
         Yaw rotation quaternion
-    q_beta : numpy.ndarray
+    q_beta : quaternion.quaternion
         Pitch rotation quaternion
-    q_gamma : numpy.ndarray
+    q_gamma : quaternion.quaternion
         Roll rotation quaternion
     E_XYZ_to_uvw : numpy.ndarray
         Orthogonal transformation matrix from XYZ to uvw
-    q_rho : numpy.ndarray
+    q_rho : quaternion.quaternion
         Pan rotation quaternion
-    q_tau : numpy.ndarray
+    q_tau : quaternion.quaternion
         Tilt rotation quaternion
     E_XYZ_to_rst : numpy.ndarray
         Orthogonal transformation matrix from XYZ to rst
