@@ -440,7 +440,7 @@ def calculateCameraPositionB(
 
     # Compute the distance between the aircraft and the tripod at time
     # one
-    distance3d = np.linalg.norm(r_ENz_a_1_t)
+    distance3d = utils.norm(r_ENz_a_1_t)
 
     # Compute the distance between the aircraft and the tripod along
     # the surface of a spherical Earth
@@ -463,7 +463,9 @@ def calculateCameraPositionB(
     # )
     r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
     rho = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
-    tau = math.degrees(math.atan2(r_uvw_a_1_t[2], np.linalg.norm(r_uvw_a_1_t[0:2])))  # [deg]
+    tau = math.degrees(
+        math.atan2(r_uvw_a_1_t[2], utils.norm(r_uvw_a_1_t[0:2]))
+    )  # [deg]
     cameraPan = rho
     cameraTilt = tau
 
@@ -478,7 +480,7 @@ def calculateCameraPositionB(
 
     # Compute the components of the angular velocity of the aircraft
     # in the rst coordinate system
-    omega = utils.cross(r_rst_a_0_t, v_rst_a_0_t) / np.linalg.norm(r_rst_a_0_t) ** 2
+    omega = utils.cross(r_rst_a_0_t, v_rst_a_0_t) / utils.norm(r_rst_a_0_t) ** 2
     angularVelocityHorizontal = math.degrees(-omega[2])
     angularVelocityVertical = math.degrees(omega[0])
 
