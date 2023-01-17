@@ -18,7 +18,6 @@ import logging
 import logging.config  # This gets rid of the annoying log messages from Vapix_Control
 import coloredlogs
 
-from geographiclib.geodesic import Geodesic
 import numpy as np
 from requests.auth import HTTPDigestAuth
 import paho.mqtt.client as mqtt
