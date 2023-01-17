@@ -120,7 +120,7 @@ def get_jpeg_request():  # 5.2.4.1
     }
     global args
 
-    url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
+    url = "http://" + args.axis_ip + "/axis-cgi/jpg/image.cgi"
     start_time = datetime.now()
     try:
         resp = requests.get(
@@ -137,7 +137,7 @@ def get_jpeg_request():  # 5.2.4.1
     if resp.status_code == 200:
         captureDir = None
 
-        if args.flat_file_structure: 
+        if args.flat_file_structure:
             captureDir = "capture/"
         else:
             captureDir = "capture/{}".format(currentPlane["type"])
@@ -380,7 +380,9 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     return q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, q_rho, q_tau, E_XYZ_to_rst
 
 
-def calculateCameraPositionB(r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw):
+def calculateCameraPositionB(
+    r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw
+):
     """Calculates camera pointing at a specified lead time."""
     # Define global variables
     # TODO: Eliminate use of global variables
@@ -400,9 +402,7 @@ def calculateCameraPositionB(r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, a
     a_h = currentPlane["altitude"]  # [m]
     # currentPlane["altitudeTime"]
     a_track = currentPlane["track"]  # [deg]
-    a_ground_speed = (
-        currentPlane["groundSpeed"]
-    )  # [m/s]
+    a_ground_speed = currentPlane["groundSpeed"]  # [m/s]
     a_vertical_rate = currentPlane["verticalRate"]  # [m/s]
     # currentPlane["icao24"]
     # currentPlane["type"]
@@ -786,17 +786,12 @@ def main():
         help="The zoom setting for the camera (0-9999)",
         default=9999,
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument(
-        "-v", 
-        "--verbose", 
-        action="store_true", 
-        help="Verbose output"
-    )
-    parser.add_argument(
-        '-f', 
-        '--flat-file-structure', 
-        action='store_true', 
-        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type."
+        "-f",
+        "--flat-file-structure",
+        action="store_true",
+        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type.",
     )
 
     args = parser.parse_args()
