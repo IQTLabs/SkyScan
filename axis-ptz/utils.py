@@ -131,14 +131,14 @@ def coordinate_distance_3d(
     Returns:
         float -- Distance in meters
     """
-    R = 6371 # Radius of the earth in km
+    R = 6371  # Radius of the earth in km
     dLat = deg2rad(lat2 - lat1)
     dLon = deg2rad(lon2 - lon1)
     a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(deg2rad(lat1)) * math.cos(
         deg2rad(lat2)
     ) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c * 1000 #  Distance in m
+    d = R * c * 1000  #  Distance in m
     # return d
     # logging.info("Alt1: " + str(alt1) + " Alt2: " + str(alt2))
     alt_diff = abs(alt1 - alt2)
@@ -160,14 +160,14 @@ def coordinate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> f
     Returns:
         float -- Distance in meters
     """
-    R = 6371 # Radius of the earth in km
+    R = 6371  # Radius of the earth in km
     dLat = deg2rad(lat2 - lat1)
     dLon = deg2rad(lon2 - lon1)
     a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(deg2rad(lat1)) * math.cos(
         deg2rad(lat2)
     ) * math.sin(dLon / 2) * math.sin(dLon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c * 1000 #  Distance in m
+    d = R * c * 1000  #  Distance in m
     return d
 
 
@@ -274,9 +274,9 @@ def calc_travel_3d(current_plane, lead_s: float):
     # alt_age_s = alt_age.total_seconds() + lead_s
     alt_age_s = lead_s
 
-    R = float(6371) # Radius of the Earth in km
+    R = float(6371)  # Radius of the Earth in km
     brng = math.radians(heading)  # Bearing is 90 degrees converted to radians.
-    d = float((lat_lon_age_s * speed_mps) / 1000.0) # Distance in km
+    d = float((lat_lon_age_s * speed_mps) / 1000.0)  # Distance in km
 
     lat1 = math.radians(lat)  # Current lat point converted to radians
     lon1 = math.radians(lon)  # Current long point converted to radians
