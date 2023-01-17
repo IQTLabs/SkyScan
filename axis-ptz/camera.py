@@ -549,7 +549,17 @@ def moveCamera(ip, username, password):
                 logging.info(" 🚨 Active but Current Plane is not set")
                 continue
             if moveTimeout <= datetime.now():
-                calculateCameraPositionB(r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw)
+                calculateCameraPositionB(
+                    r_XYZ_t,
+                    E_XYZ_to_ENz,
+                    e_E_XYZ,
+                    e_N_XYZ,
+                    e_z_XYZ,
+                    alpha,
+                    beta,
+                    gamma,
+                    E_XYZ_to_uvw,
+                )
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
                 # logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
                 moveTimeout = moveTimeout + timedelta(milliseconds=movePeriod)
