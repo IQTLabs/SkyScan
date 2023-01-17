@@ -4,6 +4,7 @@ import math
 from typing import *
 
 import numpy as np
+import quaternion
 
 logger = logging.getLogger("utils")
 logger.setLevel(logging.INFO)
@@ -485,10 +486,10 @@ def as_quaternion(s, v):
 
     Returns
     -------
-    numpy.ndarray
+    quaternion.quaternion
         A quaternion with the specified scalar and vector parts
     """
-    return np.append(s, v)
+    return np.quaternion(s, v[0], v[1], v[2])
 
 
 def as_rotation_quaternion(d_omega, u):
@@ -504,19 +505,20 @@ def as_rotation_quaternion(d_omega, u):
 
     Returns
     -------
-    numpy.ndarray
+    quaternion.quaternion
         A rotation quaternion with the specified angle and direction
     """
     r_omega = math.radians(d_omega)
-    return np.append(math.cos(r_omega / 2.0), math.sin(r_omega / 2.0) * u)
+    v = math.sin(r_omega / 2.0) * u
+    return np.quaternion(math.cos(r_omega / 2.0), v[0], v[1], v[2])
 
 
 def as_vector(q):
-    """Return the vector part of a .
+    """Return the vector part of a quaternion.
 
     Parameters
     ----------
-    q : numpy.ndarray
+    q : quaternion.quaternion
         A quaternion, assumed to be a vector quaternion with scalar part zero
 
     Returns
@@ -524,7 +526,8 @@ def as_vector(q):
     numpy.ndarray
        A vector of floats
     """
-    return q[1:]
+    return np.array([q.x, q.y, q.z])
+
 
 def cross(u, v):
     """Compute the cross product of two vectors.
