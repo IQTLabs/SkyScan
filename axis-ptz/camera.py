@@ -18,7 +18,6 @@ import logging
 import logging.config  # This gets rid of the annoying log messages from Vapix_Control
 import coloredlogs
 
-from geographiclib.geodesic import Geodesic
 import numpy as np
 from requests.auth import HTTPDigestAuth
 import paho.mqtt.client as mqtt
@@ -120,7 +119,7 @@ def get_jpeg_request():  # 5.2.4.1
     }
     global args
 
-    url = 'http://' + args.axis_ip + '/axis-cgi/jpg/image.cgi'
+    url = "http://" + args.axis_ip + "/axis-cgi/jpg/image.cgi"
     start_time = datetime.now()
     try:
         resp = requests.get(
@@ -137,7 +136,7 @@ def get_jpeg_request():  # 5.2.4.1
     if resp.status_code == 200:
         captureDir = None
 
-        if args.flat_file_structure: 
+        if args.flat_file_structure:
             captureDir = "capture/"
         else:
             captureDir = "capture/{}".format(currentPlane["type"])
@@ -269,19 +268,19 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
 
     Returns
     -------
-    q_alpha : qn.quaternion
+    q_alpha : quaternion.quaternion
         Yaw rotation quaternion
-    q_beta : qn.quaternion
+    q_beta : quaternion.quaternion
         Pitch rotation quaternion
-    q_gamma : qn.quaternion
+    q_gamma : quaternion.quaternion
         Roll rotation quaternion
-    E_XYZ_to_uvw : np.ndarray
+    E_XYZ_to_uvw : numpy.ndarray
         Orthogonal transformation matrix from XYZ to uvw
-    q_rho : qn.quaternion
+    q_rho : quaternion.quaternion
         Pan rotation quaternion
-    q_tau : qn.quaternion
+    q_tau : quaternion.quaternion
         Tilt rotation quaternion
-    E_XYZ_to_rst : np.ndarray
+    E_XYZ_to_rst : numpy.ndarray
         Orthogonal transformation matrix from XYZ to rst
     """
     # Assign unit vectors of the uvw coordinate system prior to
@@ -380,7 +379,9 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     return q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, q_rho, q_tau, E_XYZ_to_rst
 
 
-def calculateCameraPositionB():
+def calculateCameraPositionB(
+    r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw
+):
     """Calculates camera pointing at a specified lead time."""
     # Define global variables
     # TODO: Eliminate use of global variables
@@ -400,9 +401,7 @@ def calculateCameraPositionB():
     a_h = currentPlane["altitude"]  # [m]
     # currentPlane["altitudeTime"]
     a_track = currentPlane["track"]  # [deg]
-    a_ground_speed = (
-        currentPlane["groundSpeed"]
-    )  # [m/s]
+    a_ground_speed = currentPlane["groundSpeed"]  # [m/s]
     a_vertical_rate = currentPlane["verticalRate"]  # [m/s]
     # currentPlane["icao24"]
     # currentPlane["type"]
@@ -410,18 +409,15 @@ def calculateCameraPositionB():
     # Assign position of the tripod
     t_varphi = camera_latitude  # [deg]
     t_lambda = camera_longitude  # [deg]
-    t_h = camera_altitude  # [m]
 
     # Compute position in the XYZ coordinate system of the aircraft
     # relative to the tripod at time zero, the observation time
     r_XYZ_a_0 = utils.compute_r_XYZ(a_lambda, a_varphi, a_h)
-    r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
     r_XYZ_a_0_t = r_XYZ_a_0 - r_XYZ_t
 
     # Compute position and velocity in the ENz coordinate system of
     # the aircraft relative to the tripod at time zero, and position at
     # slightly later time one
-    E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
     r_ENz_a_0_t = np.matmul(E_XYZ_to_ENz, r_XYZ_a_0 - r_XYZ_t)
     a_track = math.radians(a_track)
     v_ENz_a_0_t = np.array(
@@ -440,32 +436,26 @@ def calculateCameraPositionB():
 
     # Compute the distance between the aircraft and the tripod at time
     # one
-    distance3d = np.linalg.norm(r_ENz_a_1_t)
+    distance3d = utils.norm(r_ENz_a_1_t)
 
     # Compute the distance between the aircraft and the tripod along
-    # the surface of the Earth
-    geod = Geodesic.WGS84
-    g = geod.Inverse(
+    # the surface of a spherical Earth
+    distance2d = utils.compute_great_circle_distance(
         t_varphi,
         t_lambda,
         a_varphi,
         a_lambda,
-    )
-    distance2d = g["s12"]  # [m]
+    )  # [m]
 
     # Compute the bearing from north of the aircraft from the tripod
     bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
 
     # Compute pan and tilt to point the camera at the aircraft
-    alpha = 0.0  # [deg]
-    beta = 0.0  # [deg]
-    gamma = 0.0  # [deg]
-    q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
-        e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
-    )
     r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
     rho = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
-    tau = math.degrees(math.atan2(r_uvw_a_1_t[2], np.linalg.norm(r_uvw_a_1_t[0:2])))  # [deg]
+    tau = math.degrees(
+        math.atan2(r_uvw_a_1_t[2], utils.norm(r_uvw_a_1_t[0:2]))
+    )  # [deg]
     cameraPan = rho
     cameraTilt = tau
 
@@ -480,7 +470,7 @@ def calculateCameraPositionB():
 
     # Compute the components of the angular velocity of the aircraft
     # in the rst coordinate system
-    omega = np.cross(r_rst_a_0_t, v_rst_a_0_t) / np.linalg.norm(r_rst_a_0_t) ** 2
+    omega = utils.cross(r_rst_a_0_t, v_rst_a_0_t) / utils.norm(r_rst_a_0_t) ** 2
     angularVelocityHorizontal = math.degrees(-omega[2])
     angularVelocityVertical = math.degrees(omega[0])
 
@@ -527,13 +517,43 @@ def moveCamera(ip, username, password):
     captureTimeout = datetime.now()
     camera = vapix_control.CameraControl(ip, username, password)
 
+    # Assign position of the tripod
+    t_varphi = camera_latitude  # [deg]
+    t_lambda = camera_longitude  # [deg]
+    t_h = camera_altitude  # [m]
+
+    # Compute orthogonal transformation matrix from geocentric to
+    # topocentric coordinates, and position in the XYZ coordinate
+    # system of the tripod
+    E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
+    r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
+
+    # Compute the rotations from the XYZ coordinate system to the uvw
+    # (camera housing fixed) coordinate system
+    alpha = 0.0  # [deg]
+    beta = 0.0  # [deg]
+    gamma = 0.0  # [deg]
+    q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
+        e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
+    )
+
     while True:
         if active:
             if not "icao24" in currentPlane:
                 logging.info(" 🚨 Active but Current Plane is not set")
                 continue
             if moveTimeout <= datetime.now():
-                calculateCameraPositionB()
+                calculateCameraPositionB(
+                    r_XYZ_t,
+                    E_XYZ_to_ENz,
+                    e_E_XYZ,
+                    e_N_XYZ,
+                    e_z_XYZ,
+                    alpha,
+                    beta,
+                    gamma,
+                    E_XYZ_to_uvw,
+                )
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
                 # logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
                 moveTimeout = moveTimeout + timedelta(milliseconds=movePeriod)
@@ -772,17 +792,12 @@ def main():
         help="The zoom setting for the camera (0-9999)",
         default=9999,
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument(
-        "-v", 
-        "--verbose", 
-        action="store_true", 
-        help="Verbose output"
-    )
-    parser.add_argument(
-        '-f', 
-        '--flat-file-structure', 
-        action='store_true', 
-        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type."
+        "-f",
+        "--flat-file-structure",
+        action="store_true",
+        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type.",
     )
 
     args = parser.parse_args()

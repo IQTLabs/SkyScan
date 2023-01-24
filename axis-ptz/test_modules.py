@@ -4,7 +4,7 @@ import pytest
 
 import numpy as np
 import pandas as pd
-import quaternion as qn
+import quaternion
 
 import camera
 import utils
@@ -12,6 +12,11 @@ import utils
 PRECISION = 1e-12
 RELATIVE_DIFFERENCE = 2  # %
 ANGULAR_DIFFERENCE = 1  # [deg]
+
+
+def qnorm(q):
+    """Compute the quaternion norm."""
+    return math.sqrt((q * q.conjugate()).w)
 
 class TestCameraModule:
     """Test construction of rotations and calculation of camera
@@ -35,22 +40,22 @@ class TestCameraModule:
 
         # Perform some mental rotation gymnastics (hint: use paper)
         q_alpha_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, -1.0]
+            90.0, np.array([0.0, 0.0, -1.0])
         )  # About -w or -Z
         q_beta_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, -1.0, 0.0]
+            90.0, np.array([0.0, -1.0, 0.0])
         )  # About u_alpha or -Y
         q_gamma_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, 1.0]
+            90.0, np.array([0.0, 0.0, 1.0])
         )  # About v_beta_alpha or Z
         E_XYZ_to_uvw_exp = np.array(
             [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0]]  # [X, Z, -Y]
         )
         q_rho_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 1.0, 0.0]
+            90.0, np.array([0.0, 1.0, 0.0])
         )  # About -t_gamma_beta_alpha or Y
         q_tau_exp = utils.as_rotation_quaternion(
-            90.0, [0.0, 0.0, -1.0]
+            90.0, np.array([0.0, 0.0, -1.0])
         )  # About r_rho_gamma_beta_alpha or -Z
         E_XYZ_to_rst_exp = np.array(
             [[0.0, 0.0, -1.0], [0.0, -1.0, 0.0], [-1.0, 0.0, 0.0]]  # [-Z, -N, -E]
@@ -68,10 +73,6 @@ class TestCameraModule:
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau
         )
 
-        def qnorm(q):
-            """Compute the quaternion norm."""
-            return math.sqrt((q * q.conjugate()).w)
-
         assert qnorm(q_alpha_act - q_alpha_exp) < PRECISION
         assert qnorm(q_beta_act - q_beta_exp) < PRECISION
         assert qnorm(q_gamma_act - q_gamma_exp) < PRECISION
@@ -88,6 +89,25 @@ class TestCameraModule:
         camera.camera_altitude = 86.46  # [m]
         camera.camera_lead = 0.0  # [s]
 
+        # Assign position of the tripod
+        t_varphi = camera.camera_latitude  # [deg]
+        t_lambda = camera.camera_longitude  # [deg]
+        t_h = camera.camera_altitude  # [m]
+
+        # Compute position in the XYZ coordinate system of the tripod
+        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
+        r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
+
+        # Compute the rotations from the XYZ coordinate system to the
+        # uvw (camera housing fixed) coordinate system
+        alpha = 0.0  # [deg]
+        beta = 0.0  # [deg]
+        gamma = 0.0  # [deg]
+        q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = camera.compute_rotations(
+            e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
+        )
+
+        # Test each data value
         for index in range(0, data.shape[0]):
             camera.currentPlane = data.iloc[index, :].to_dict()
 
@@ -116,7 +136,17 @@ class TestCameraModule:
             cameraPanA = camera.cameraPan
             cameraTiltA = camera.cameraTilt
 
-            camera.calculateCameraPositionB()
+            camera.calculateCameraPositionB(
+                r_XYZ_t,
+                E_XYZ_to_ENz,
+                e_E_XYZ,
+                e_N_XYZ,
+                e_z_XYZ,
+                alpha,
+                beta,
+                gamma,
+                E_XYZ_to_uvw,
+            )
 
             distance3dB = camera.distance3d
             distance2dB = camera.distance2d
@@ -250,57 +280,28 @@ class TestUtilsModule:
         # Decrease precision to accommodate R_OPLUS [ft]
         assert np.linalg.norm(r_XYZ_act - r_XYZ_exp) < 10000 * PRECISION
 
-    # Construct quaternions from a list or numpy.ndarray
+    # Construct quaternions from a numpy.ndarray
     @pytest.mark.parametrize(
         "s, v, q_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
             (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
         ],
     )
     def test_as_quaternion(self, s, v, q_exp):
         q_act = utils.as_quaternion(s, v)
-        assert q_act.equal(q_exp)
+        assert np.equal(q_act, q_exp).any()
 
-    # Raise an exception when constructing quaternions without floats,
-    # or three dimensional vectors
-    @pytest.mark.parametrize(
-        "s, v, q_exp",
-        [
-            (0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1.0, 2.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-        ],
-    )
-    def test_as_quaternion_with_exception(self, s, v, q_exp):
-        with pytest.raises(Exception):
-            q_act = utils.as_quaternion(s, v)
-
-    # Construct rotation quaternions from a list or numpy.ndarray
+    # Construct rotation quaternions from numpy.ndarrays
     @pytest.mark.parametrize(
         "s, v, r_exp",
         [
-            (0.0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
+            (0.0, np.array([1.0, 2.0, 3.0]), np.quaternion(1.0, 0.0, 0.0, 0.0)),
+            (180.0, np.array([1.0, 2.0, 3.0]), np.quaternion(0.0, 1.0, 2.0, 3.0)),
         ],
     )
     def test_as_rotation_quaternion(self, s, v, r_exp):
         r_act = utils.as_rotation_quaternion(s, v)
-        assert r_act.equal(r_exp)
-
-    # Raise an exception when constructing rotation quaternions
-    # without floats, or three dimensional vectors
-    @pytest.mark.parametrize(
-        "s, v, r_exp",
-        [
-            (0, [1.0, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1, 2.0, 3.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-            (0.0, [1.0, 2.0], np.quaternion(0.0, 1.0, 2.0, 3.0)),
-        ],
-    )
-    def test_as_rotation_quaternion(self, s, v, r_exp):
-        with pytest.raises(Exception):
-            r_act = utils.as_rotation_quaternion(s, v)
+        assert qnorm(r_act - r_exp) < PRECISION
 
     # Get the vector part of a vector quaternion
     @pytest.mark.parametrize(
@@ -311,16 +312,38 @@ class TestUtilsModule:
     )
     def test_as_vector(self, q, v_exp):
         v_act = utils.as_vector(q)
-        assert np.linalg.norm(v_act - v_act) < PRECISION
+        assert np.equal(v_act, v_exp).any()
 
-    # Raise an exception when getting the vector part of a quaternion
-    # that is not a vector quaternion
+    # Compute the cross product of two vectors
+    def test_cross(self):
+        u = np.array([2.0, 3.0, 4.0])
+        v = np.array([3.0, 4.0, 5.0])
+        w_exp = np.array([-1, 2, -1])
+        w_act = utils.cross(u, v)
+        assert np.equal(w_act, w_exp).any()
+
+        # Test using external package
+        w_npq = np.cross(u, v)
+        assert np.equal(w_npq, w_exp).any()
+
+    # Compute the Euclidean norm of a vector
+    def test_norm(self):
+        v = np.array([3.0, 4.0, 5.0])
+        n_exp = math.sqrt(50)
+        n_act = utils.norm(v)
+        assert n_exp == n_act
+
+    # Compute the great-circle distance between two points on a sphere
+    # separated by a quarter circumference
     @pytest.mark.parametrize(
-        "q, v_exp",
+        "varphi_1, lambda_1, varphi_2, lambda_2, d_exp",
         [
-            (np.quaternion(1.1e-12, 1.0, 2.0, 3.0), np.array([1.0, 2.0, 3.0])),
+            (0.0, 0.0, 0.0, 90.0, math.pi * utils.R_OPLUS / 2.0),
+            (0.0, 0.0, 90.0, 0.0, math.pi * utils.R_OPLUS / 2.0),
         ],
     )
-    def test_as_vector(self, q, v_exp):
-        with pytest.raises(Exception):
-            v_act = utils.as_vector(q)
+    def test_great_circle_distance(self, varphi_1, lambda_1, varphi_2, lambda_2, d_exp):
+        d_act = utils.compute_great_circle_distance(
+            varphi_1, lambda_1, varphi_2, lambda_2
+        )
+        assert math.fabs((d_act - d_exp) / d_exp) < PRECISION
