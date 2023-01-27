@@ -474,6 +474,9 @@ def calculateCameraPositionB(
     angularVelocityHorizontal = math.degrees(-omega[2])
     angularVelocityVertical = math.degrees(omega[0])
 
+    # TODO: Remove
+    return r_rst_a_0_t, v_rst_a_0_t
+
 
 def calculateCameraPositionA():
     global cameraPan
