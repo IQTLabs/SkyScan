@@ -31,7 +31,7 @@ def point_camera(
     camera.currentPlane["groundSpeed"] *= (
         6076.12 / 3600 * 0.3048
     )  # [nm/h] * [ft/nm] / [s/h] * [m/ft] = [m/s]
-    camera.currentPlane["verticalRate"] *= 0.3048  # [ft/s] * [m/ft] = [m/s]
+    camera.currentPlane["verticalRate"] *= 0.3048 / 60  # [ft/s] * [m/ft] / [s/m] = [m/s]
     # currentPlane["icao24"]
     # currentPlane["type"]
 
