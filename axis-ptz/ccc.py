@@ -1,4 +1,5 @@
 import math
+import os
 
 import pandas as pd
 
@@ -63,8 +64,8 @@ def point_camera(
 data = pd.read_csv("data/A1E946-processed-track.csv")
 
 # Assign camerag position
-camera.camera_latitude = 38.0  # [deg]
-camera.camera_longitude = -77.0  # [deg]
+camera.camera_latitude = float(os.getenv("CAMERA_LATITUDE", "38.0"))  # [deg]
+camera.camera_longitude = float(os.getenv("CAMERA_LONGITUDE", "-77.0"))  # [deg]
 camera.camera_altitude = 86.46  # [m]
 camera.camera_lead = 0.0  # [s]
 
