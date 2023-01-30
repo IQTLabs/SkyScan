@@ -153,8 +153,9 @@ while index < data.shape[0] - 1:
 
     # Update the system inputs at the rate AIS-B messages are recieved
     if time_c >= data["latLonTime"][index + 1]:
+        index = data["latLonTime"][time_c >= data["latLonTime"]].index[-1]
+
         # Update the aircraft parameters and compute camera pointing and slew rate
-        index += 1
         camera.currentPlane = data.iloc[index, :].to_dict()
         time_a, rho_a, tau_a, r_rst_a_t, v_rst_a_t = point_camera(
             r_XYZ_t,
