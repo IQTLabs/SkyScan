@@ -107,9 +107,9 @@ rho_dot_a = math.degrees(-omega[2])
 tau_dot_a = math.degrees(omega[0])
 
 # Define control parameters and camera update rate
-k_rho = 0.4
-k_tau = 1.0
-do_init = True
+k_rho = 0.20
+k_tau = 0.20
+do_init = False
 dt_c = 0.1
 
 # Initialize parameters
@@ -172,11 +172,9 @@ while index < data.shape[0] - 1:
         tau_dot_a = math.degrees(omega[0])
 
         # Compute slew rate differences
-        dt_a = 1.0  # (time_a - history["time_a"][-1])
+        dt_a = (time_a - history["time_a"][-1])
         delta_rho_dot_c = k_rho * (rho_a - rho_c) / dt_a
         delta_tau_dot_c = k_tau * (tau_a - tau_c) / dt_a
-        # delta_rho_dot_c = k_rho * (rho_dot_a - rho_dot_c)
-        # delta_tau_dot_c = k_tau * (tau_dot_a - tau_dot_c)
 
     # Accumulate parameters at each step
     history["time_a"].append(time_a)
