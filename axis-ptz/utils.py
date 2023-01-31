@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 import logging
 import math
 from typing import *
@@ -474,6 +475,142 @@ def compute_r_XYZ(d_lambda, d_varphi, o_h):
     return r_XYZ
 
 
+def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
+    """Compute the rotations from the XYZ coordinate system to the uvw
+    (camera housing fixed) and rst (camera fixed) coordinate systems.
+
+    Parameters
+    ----------
+    e_E_XYZ : np.ndarray
+        East unit vector
+    e_N_XYZ : np.ndarray
+        North unit vector
+    e_z_XYZ : np.ndarray
+        Zenith unit vector
+    alpha : float
+        Yaw angle about -w axis [deg]
+    beta : float
+        Pitch angle about u axis [deg]
+    gamma : float
+        Roll angle about v axis [deg]
+    rho : float
+        Pan angle about -t axis [deg]
+    tau : float
+        Tilt angle about w axis [deg]
+
+    Returns
+    -------
+    q_alpha : quaternion.quaternion
+        Yaw rotation quaternion
+    q_beta : quaternion.quaternion
+        Pitch rotation quaternion
+    q_gamma : quaternion.quaternion
+        Roll rotation quaternion
+    E_XYZ_to_uvw : numpy.ndarray
+        Orthogonal transformation matrix from XYZ to uvw
+    q_rho : quaternion.quaternion
+        Pan rotation quaternion
+    q_tau : quaternion.quaternion
+        Tilt rotation quaternion
+    E_XYZ_to_rst : numpy.ndarray
+        Orthogonal transformation matrix from XYZ to rst
+    """
+    # Assign unit vectors of the uvw coordinate system prior to
+    # rotation
+    e_u_XYZ = e_E_XYZ
+    e_v_XYZ = e_N_XYZ
+    e_w_XYZ = e_z_XYZ
+
+    # Construct the yaw rotation quaternion
+    q_alpha = as_rotation_quaternion(alpha, -e_w_XYZ)
+
+    # Construct the pitch rotation quaternion
+    e_u_XYZ_alpha = as_vector(
+        q_alpha * as_quaternion(0.0, e_u_XYZ) * q_alpha.conjugate()
+    )
+    q_beta = as_rotation_quaternion(beta, e_u_XYZ_alpha)
+
+    # Construct the roll rotation quaternion
+    q_beta_alpha = q_beta * q_alpha
+    e_v_XYZ_beta_alpha = as_vector(
+        q_beta_alpha * as_quaternion(0.0, e_v_XYZ) * q_beta_alpha.conjugate()
+    )
+    q_gamma = as_rotation_quaternion(gamma, e_v_XYZ_beta_alpha)
+
+    # Compute the orthogonal transformation matrix from the XYZ to the
+    # uvw coordinate system
+    q_gamma_beta_alpha = q_gamma * q_beta_alpha
+    e_u_XYZ_gamma_beta_alpha = as_vector(
+        q_gamma_beta_alpha
+        * as_quaternion(0.0, e_u_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    e_v_XYZ_gamma_beta_alpha = as_vector(
+        q_gamma_beta_alpha
+        * as_quaternion(0.0, e_v_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    e_w_XYZ_gamma_beta_alpha = as_vector(
+        q_gamma_beta_alpha
+        * as_quaternion(0.0, e_w_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    E_XYZ_to_uvw = np.row_stack(
+        (e_u_XYZ_gamma_beta_alpha, e_v_XYZ_gamma_beta_alpha, e_w_XYZ_gamma_beta_alpha)
+    )
+
+    # Assign unit vectors of the rst coordinate system prior to
+    # rotation
+    e_r_XYZ = e_u_XYZ
+    e_s_XYZ = e_v_XYZ
+    e_t_XYZ = e_w_XYZ
+
+    # Construct the pan rotation quaternion
+    e_t_XYZ_gamma_beta_alpha = as_vector(
+        q_gamma_beta_alpha
+        * as_quaternion(0.0, e_t_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    q_rho = as_rotation_quaternion(rho, -e_t_XYZ_gamma_beta_alpha)
+
+    # Construct the tilt rotation quaternion
+    q_rho_gamma_beta_alpha = q_rho * q_gamma_beta_alpha
+    e_r_XYZ_rho_gamma_beta_alpha = as_vector(
+        q_rho_gamma_beta_alpha
+        * as_quaternion(0.0, e_r_XYZ)
+        * q_rho_gamma_beta_alpha.conjugate()
+    )
+    q_tau = as_rotation_quaternion(tau, e_r_XYZ_rho_gamma_beta_alpha)
+
+    # Compute the orthogonal transformation matrix from the XYZ to the
+    # rst coordinate system
+    q_tau_rho_gamma_beta_alpha = q_tau * q_rho_gamma_beta_alpha
+    e_r_XYZ_tau_rho_gamma_beta_alpha = as_vector(
+        q_tau_rho_gamma_beta_alpha
+        * as_quaternion(0.0, e_r_XYZ)
+        * q_tau_rho_gamma_beta_alpha.conjugate()
+    )
+    e_s_XYZ_tau_rho_gamma_beta_alpha = as_vector(
+        q_tau_rho_gamma_beta_alpha
+        * as_quaternion(0.0, e_s_XYZ)
+        * q_tau_rho_gamma_beta_alpha.conjugate()
+    )
+    e_t_XYZ_tau_rho_gamma_beta_alpha = as_vector(
+        q_tau_rho_gamma_beta_alpha
+        * as_quaternion(0.0, e_t_XYZ)
+        * q_tau_rho_gamma_beta_alpha.conjugate()
+    )
+    E_XYZ_to_rst = np.row_stack(
+        (
+            e_r_XYZ_tau_rho_gamma_beta_alpha,
+            e_s_XYZ_tau_rho_gamma_beta_alpha,
+            e_t_XYZ_tau_rho_gamma_beta_alpha,
+        )
+    )
+
+    return q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, q_rho, q_tau, E_XYZ_to_rst
+
+
 def as_quaternion(s, v):
     """Construct a quaternion given a scalar and vector.
 
@@ -607,3 +744,11 @@ def compute_great_circle_distance(varphi_1, lambda_1, varphi_2, lambda_2):
             )
         )
     )
+
+def read_incoming_message():
+    path = "./orientation-msg.json"
+    with open(path) as f:
+        data = json.load(f)
+    return data
+
+
