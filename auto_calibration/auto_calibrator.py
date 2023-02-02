@@ -15,7 +15,7 @@ from scipy.optimize import fmin_bfgs
 # TODO: standardize method of importing base class
 sys.path.append(str(Path(os.getenv("EDGETECH_CORE_HOME")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
-import calibration_utils
+import utils_auto_calibrator
 
 # TODO: add logging
 
@@ -85,7 +85,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         msg = payload["data"]
 
         # calculate rho_0, tau_0, rho_epsilon and tau_epsilon
-        rho_0, tau_0, rho_epsilon, tau_epsilon = self._calculate_calibration_error(payload)
+        rho_0, tau_0, rho_epsilon, tau_epsilon = self._calculate_calibration_error(msg)
 
         # Use bfgs minimize function to determine correct alpha beta and gamma
         alpha, beta, gamma = self._minimize(payload, rho_0, tau_0, rho_epsilon, tau_epsilon)
@@ -101,6 +101,7 @@ class AutoCalibrator(BaseMQTTPubSub):
 
     @staticmethod
     def _calculate_calibration_error(msg):
+
         """
         Calculate calibration error of camera using information from YOLO or equivalent bounding box
 
@@ -121,12 +122,12 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
 
         # Get values at time of message
-        rho_0 = msg["pan"]
-        tau_0 = msg["tilt"]
+        rho_0 = msg["camera"]["pan"]
+        tau_0 = msg["camera"]["tilt"]
 
         # Throw error if camera not at expected zoom (9999)
         # TODO: Dynamic FoV for zoom
-        zoom = msg["zoom"]
+        zoom = msg["camera"]["zoom"]
         if zoom != 9999:
             raise ValueError('Camera not at expected zoom. Auto-calibration failed')
 
@@ -188,25 +189,25 @@ class AutoCalibrator(BaseMQTTPubSub):
         a_varphi = msg["lat"]  # [deg]
         a_lambda = msg["lon"]  # [deg]
         a_h = msg["altitude"]  # [m]
-        r_XYZ_a = calibration_utils.compute_r_XYZ(a_lambda, a_varphi, a_h)
+        r_XYZ_a = utils_auto_calibrator.compute_r_XYZ(a_lambda, a_varphi, a_h)
 
         # Compute position of the tripod
         t_varphi = msg["camera"]["lat"]  # [deg]
         t_lambda = msg["camera"]["lon"]  # [deg]
         t_h = msg["camera"]["lon"]  # [m]
-        r_XYZ_t = calibration_utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
+        r_XYZ_t = utils_auto_calibrator.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
         # Compute orthogonal transformation matrix from geocentric to
         # topocentric coordinates, and corresponding unit vectors
         # system of the tripod
-        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = calibration_utils.compute_E(t_lambda, t_varphi)
+        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils_auto_calibrator.compute_E(t_lambda, t_varphi)
 
         # Compute the rotations from the XYZ coordinate system to the uvw
         # (camera housing fixed) coordinate system
         alpha = alpha_beta_gamma[0]  # [deg]
         beta = alpha_beta_gamma[1]  # [deg]
         gamma = alpha_beta_gamma[2]  # [deg]
-        _, _, _, E_XYZ_to_uvw, _, _, _ = calibration_utils.compute_rotations(
+        _, _, _, E_XYZ_to_uvw, _, _, _ = utils_auto_calibrator.compute_rotations(
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
         )
 
@@ -218,7 +219,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         # the updated values of alpha, beta, and gamma
         rho = math.degrees(math.atan2(r_uvw_a_t[0], r_uvw_a_t[1]))  # [deg]
         tau = math.degrees(
-            math.atan2(r_uvw_a_t[2], calibration_utils.norm(r_uvw_a_t[0:2]))
+            math.atan2(r_uvw_a_t[2], utils_auto_calibrator.norm(r_uvw_a_t[0:2]))
         )  # [deg]
 
         # Return the pointing error to be minimized
