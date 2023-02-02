@@ -15,9 +15,9 @@ services:
       context: ./
       dockerfile: ./Dockerfile
     environment:
-      - ENV_VARIABLE=EXAMPLE
-      - EXAMPLE_TOPIC=/example
-      - MQTT_IP=mqtt
+      - CONFIG_TOPIC="skyscan/config/json"
+      - CALIBRATION_TOPIC="skyscan/calibration/json"
+      - MQTT_IP="127.0.0.1"
     restart: unless-stopped
     depends_on:
       - mqtt
