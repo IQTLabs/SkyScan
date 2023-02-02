@@ -243,6 +243,140 @@ def get_bmp_request():  # 5.2.4.1
     return text
 
 
+def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
+    """Compute the rotations from the XYZ coordinate system to the uvw
+    (camera housing fixed) and rst (camera fixed) coordinate systems.
+
+    Parameters
+    ----------
+    e_E_XYZ : np.ndarray
+        East unit vector
+    e_N_XYZ : np.ndarray
+        North unit vector
+    e_z_XYZ : np.ndarray
+        Zenith unit vector
+    alpha : float
+        Yaw angle about -w axis [deg]
+    beta : float
+        Pitch angle about u axis [deg]
+    gamma : float
+        Roll angle about v axis [deg]
+    rho : float
+        Pan angle about -t axis [deg]
+    tau : float
+        Tilt angle about w axis [deg]
+
+    Returns
+    -------
+    q_alpha : quaternion.quaternion
+        Yaw rotation quaternion
+    q_beta : quaternion.quaternion
+        Pitch rotation quaternion
+    q_gamma : quaternion.quaternion
+        Roll rotation quaternion
+    E_XYZ_to_uvw : numpy.ndarray
+        Orthogonal transformation matrix from XYZ to uvw
+    q_rho : quaternion.quaternion
+        Pan rotation quaternion
+    q_tau : quaternion.quaternion
+        Tilt rotation quaternion
+    E_XYZ_to_rst : numpy.ndarray
+        Orthogonal transformation matrix from XYZ to rst
+    """
+    # Assign unit vectors of the uvw coordinate system prior to
+    # rotation
+    e_u_XYZ = e_E_XYZ
+    e_v_XYZ = e_N_XYZ
+    e_w_XYZ = e_z_XYZ
+
+    # Construct the yaw rotation quaternion
+    q_alpha = utils.as_rotation_quaternion(alpha, -e_w_XYZ)
+
+    # Construct the pitch rotation quaternion
+    e_u_XYZ_alpha = utils.as_vector(
+        q_alpha * utils.as_quaternion(0.0, e_u_XYZ) * q_alpha.conjugate()
+    )
+    q_beta = utils.as_rotation_quaternion(beta, e_u_XYZ_alpha)
+
+    # Construct the roll rotation quaternion
+    q_beta_alpha = q_beta * q_alpha
+    e_v_XYZ_beta_alpha = utils.as_vector(
+        q_beta_alpha * utils.as_quaternion(0.0, e_v_XYZ) * q_beta_alpha.conjugate()
+    )
+    q_gamma = utils.as_rotation_quaternion(gamma, e_v_XYZ_beta_alpha)
+
+    # Compute the orthogonal transformation matrix from the XYZ to the
+    # uvw coordinate system
+    q_gamma_beta_alpha = q_gamma * q_beta_alpha
+    e_u_XYZ_gamma_beta_alpha = utils.as_vector(
+        q_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_u_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    e_v_XYZ_gamma_beta_alpha = utils.as_vector(
+        q_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_v_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    e_w_XYZ_gamma_beta_alpha = utils.as_vector(
+        q_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_w_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    E_XYZ_to_uvw = np.row_stack(
+        (e_u_XYZ_gamma_beta_alpha, e_v_XYZ_gamma_beta_alpha, e_w_XYZ_gamma_beta_alpha)
+    )
+
+    # Assign unit vectors of the rst coordinate system prior to
+    # rotation
+    e_r_XYZ = e_u_XYZ
+    e_s_XYZ = e_v_XYZ
+    e_t_XYZ = e_w_XYZ
+
+    # Construct the pan rotation quaternion
+    e_t_XYZ_gamma_beta_alpha = utils.as_vector(
+        q_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_t_XYZ)
+        * q_gamma_beta_alpha.conjugate()
+    )
+    q_rho = utils.as_rotation_quaternion(rho, -e_t_XYZ_gamma_beta_alpha)
+
+    # Construct the tilt rotation quaternion
+    q_rho_gamma_beta_alpha = q_rho * q_gamma_beta_alpha
+    e_r_XYZ_rho_gamma_beta_alpha = utils.as_vector(
+        q_rho_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_r_XYZ)
+        * q_rho_gamma_beta_alpha.conjugate()
+    )
+    q_tau = utils.as_rotation_quaternion(tau, e_r_XYZ_rho_gamma_beta_alpha)
+
+    # Compute the orthogonal transformation matrix from the XYZ to the
+    # rst coordinate system
+    q_tau_rho_gamma_beta_alpha = q_tau * q_rho_gamma_beta_alpha
+    e_r_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
+        q_tau_rho_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_r_XYZ)
+        * q_tau_rho_gamma_beta_alpha.conjugate()
+    )
+    e_s_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
+        q_tau_rho_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_s_XYZ)
+        * q_tau_rho_gamma_beta_alpha.conjugate()
+    )
+    e_t_XYZ_tau_rho_gamma_beta_alpha = utils.as_vector(
+        q_tau_rho_gamma_beta_alpha
+        * utils.as_quaternion(0.0, e_t_XYZ)
+        * q_tau_rho_gamma_beta_alpha.conjugate()
+    )
+    E_XYZ_to_rst = np.row_stack(
+        (
+            e_r_XYZ_tau_rho_gamma_beta_alpha,
+            e_s_XYZ_tau_rho_gamma_beta_alpha,
+            e_t_XYZ_tau_rho_gamma_beta_alpha,
+        )
+    )
+
+    return q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, q_rho, q_tau, E_XYZ_to_rst
 
 
 def calculateCameraPositionB(
@@ -328,7 +462,7 @@ def calculateCameraPositionB(
     # Compute position and velocity in the rst coordinate system of
     # the aircraft relative to the tripod at time zero after pointing
     # the camera at the aircraft
-    _, _, _, _, q_rho, q_tau, E_XYZ_to_rst = utils.compute_rotations(
+    _, _, _, _, q_rho, q_tau, E_XYZ_to_rst = compute_rotations(
         e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau
     )
     r_rst_a_0_t = np.matmul(E_XYZ_to_rst, r_XYZ_a_0_t)
@@ -399,7 +533,7 @@ def moveCamera(ip, username, password):
     alpha = 0.0  # [deg]
     beta = 0.0  # [deg]
     gamma = 0.0  # [deg]
-    q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = utils.compute_rotations(
+    q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
         e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
     )
 
