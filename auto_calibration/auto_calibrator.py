@@ -55,7 +55,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         if not self.test:
             self.connect_client()
             sleep(1)
-            self.publish_registration("Template Module Registration")
+            self.publish_registration("Auto Calibration Registration")
 
     def _calibration_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], payload: Any
