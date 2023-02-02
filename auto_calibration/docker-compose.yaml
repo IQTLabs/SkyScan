@@ -1,0 +1,23 @@
+version: "3"
+services:
+  mqtt:
+    image: iqtlabs/edgetech-mqtt:latest
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    build:
+      context: ./mqtt
+      dockerfile: Dockerfile
+    restart: unless-stopped
+  filesaver:
+    image: iqtlabs/edgetech-template:latest
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    environment:
+      - ENV_VARIABLE=EXAMPLE
+      - EXAMPLE_TOPIC=/example
+      - MQTT_IP=mqtt
+    restart: unless-stopped
+    depends_on:
+      - mqtt
