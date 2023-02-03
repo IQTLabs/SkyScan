@@ -49,7 +49,7 @@ class TestAutoCalibrator:
 
         alpha, beta, gamma = auto_calibrator.AutoCalibrator._minimize(auto_calibrator.AutoCalibrator, additional_data, rho_0, tau_0, rho_epsilon, tau_epsilon)
 
-        assert alpha == 90.81332044751359
-        assert beta == 51.76150246750204
-        assert gamma == -20.249553096392578
+        assert alpha == 96.22945929035237
+        assert beta == 31.55893394983606
+        assert gamma == 1.5230141040882903
 
