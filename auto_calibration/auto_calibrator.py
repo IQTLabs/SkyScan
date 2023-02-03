@@ -252,9 +252,9 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
 
         # Get current values for initial guess
-        alpha_0 = msg["camera"]["tripod_yaw"]  # [deg]
-        beta_0 = msg["camera"]["tripod_pitch"]  # [deg]
-        gamma_0 = msg["camera"]["tripod_roll"]  # [deg]
+        alpha_0 = msg["camera"]["pan"]  # [deg]
+        beta_0 = msg["camera"]["tilt"]  # [deg]
+        gamma_0 = 0.0  # [deg]
         x0 = [alpha_0, beta_0, gamma_0]
 
         x1 = fmin_bfgs(self._calculate_pointing_error, x0, args=[msg, rho_0, tau_0, rho_epsilon, tau_epsilon])
