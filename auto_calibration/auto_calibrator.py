@@ -68,21 +68,21 @@ class AutoCalibrator(BaseMQTTPubSub):
             MQTT client
         _userdata: dict
             Any required user data
-        msg: Dict
-            A Dict with calibration information
+        payload: Dict
+            A Dict with calibration information and a timestamp
         Returns
         -------
         None
         """
         # Decode message:
-        payload = json.loads(str(payload.payload.decode("utf-8")))
+        msg = str(payload.payload.decode("utf-8"))
 
         print("Received '{payload}' from `{topic}` topic".format(
             payload=payload.payload.decode(), topic=payload.topic))
 
         # Get message from payload
         # TODO: get correct msg format
-        msg = payload["data"]
+        data = msg["data"]
 
         # calculate rho_0, tau_0, rho_epsilon and tau_epsilon
         rho_0, tau_0, rho_epsilon, tau_epsilon = self._calculate_calibration_error(msg)
@@ -186,15 +186,15 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
 
         # Compute position of the aircraft
-        a_varphi = msg["lat"]  # [deg]
-        a_lambda = msg["lon"]  # [deg]
-        a_h = msg["altitude"]  # [m]
+        a_varphi = msg["aircraft"]["lat"]  # [deg]
+        a_lambda = msg["aircraft"]["long"]  # [deg]
+        a_h = msg["aircraft"]["altitude"]  # [m]
         r_XYZ_a = utils_auto_calibrator.compute_r_XYZ(a_lambda, a_varphi, a_h)
 
         # Compute position of the tripod
         t_varphi = msg["camera"]["lat"]  # [deg]
-        t_lambda = msg["camera"]["lon"]  # [deg]
-        t_h = msg["camera"]["lon"]  # [m]
+        t_lambda = msg["camera"]["long"]  # [deg]
+        t_h = msg["camera"]["altitude"]  # [m]
         r_XYZ_t = utils_auto_calibrator.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
         # Compute orthogonal transformation matrix from geocentric to
@@ -251,10 +251,10 @@ class AutoCalibrator(BaseMQTTPubSub):
             Roll pointing error
         """
 
-        # Initial guess
-        alpha_0 = msg["tripod_yaw"]  # [deg]
-        beta_0 = msg["tripod_pitch"]  # [deg]
-        gamma_0 = msg["tripod_roll"]  # [deg]
+        # Get current values for initial guess
+        alpha_0 = msg["camera"]["tripod_yaw"]  # [deg]
+        beta_0 = msg["camera"]["tripod_pitch"]  # [deg]
+        gamma_0 = msg["camera"]["tripod_roll"]  # [deg]
         x0 = [alpha_0, beta_0, gamma_0]
 
         x1 = fmin_bfgs(self._calculate_pointing_error, x0, args=[msg, rho_0, tau_0, rho_epsilon, tau_epsilon])
