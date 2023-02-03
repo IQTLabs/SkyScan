@@ -44,7 +44,7 @@ class TestAutoCalibrator:
         pass
 
     def test_minimize(self, additional_data):
-        """TODO: Complete"""
+        """Test Broyden, Fletcher, Goldfarb and Shanno minimization algorithm for pointing error method"""
 
         rho_0 = -47.617992362840106
         tau_0 = 1.500321537077791
