@@ -1,0 +1,10 @@
+{
+  "timestamp": "2023-01-12-17-54-36",
+  "data": {
+    "camera": {
+      "tripod_yaw": 1.0,
+      "tripod_pitch": 1.0,
+      "tripod_roll": 1.0
+    }
+  }
+}

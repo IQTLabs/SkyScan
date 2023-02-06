@@ -17,17 +17,20 @@ sys.path.append(str(Path(os.getenv("EDGETECH_CORE_HOME")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 import utils_auto_calibrator
 
+
 # TODO: add logging
 
 class AutoCalibrator(BaseMQTTPubSub):
     def __init__(
-        self: Any,
-        env_variable: Any,
-        config_topic: str,
-        calibration_topic: str,
-        debug: bool = False,
-        test: bool = False,
-        **kwargs: Any,
+            self: Any,
+            env_variable: Any,
+            config_topic: str,
+            calibration_topic: str,
+            debug: bool = False,
+            alpha=0.0,
+            beta=0.0,
+            gamma=0.0,
+            **kwargs: Any,
     ):
         """Initialize the auto calibrator
                 Parameters
@@ -48,20 +51,24 @@ class AutoCalibrator(BaseMQTTPubSub):
         super().__init__(**kwargs)
         self.env_variable = env_variable
         self.calibration_topic = calibration_topic
+        self.config_topic = config_topic
         self.debug = debug
-        self.test = test
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
 
         # Connect client on construction
-        if not self.test:
+        if not self.debug:
             self.connect_client()
             sleep(1)
             self.publish_registration("Auto Calibration Registration")
 
     def _calibration_callback(
-        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], payload: Any
+            self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], payload: Any
     ) -> None:
         """
         Process calibration message.
+
         Parameters
         ----------
         _client: mqtt.Client
@@ -74,28 +81,72 @@ class AutoCalibrator(BaseMQTTPubSub):
         -------
         None
         """
+
         # Decode message:
-        msg = str(payload.payload.decode("utf-8"))
-
-        print("Received '{payload}' from `{topic}` topic".format(
-            payload=payload.payload.decode(), topic=payload.topic))
-
-        # Get message from payload
         # TODO: get correct msg format
-        data = msg["data"]
+        if self.debug:
+            data = payload["data"]
+        else:
+            data = str(payload.payload.decode("utf-8"))["data"]
+
+            # TODO: switch to logging
+            print("Received '{payload}' from `{topic}` topic".format(
+                payload=payload.payload.decode(), topic=payload.topic))
 
         # calculate rho_0, tau_0, rho_epsilon and tau_epsilon
-        rho_0, tau_0, rho_epsilon, tau_epsilon = self._calculate_calibration_error(msg)
+        rho_0, tau_0, rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
 
         # Use bfgs minimize function to determine correct alpha beta and gamma
-        alpha, beta, gamma = self._minimize(payload, rho_0, tau_0, rho_epsilon, tau_epsilon)
+        alpha, beta, gamma = self._minimize(data, rho_0, tau_0, rho_epsilon, tau_epsilon)
 
-        # TODO: find correct format
+        # Update alpha, beta, gamma with new correct values
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+
         publish_data = {
-            "timestamp": str(int(datetime.utcnow().timestamp())),
-            "data": f"[{alpha}, {beta}, {gamma}]",
+            "timestamp": str(int(datetime.datetime.utcnow().timestamp())),
+            "data": {"camera": {"tripod_yaw": alpha, "tripod_pitch": beta, "tripod_roll": gamma}}
         }
-        self.publish_to_topic(self.publish_topic, json.dumps(publish_data))
+        if not self.debug:
+            self.publish_to_topic(self.publish_topic, json.dumps(publish_data))
+
+        pass
+
+    def _config_callback(
+            self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], payload: Any
+    ) -> None:
+        """
+        Process config message.
+
+        Parameters
+        ----------
+        _client: mqtt.Client
+            MQTT client
+        _userdata: dict
+            Any required user data
+        payload: Dict
+            A Dict with calibration information and a timestamp
+        Returns
+        -------
+        None
+        """
+
+        # Decode message:
+        # TODO: get correct msg format
+        if self.debug:
+            data = payload["data"]
+        else:
+            data = str(payload.payload.decode("utf-8"))["data"]
+
+            # TODO: switch to logging
+            print("Received '{payload}' from `{topic}` topic".format(
+                payload=payload.payload.decode(), topic=payload.topic))
+
+        # Set values
+        self.alpha = data["camera"]["tripod_yaw"]  # [deg]
+        self.beta = data["camera"]["tripod_pitch"]  # [deg]
+        self.gamma = data["camera"]["tripod_roll"]  # [deg]
 
         pass
 
@@ -252,12 +303,14 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
 
         # Get current values for initial guess
-        alpha_0 = msg["camera"]["tripod_yaw"]  # [deg]
-        beta_0 = msg["camera"]["tripod_pitch"]  # [deg]
-        gamma_0 = msg["camera"]["tripod_roll"]  # [deg]
+        # TODO: set yaw pitch roll as incoming config message, grab with self.alpha etc.
+        alpha_0 = self.alpha  # [deg]
+        beta_0 = self.beta  # [deg]
+        gamma_0 = self.gamma  # [deg]
         x0 = [alpha_0, beta_0, gamma_0]
 
         x1 = fmin_bfgs(self._calculate_pointing_error, x0, args=[msg, rho_0, tau_0, rho_epsilon, tau_epsilon])
+        # TODO: update self.alpha etc with updated values
         alpha_1 = x1[0]
         beta_1 = x1[1]
         gamma_1 = x1[2]
@@ -284,6 +337,9 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Subscribe to calibration topic with callback
         self.add_subscribe_topic(self.calibration_topic, self._calibration_callback)
+
+        # Subscribe to config topic with callback
+        self.add_subscribe_topic(self.config_topic, self._config_callback)
 
         # Run
         while True:
