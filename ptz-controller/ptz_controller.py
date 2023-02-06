@@ -30,14 +30,16 @@ class PtzController(BaseMQTTPubSub):
         config_topic: str,
         calibration_topic: str,
         flight_topic: str,
-        lead_time: float,
+        heartbeat_interval: float,
         update_interval: float,
+        lead_time: float,
         gain_pan: float,
         gain_tilt: float,
         debug: bool = False,
         **kwargs: Any,
     ):
-        """Initialize the PTZ controller.
+        """Instanstiate the PTZ controller by connecting to the
+        message broker, and initializing data attributes.
 
         Parameters
         ----------
@@ -47,14 +49,17 @@ class PtzController(BaseMQTTPubSub):
             MQTT topic for subscribing to calibration messages
         flight_topic: str
             MQTT topic for subscribing to flight messages
-        lead_time: float
-            Lead time when assigning pointing to the aircraft [s]
+        heartbeat_interval: float
+            Interval at which heartbeat message is to be published [s]
         update_interval: float
-            Update interval to compute pointing of the camera [s]
+            Interval at which pointing of the camera is computed [s]
+        lead_time: float
+            Lead time used when computing camera pointing to the
+            aircraft [s]
         gain_pan: float
-            Proportional control gain for pan
+            Proportional control gain for pan error [1/s]
         gain_tilt: float
-            Proportional control gain for tilt
+            Proportional control gain for tilt error [1/s]
         debug: bool
             Flag to debug the PTZ controller, or not
 
@@ -64,12 +69,12 @@ class PtzController(BaseMQTTPubSub):
         """
         # Parent class handles kwargs
         super().__init__(**kwargs)
-        # self.env_variable = env_variable
         self.config_topic = config_topic
         self.calibration_topic = calibration_topic
         self.flight_topic = flight_topic
-        self.lead_time = lead_time
+        self.heartbeat_interval = heartbeat_interval
         self.update_interval = update_interval
+        self.lead_time = lead_time
         self.gain_pan = gain_pan
         self.gain_tilt = gain_tilt
         self.debug = debug
@@ -97,6 +102,12 @@ class PtzController(BaseMQTTPubSub):
         # Tripod position in the geocentric coordinate system
         self.r_XYZ_t = None
 
+        # Time of flight message and corresponding aircraft position
+        # and velocity
+        self.time_a = 0.0  # [s]
+        self.r_rst_a_0_t = None  # [m/s]
+        self.v_rst_a_0_t = None  # [m/s]
+
         # Tripod yaw, pitch, and roll angles
         self.alpha = 0.0  # [deg]
         self.beta = 0.0  # [deg]
@@ -107,8 +118,8 @@ class PtzController(BaseMQTTPubSub):
         self.q_beta = None
         self.q_gamma = None
 
-        # Orthogonal transformation matrix from geocentric to camera
-        # housing fixed coordinates
+        # Orthogonal transformation matrix from geocentric (XYZ) to
+        # camera housing fixed (uvw) coordinates
         self.E_XYZ_to_uvw = None
 
         # Aircraft pan and tilt angles
@@ -119,8 +130,8 @@ class PtzController(BaseMQTTPubSub):
         self.q_row = None
         self.q_tau = None
 
-        # Orthogonal transformation matrix from camera housing to
-        # camer fixed coordinates
+        # Orthogonal transformation matrix from camera housing (uvw)
+        # to camera fixed (rst) coordinates
         self.E_XYZ_to_rst = None
 
         # Aircraft pan and tilt rates
@@ -138,12 +149,6 @@ class PtzController(BaseMQTTPubSub):
         # Camera pan and tilt rate differences
         self.delta_rho_dot_c = 0.0  # [deg/s]
         self.delta_tau_dot_c = 0.0  # [deg/s]
-
-        # Time of flight message and corresponding aircraft position
-        # and velocity
-        self.time_a = 0.0  # [s]
-        self.r_rst_a_0_t = None  # [m/s]
-        self.v_rst_a_0_t = None  # [m/s]
 
     def _config_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
@@ -267,7 +272,7 @@ class PtzController(BaseMQTTPubSub):
             payload = msg["data"]
         else:
             payload = self.decode_payload(msg)
-        time_a = payload["latLonTime"]  # [sec]
+        self.time_a = payload["latLonTime"]  # [sec]
         lambda_a = payload["lon"]  # [deg]
         varphi_a = payload["lat"]  # [deg]
         h_a = payload["altitude"]  # [m]
@@ -328,17 +333,11 @@ class PtzController(BaseMQTTPubSub):
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
         )  # [deg]
 
-        # TODO: Query camera for pan and tilt
+        # TODO: Query camera for pan and tilt? Or rely on estimated values?
 
         # Compute slew rate differences
-        # TODO: Decide how to reset time when starting a new track
-        if self.time_a == 0.0:
-            dt_a = 1.0
-        else:
-            dt_a = time_a - self.time_a
-        self.time_a = time_a
-        self.delta_rho_dot_c = self.gain_pan * (self.rho_a - self.rho_c) / dt_a
-        self.delta_tau_dot_c = self.gain_tilt * (self.tau_a - self.tau_c) / dt_a
+        self.delta_rho_dot_c = self.gain_pan * (self.rho_a - self.rho_c)
+        self.delta_tau_dot_c = self.gain_tilt * (self.tau_a - self.tau_c)
 
         # Compute position and velocity in the camera fixed (rst)
         # coordinate system of the aircraft relative to the tripod at
@@ -361,8 +360,8 @@ class PtzController(BaseMQTTPubSub):
             ptz_utilities.cross(self.r_rst_a_0_t, self.v_rst_a_0_t)
             / ptz_utilities.norm(self.r_rst_a_0_t) ** 2
         )
-        self.rho_dot_a = math.degrees(-omega[2]) + self.delta_rho_dot_c
-        self.tau_dot_a = math.degrees(omega[0]) + self.delta_tau_dot_c
+        self.rho_dot_a = math.degrees(-omega[2])
+        self.tau_dot_a = math.degrees(omega[0])
 
         # Update camera pan and tilt rate
         self.rho_dot_c = self.rho_dot_a + self.delta_rho_dot_c
@@ -375,24 +374,44 @@ class PtzController(BaseMQTTPubSub):
         # }
         # self.publish_to_topic(self.example_publish_topic, json.dumps(example_data))
 
+    def update_pointing(self):
+        """Update values of camera pan and tilt using current pan and
+        tilt rate. Note that these value likely differ slightly from
+        the actual camera pan and tilt angles.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        self.rho_c += self.rho_dot_c * self.update_interval
+        self.tau_c += self.tau_dot_c * self.update_interval
+        
     def main(self: Any) -> None:
         """TODO: Complete"""
 
-        # Schedule module heartbeat
-        schedule.every(10).seconds.do(
-            self.publish_heartbeat, payload="PTZ Controller Module Heartbeat"
-        )
+        if not self.debug:
 
-        # Subscribe to required topics
-        # TODO: Add a topic to exit gracefully?
-        self.add_subscribe_topic(self.config_topic, self._config_callback)
-        self.add_subscribe_topic(self.calibration_topic, self._calibration_callback)
-        self.add_subscribe_topic(self.flight_topic, self._flight_callback)
+            # Schedule module heartbeat
+            schedule.every(10).seconds.do(
+                self.publish_heartbeat, payload="PTZ Controller Module Heartbeat"
+            )
+
+            # Subscribe to required topics
+            # TODO: Add a topic to exit gracefully?
+            self.add_subscribe_topic(self.config_topic, self._config_callback)
+            self.add_subscribe_topic(self.calibration_topic, self._calibration_callback)
+            self.add_subscribe_topic(self.flight_topic, self._flight_callback)
 
         # Run pending scheduled messages
         while True:
             try:
-                schedule.run_pending()
+                if not self.debug:
+                    schedule.run_pending()
+                self.update_pointing
                 sleep(self.update_interval)
 
             except Exception as e:
@@ -406,8 +425,9 @@ if __name__ == "__main__":
         config_topic=os.environ.get("CONFIG_TOPIC"),
         calibration_topic=os.environ.get("CALIBRATION_TOPIC"),
         flight_topic=os.environ.get("FLIGHT_TOPIC"),
-        lead_time=float(os.environ.get("LEAD_TIME")),
+        heartbeat_interval=float(os.environ.get("HEARTBEAT_INTERVAL")),
         update_interval=float(os.environ.get("UPDATE_INTERVAL")),
+        lead_time=float(os.environ.get("LEAD_TIME")),
         gain_pan=float(os.environ.get("GAIN_PAN")),
         gain_tilt=float(os.environ.get("GAIN_TILT")),
         mqtt_ip=os.environ.get("MQTT_IP"),

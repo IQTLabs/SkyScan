@@ -24,8 +24,8 @@ def compute_e_E_XYZ(d_lambda):
     Returns
     -------
     e_E_XYZ : numpy.ndarray
-        Components of the east unit vector in an Earth
-        fixed geocentric equatorial coordinate system
+        Components of the east unit vector in an Earth fixed
+        geocentric equatorial coordinate system
     """
     r_lambda = math.radians(d_lambda)
     e_E_XYZ = np.array([-math.sin(r_lambda), math.cos(r_lambda), 0.0])
@@ -33,8 +33,8 @@ def compute_e_E_XYZ(d_lambda):
 
 
 def compute_e_N_XYZ(d_lambda, d_varphi):
-    """Compute components of the north unit vector at a
-    given geodetic longitude and latitude.
+    """Compute components of the north unit vector at a given geodetic
+    longitude and latitude.
 
     Parameters
     ----------
@@ -46,8 +46,8 @@ def compute_e_N_XYZ(d_lambda, d_varphi):
     Returns
     -------
     e_N_XYZ : numpy.ndarray
-        Components of the north unit vector in an Earth
-        fixed geocentric equatorial coordinate system
+        Components of the north unit vector in an Earth fixed
+        geocentric equatorial coordinate system
     """
     r_lambda = math.radians(d_lambda)
     r_varphi = math.radians(d_varphi)
@@ -62,8 +62,8 @@ def compute_e_N_XYZ(d_lambda, d_varphi):
 
 
 def compute_e_z_XYZ(d_lambda, d_varphi):
-    """Compute components of the zenith unit vector at a
-    given geodetic longitude and latitude.
+    """Compute components of the zenith unit vector at a given
+    geodetic longitude and latitude.
 
     Parameters
     ----------
@@ -75,8 +75,8 @@ def compute_e_z_XYZ(d_lambda, d_varphi):
     Returns
     -------
     e_z_XYZ : numpy.ndarray
-        Components of the zenith unit vector in an Earth
-        fixed geocentric equatorial coordinate system
+        Components of the zenith unit vector in an Earth fixed
+        geocentric equatorial coordinate system
     """
     r_lambda = math.radians(d_lambda)
     r_varphi = math.radians(d_varphi)
@@ -115,8 +115,8 @@ def compute_E_XYZ_to_ENz(d_lambda, d_varphi):
 
 
 def compute_r_XYZ(d_lambda, d_varphi, o_h):
-    """Compute the position given geodetic longitude and
-    latitude, and altitude.
+    """Compute the position given geodetic longitude and latitude, and
+    altitude.
 
     Parameters
     ----------
@@ -130,8 +130,8 @@ def compute_r_XYZ(d_lambda, d_varphi, o_h):
     Returns
     -------
     r_XYZ : numpy.ndarray
-        Position [m] in an Earth
-        fixed geocentric equatorial coordinate system
+        Position in an Earth fixed geocentric equatorial
+        coordinate system [m]
     """
     f = 1.0 / F_INV
     if type(d_lambda) == float:
@@ -204,7 +204,8 @@ def as_vector(q):
     Parameters
     ----------
     q : quaternion.quaternion
-        A quaternion, assumed to be a vector quaternion with scalar part zero
+        A quaternion, assumed to be a vector quaternion with scalar
+        part zero
 
     Returns
     -------

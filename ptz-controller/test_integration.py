@@ -6,10 +6,11 @@ import pandas as pd
 import ptz_controller
 
 
-LEAD_TIME = 0.0
+HEARTBEAT_INTERVAL = 10.0
 UPDATE_INTERVAL = 0.10
-GAIN_PAN = 0.01
-GAIN_TILT = 0.04
+LEAD_TIME = 0.0
+GAIN_PAN = 0.1
+GAIN_TILT = 0.4
 
 
 def make_controller():
@@ -18,8 +19,9 @@ def make_controller():
         config_topic="skyscan/config/json",
         calibration_topic="skyscan/calibration/json",
         flight_topic="skyscan/flight/json",
-        lead_time=LEAD_TIME,
+        heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
+        lead_time=LEAD_TIME,
         gain_pan=GAIN_PAN,
         gain_tilt=GAIN_TILT,
         mqtt_ip="mqtt",
@@ -155,5 +157,3 @@ axs[0, 0].set_xlabel("Time [s]")
 axs[1, 1].set_ylabel("Tilt Anglular Rate [deg/s]")
 
 plt.show()
-
-

@@ -1,11 +1,10 @@
 import math
 from pathlib import Path
-import pytest
 
 import numpy as np
 import pandas as pd
+import pytest
 import quaternion
-
 import ptz_controller
 import ptz_utilities
 
@@ -25,8 +24,9 @@ VARPHI_A = 89.99  # [deg]
 H_A = 1000.0  # [m]
 AIR_SPEED = 100.0  # [m/s]
 
-LEAD_TIME = 0.0
+HEARTBEAT_INTERVAL = 0.10
 UPDATE_INTERVAL = 0.10
+LEAD_TIME = 0.0
 GAIN_PAN = 0.2
 GAIN_TILT = 0.2
 
@@ -50,8 +50,9 @@ def controller():
         config_topic="skyscan/config/json",
         calibration_topic="skyscan/calibration/json",
         flight_topic="skyscan/flight/json",
-        lead_time=LEAD_TIME,
+        heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
+        lead_time=LEAD_TIME,
         gain_pan=GAIN_PAN,
         gain_tilt=GAIN_TILT,
         mqtt_ip="mqtt",
@@ -204,7 +205,6 @@ class TestPtzController:
         tau_a_exp = math.degrees(
             math.atan2(r_uvw_a_t[2], math.sqrt(r_uvw_a_t[0] ** 2 + r_uvw_a_t[1] ** 2))
         )
-        time_a_exp = 1.0
         delta_rho_dot_c_exp = GAIN_PAN * rho_a_exp  # Since rho_c = 0.0
         delta_tau_dot_c_exp = GAIN_TILT * tau_a_exp  # Since tau_c = 0.0
         r_rst_a_0_t = np.array([0.0, ptz_utilities.norm(r_uvw_a_t), 0.0])
@@ -212,7 +212,6 @@ class TestPtzController:
 
         assert math.fabs(controller.rho_a) == rho_a_exp
         assert controller.tau_a == tau_a_exp
-        assert controller.time_a == time_a_exp
         assert controller.delta_rho_dot_c == delta_rho_dot_c_exp
         assert controller.delta_tau_dot_c == delta_tau_dot_c_exp
         assert np.linalg.norm(controller.r_rst_a_0_t - r_rst_a_0_t) < PRECISION
