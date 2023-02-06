@@ -19,6 +19,7 @@ LAMBDA_T = 270.0  # [deg]
 VARPHI_T = 90.0  # [deg]
 H_T = 0.0  # [m]
 
+# Places aircraft south of tripod
 LAMBDA_A = 270.0  # [deg]
 VARPHI_A = 89.99  # [deg]
 H_A = 1000.0  # [m]
@@ -137,9 +138,9 @@ class TestPtzController:
 
         # Y component of r_XYZ_t precision lower due to precision of
         # cos(90) and magnitude of R_oplus
-        assert controller.lambda_t == 270.0
-        assert controller.varphi_t == 90.0
-        assert controller.h_t == 0.0
+        assert controller.lambda_t == LAMBDA_T
+        assert controller.varphi_t == VARPHI_T
+        assert controller.h_t == H_T
         assert np.linalg.norm(controller.r_XYZ_t - r_XYZ_t_exp) < 400 * PRECISION
         assert np.linalg.norm(controller.E_XYZ_to_ENz - E_XYZ_to_ENz_exp) < PRECISION
         assert np.linalg.norm(controller.e_E_XYZ - e_E_XYZ_exp) < PRECISION
@@ -157,7 +158,7 @@ class TestPtzController:
         controller._calibration_callback(_client, _userdata, calibration_msg_90s)
 
         # Assign expected values by performing some mental rotation
-        # gymnastics (hint: use paper)
+        # gymnastics
         alpha = 90.0
         q_alpha_exp = ptz_utilities.as_rotation_quaternion(
             alpha, np.array([0.0, 0.0, -1.0])
@@ -177,6 +178,7 @@ class TestPtzController:
         assert qnorm(controller.q_alpha - q_alpha_exp) < PRECISION
         assert qnorm(controller.q_beta - q_beta_exp) < PRECISION
         assert qnorm(controller.q_gamma - q_gamma_exp) < PRECISION
+        assert np.linalg.norm(controller.E_XYZ_to_uvw - E_XYZ_to_uvw_exp) < PRECISION
 
     def test_flight_callback(
         self, controller, config_msg, calibration_msg_0s, flight_msg
@@ -203,8 +205,8 @@ class TestPtzController:
             math.atan2(r_uvw_a_t[2], math.sqrt(r_uvw_a_t[0] ** 2 + r_uvw_a_t[1] ** 2))
         )
         time_a_exp = 1.0
-        delta_rho_dot_c_exp = GAIN_PAN * rho_a_exp
-        delta_tau_dot_c_exp = GAIN_TILT * tau_a_exp
+        delta_rho_dot_c_exp = GAIN_PAN * rho_a_exp  # Since rho_c = 0.0
+        delta_tau_dot_c_exp = GAIN_TILT * tau_a_exp  # Since tau_c = 0.0
         r_rst_a_0_t = np.array([0.0, ptz_utilities.norm(r_uvw_a_t), 0.0])
         v_rst_a_0_t = np.array([0.0, AIR_SPEED, 0.0])
 
@@ -221,39 +223,6 @@ class TestPtzController:
             / np.linalg.norm(v_rst_a_0_t)
             < RELATIVE_DIFFERENCE / 100
         )
-
-    def test_update_pointing(self):
-        """TODO: Complete"""
-
-        controller = ptz_controller.PtzController(
-            config_topic="skyscan/config/json",
-            calibration_topic="skyscan/calibration/json",
-            flight_topic="skyscan/flight/json",
-            lead_time="0.25",
-            update_interval="0.10",
-            gain_pan="0.2",
-            gain_tilt="0.2",
-            mqtt_ip="127.0.0.1",
-            test=True,
-        )
-        _client = None
-        _userdata = None
-
-        msg = {}
-        msg["data"] = {}
-        msg["data"]["tripod_latitude"] = 90.0
-        msg["data"]["tripod_longitude"] = 270.0
-        msg["data"]["tripod_altitude"] = 0.0
-
-        controller._config_callback(_client, _userdata, msg)
-        controller._compute_tripod_position()
-        controller._compute_topocentric_dcm()
-
-        self.r_rst_a_0_t
-        self.rho_dot_c
-        self.tau_dot_c
-        self.rho_c
-        self.tau_c
 
 
 class TestPtzUtilities:
@@ -409,7 +378,7 @@ class TestPtzUtilities:
         rho = 90.0
         tau = 90.0
 
-        # Perform some mental rotation gymnastics (hint: use paper)
+        # Perform some mental rotation gymnastics
         q_alpha_exp = ptz_utilities.as_rotation_quaternion(
             alpha, np.array([0.0, 0.0, -1.0])
         )  # About -w or -Z

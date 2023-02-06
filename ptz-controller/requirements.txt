@@ -1,7 +1,7 @@
 # TODO: Remove
 coloredlogs==14.0
 
-numpy
+numpy==1.24.1
 numpy-quaternion==2022.4.2
 paho-mqtt==1.6.1
 pandas==1.5.2

@@ -4,7 +4,7 @@ import math
 import numpy as np
 import quaternion
 
-logger = logging.getLogger("utils")
+logger = logging.getLogger("ptz_utilities")
 logger.setLevel(logging.INFO)
 
 # WGS84 parameters
@@ -14,7 +14,7 @@ F_INV = 298.257223563
 
 def compute_e_E_XYZ(d_lambda):
     """Compute components of the east unit vector at a given geodetic
-    longitude and latitude.
+    longitude.
 
     Parameters
     ----------

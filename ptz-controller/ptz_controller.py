@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -17,7 +18,8 @@ sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 import ptz_utilities
 
-# TODO: Add logging
+logger = logging.getLogger("ptz_controller")
+logger.setLevel(logging.INFO)
 
 
 class PtzController(BaseMQTTPubSub):
@@ -95,12 +97,12 @@ class PtzController(BaseMQTTPubSub):
         # Tripod position in the geocentric coordinate system
         self.r_XYZ_t = None
 
-        # Yaw, pitch, and roll angles
+        # Tripod yaw, pitch, and roll angles
         self.alpha = 0.0  # [deg]
         self.beta = 0.0  # [deg]
         self.gamma = 0.0  # [deg]
 
-        # Yaw, pitch, and roll rotation quaternions
+        # Tripod yaw, pitch, and roll rotation quaternions
         self.q_alpha = None
         self.q_beta = None
         self.q_gamma = None
@@ -137,11 +139,10 @@ class PtzController(BaseMQTTPubSub):
         self.delta_rho_dot_c = 0.0  # [deg/s]
         self.delta_tau_dot_c = 0.0  # [deg/s]
 
-        # Time of flight message
+        # Time of flight message and corresponding aircraft position
+        # and velocity
         self.time_a = 0.0  # [s]
-        # Position of aircraft
         self.r_rst_a_0_t = None  # [m/s]
-        # Position of velocity
         self.v_rst_a_0_t = None  # [m/s]
 
     def _config_callback(
@@ -164,6 +165,7 @@ class PtzController(BaseMQTTPubSub):
         None
         """
         # Assign position of the tripod
+        # TODO: Complete
         if self.debug:
             payload = msg["data"]
         else:
@@ -209,6 +211,7 @@ class PtzController(BaseMQTTPubSub):
         None
         """
         # Assign camera housing rotation angles
+        # TODO: Complete
         if self.debug:
             payload = msg["data"]
         else:
@@ -259,6 +262,7 @@ class PtzController(BaseMQTTPubSub):
 
         """
         # Assign position and velocity of the aircraft
+        # TODO: Complete
         if self.debug:
             payload = msg["data"]
         else:
@@ -324,10 +328,17 @@ class PtzController(BaseMQTTPubSub):
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
         )  # [deg]
 
+        # TODO: Query camera for pan and tilt
+
         # Compute slew rate differences
+        # TODO: Decide how to reset time when starting a new track
+        if self.time_a == 0.0:
+            dt_a = 1.0
+        else:
+            dt_a = time_a - self.time_a
         self.time_a = time_a
-        self.delta_rho_dot_c = self.gain_pan * (self.rho_a - self.rho_c)
-        self.delta_tau_dot_c = self.gain_tilt * (self.tau_a - self.tau_c)
+        self.delta_rho_dot_c = self.gain_pan * (self.rho_a - self.rho_c) / dt_a
+        self.delta_tau_dot_c = self.gain_tilt * (self.tau_a - self.tau_c) / dt_a
 
         # Compute position and velocity in the camera fixed (rst)
         # coordinate system of the aircraft relative to the tripod at
@@ -344,37 +355,20 @@ class PtzController(BaseMQTTPubSub):
         )
         self.r_rst_a_0_t = np.matmul(self.E_XYZ_to_rst, r_XYZ_a_0_t)
         self.v_rst_a_0_t = np.matmul(self.E_XYZ_to_rst, v_XYZ_a_0_t)
-        print("hi")
 
-    def _update_pointing(self):
-        """Update camera pointing at the update interval.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
-        """
-        # Assuming constant aircraft velocity and update aircraft
-        # position
-        self.r_rst_a_0_t += self.v_rst_a_0_t * self.update_interval
-
-        # Compute camera slew rate
+        # Compute aircraft slew rate
         omega = (
             ptz_utilities.cross(self.r_rst_a_0_t, self.v_rst_a_0_t)
             / ptz_utilities.norm(self.r_rst_a_0_t) ** 2
         )
-        self.rho_dot_c = math.degrees(-omega[2]) + self.delta_rho_dot_c
-        self.tau_dot_c = math.degrees(omega[0]) + self.delta_tau_dot_c
+        self.rho_dot_a = math.degrees(-omega[2]) + self.delta_rho_dot_c
+        self.tau_dot_a = math.degrees(omega[0]) + self.delta_tau_dot_c
 
-        # Update camera pan and tilt
-        dt_c = self.update_interval
-        self.rho_c += self.rho_dot_c * dt_c
-        self.tau_c += self.tau_dot_c * dt_c
+        # Update camera pan and tilt rate
+        self.rho_dot_c = self.rho_dot_a + self.delta_rho_dot_c
+        self.tau_dot_c = self.tau_dot_a + self.delta_tau_dot_c
 
-        # TODO: Publish pointing
+        # TODO: Publish slew rate, or command camera
         # example_data = {
         #     "timestamp": str(int(datetime.utcnow().timestamp())),
         #     "data": "Example data payload",
@@ -383,6 +377,7 @@ class PtzController(BaseMQTTPubSub):
 
     def main(self: Any) -> None:
         """TODO: Complete"""
+
         # Schedule module heartbeat
         schedule.every(10).seconds.do(
             self.publish_heartbeat, payload="PTZ Controller Module Heartbeat"
@@ -398,7 +393,6 @@ class PtzController(BaseMQTTPubSub):
         while True:
             try:
                 schedule.run_pending()
-                self._update_pointing()
                 sleep(self.update_interval)
 
             except Exception as e:
