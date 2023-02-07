@@ -2,6 +2,12 @@
   "timestamp": "2023-01-12-17-54-36",
   "data": {
     "camera": {
+      "min_horizontal_fov": 1.0,
+      "max_horizontal_fov": 1.0,
+      "min_vertical_fov": 1.0,
+      "max_vertical_fov": 1.0,
+      "horizontal_pixels": 1.0,
+      "vertical_pixels": 1.0,
       "tripod_yaw": 1.0,
       "tripod_pitch": 1.0,
       "tripod_roll": 1.0

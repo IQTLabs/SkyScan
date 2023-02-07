@@ -8,6 +8,7 @@ import quaternion
 R_OPLUS = 6378137  # [m]
 F_INV = 298.257223563
 
+
 def compute_r_XYZ(d_lambda, d_varphi, o_h):
     """Compute the position given geodetic longitude and
     latitude, and altitude.
@@ -51,6 +52,7 @@ def compute_r_XYZ(d_lambda, d_varphi, o_h):
             ),
         )
     return r_XYZ
+
 
 def compute_e_E_XYZ(d_lambda):
     """Compute components of the east unit vector at a given geodetic
@@ -152,6 +154,7 @@ def compute_E(d_lambda, d_varphi):
     e_z_XYZ = compute_e_z_XYZ(d_lambda, d_varphi)
     E_XYZ_to_ENz = np.row_stack((e_E_XYZ, e_N_XYZ, e_z_XYZ))
     return E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ
+
 
 def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     """Compute the rotations from the XYZ coordinate system to the uvw
@@ -288,6 +291,7 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
 
     return q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, q_rho, q_tau, E_XYZ_to_rst
 
+
 def as_vector(q):
     """Return the vector part of a quaternion.
 
@@ -302,6 +306,7 @@ def as_vector(q):
        A vector of floats
     """
     return np.array([q.x, q.y, q.z])
+
 
 def as_quaternion(s, v):
     """Construct a quaternion given a scalar and vector.
@@ -319,6 +324,7 @@ def as_quaternion(s, v):
         A quaternion with the specified scalar and vector parts
     """
     return np.quaternion(s, v[0], v[1], v[2])
+
 
 def as_rotation_quaternion(d_omega, u):
     """Construct a rotation quaternion given an angle and direction of
@@ -340,6 +346,7 @@ def as_rotation_quaternion(d_omega, u):
     v = math.sin(r_omega / 2.0) * u
     return np.quaternion(math.cos(r_omega / 2.0), v[0], v[1], v[2])
 
+
 def norm(v):
     """Compute the Euclidean norm of a vector.
 
@@ -355,6 +362,5 @@ def norm(v):
     """
     s = 0
     for i in range(len(v)):
-        s += v[i]**2
+        s += v[i] ** 2
     return math.sqrt(s)
-
