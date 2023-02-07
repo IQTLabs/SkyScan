@@ -16,14 +16,21 @@ services:
       dockerfile: ./Dockerfile
     environment:
       - CORE_PATH="/root"
+      - CAMERA_IP=""
+      - CAMERA_USER=""
+      - CAMERA_PASSWORD=""
+      - MQTT_IP="127.0.0.1"
       - CONFIG_TOPIC="skyscan/config/json"
       - CALIBRATION_TOPIC="skyscan/calibration/json"
       - FLIGHT_TOPIC="skyscan/flight/json"
       - LEAD_TIME=0.25
       - UPDATE_INTERVAL=0.10
-      - GAIN_PAN=0.2
-      - GAIN_TILT=0.2
-      - MQTT_IP=mqtt
+      - PAN_GAIN=0.2
+      - PAN_RATE_MIN=1.0
+      - PAN_RATE_MAX=100.0
+      - TILT_GAIN=0.2
+      - TILT_RATE_MIN=1.0
+      - TILT_RATE_MAX=100.0
     restart: unless-stopped
     depends_on:
       - mqtt

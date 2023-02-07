@@ -27,8 +27,12 @@ AIR_SPEED = 100.0  # [m/s]
 HEARTBEAT_INTERVAL = 0.10
 UPDATE_INTERVAL = 0.10
 LEAD_TIME = 0.0
-GAIN_PAN = 0.2
-GAIN_TILT = 0.2
+PAN_GAIN = 0.2
+PAN_RATE_MIN = 1.0
+PAN_RATE_MAX = 100.0
+TILT_GAIN = 0.2
+TILT_RATE_MIN = 1.0
+TILT_RATE_MAX = 100.0
 
 
 def qnorm(q):
@@ -47,15 +51,22 @@ def R_pole():
 def controller():
     """Construct a controller."""
     controller = ptz_controller.PtzController(
+        camera_ip="",
+        camera_user="",
+        camera_password="",
+        mqtt_ip="127.0.0.1",
         config_topic="skyscan/config/json",
         calibration_topic="skyscan/calibration/json",
         flight_topic="skyscan/flight/json",
         heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
         lead_time=LEAD_TIME,
-        gain_pan=GAIN_PAN,
-        gain_tilt=GAIN_TILT,
-        mqtt_ip="mqtt",
+        pan_gain=PAN_GAIN,
+        pan_rate_min=PAN_RATE_MIN,
+        pan_rate_max=PAN_RATE_MAX,
+        tilt_gain=TILT_GAIN,
+        tilt_rate_min=TILT_RATE_MIN,
+        tilt_rate_max=TILT_RATE_MAX,
         debug=True,
     )
     return controller
@@ -205,8 +216,8 @@ class TestPtzController:
         tau_a_exp = math.degrees(
             math.atan2(r_uvw_a_t[2], math.sqrt(r_uvw_a_t[0] ** 2 + r_uvw_a_t[1] ** 2))
         )
-        delta_rho_dot_c_exp = GAIN_PAN * rho_a_exp  # Since rho_c = 0.0
-        delta_tau_dot_c_exp = GAIN_TILT * tau_a_exp  # Since tau_c = 0.0
+        delta_rho_dot_c_exp = PAN_GAIN * rho_a_exp  # Since rho_c = 0.0
+        delta_tau_dot_c_exp = TILT_GAIN * tau_a_exp  # Since tau_c = 0.0
         r_rst_a_0_t = np.array([0.0, ptz_utilities.norm(r_uvw_a_t), 0.0])
         v_rst_a_0_t = np.array([0.0, AIR_SPEED, 0.0])
 

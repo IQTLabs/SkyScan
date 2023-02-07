@@ -9,22 +9,33 @@ import ptz_controller
 HEARTBEAT_INTERVAL = 10.0
 UPDATE_INTERVAL = 0.10
 LEAD_TIME = 0.0
-GAIN_PAN = 0.1
-GAIN_TILT = 0.4
+PAN_GAIN = 0.1
+PAN_RATE_MIN = 1.0
+PAN_RATE_MAX = 100.0
+TILT_GAIN = 0.4
+TILT_RATE_MIN = 1.0
+TILT_RATE_MAX = 100.0
 
 
 def make_controller():
     """Construct a controller."""
     controller = ptz_controller.PtzController(
+        camera_ip="",
+        camera_user="",
+        camera_password="",
+        mqtt_ip="127.0.0.1",
         config_topic="skyscan/config/json",
         calibration_topic="skyscan/calibration/json",
         flight_topic="skyscan/flight/json",
         heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
         lead_time=LEAD_TIME,
-        gain_pan=GAIN_PAN,
-        gain_tilt=GAIN_TILT,
-        mqtt_ip="mqtt",
+        pan_gain=PAN_GAIN,
+        pan_rate_min=PAN_RATE_MIN,
+        pan_rate_max=PAN_RATE_MAX,
+        tilt_gain=TILT_GAIN,
+        tilt_rate_min=TILT_RATE_MIN,
+        tilt_rate_max=TILT_RATE_MAX,
         debug=True,
     )
     return controller

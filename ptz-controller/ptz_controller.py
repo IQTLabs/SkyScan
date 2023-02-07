@@ -12,6 +12,7 @@ import numpy as np
 import quaternion
 import paho.mqtt.client as mqtt
 import schedule
+from sensecam_control import vapix_control
 
 # TODO: Agree on a method for importing the base class
 sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
@@ -27,14 +28,21 @@ class PtzController(BaseMQTTPubSub):
 
     def __init__(
         self: Any,
+        camera_ip: str,
+        camera_user: str,
+        camera_password: str,
         config_topic: str,
         calibration_topic: str,
         flight_topic: str,
         heartbeat_interval: float,
         update_interval: float,
         lead_time: float,
-        gain_pan: float,
-        gain_tilt: float,
+        pan_gain: float,
+        pan_rate_min: float,
+        pan_rate_max: float,
+        tilt_gain: float,
+        tilt_rate_min: float,
+        tilt_rate_max: float,
         debug: bool = False,
         **kwargs: Any,
     ):
@@ -43,6 +51,12 @@ class PtzController(BaseMQTTPubSub):
 
         Parameters
         ----------
+        camera_ip: str
+            Camera IP address
+        camera_user: str
+            Camera user name
+        camera_password: str
+            Camera user password
         config_topic: str
             MQTT topic for subscribing to configuration messages
         calibration_topic: str
@@ -56,10 +70,18 @@ class PtzController(BaseMQTTPubSub):
         lead_time: float
             Lead time used when computing camera pointing to the
             aircraft [s]
-        gain_pan: float
+        pan_gain: float
             Proportional control gain for pan error [1/s]
-        gain_tilt: float
+        pan_rate_min: float
+            Camera pan rate minimum [deg/s]
+        pan_rate_max: float
+            Camera pan rate maximum [deg/s]
+        tilt_gain: float
             Proportional control gain for tilt error [1/s]
+        tilt_rate_min: float
+            Camera tilt rate minimum [deg/s]
+        tilt_rate_max: float
+            Camera tilt rate maximum [deg/s]
         debug: bool
             Flag to debug the PTZ controller, or not
 
@@ -67,19 +89,31 @@ class PtzController(BaseMQTTPubSub):
         -------
         PtzController
         """
-        # Parent class handles kwargs
+        # Parent class handles kwargs, including MQTT IP
         super().__init__(**kwargs)
+        self.camera_ip = camera_ip
+        self.camera_user = camera_user
+        self.camera_password = camera_password
         self.config_topic = config_topic
         self.calibration_topic = calibration_topic
         self.flight_topic = flight_topic
         self.heartbeat_interval = heartbeat_interval
         self.update_interval = update_interval
         self.lead_time = lead_time
-        self.gain_pan = gain_pan
-        self.gain_tilt = gain_tilt
+        self.pan_gain = pan_gain
+        self.pan_rate_min = pan_rate_min
+        self.pan_rate_max = pan_rate_max
+        self.tilt_gain = tilt_gain
+        self.tilt_rate_min = tilt_rate_min
+        self.tilt_rate_max = tilt_rate_max
         self.debug = debug
 
-        # Connect client on construction
+        # Construct camera control
+        self.camera_control = vapix_control.CameraControl(
+            self.camera_ip, self.camera_user, self.camera_password
+        )
+
+        # Connect MQTT client
         if not self.debug:
             self.connect_client()
             sleep(1)
@@ -138,9 +172,10 @@ class PtzController(BaseMQTTPubSub):
         self.rho_dot_a = 0.0  # [deg/s]
         self.tau_dot_a = 0.0  # [deg/s]
 
-        # Camera pan and tilt angles
+        # Camera pan and tilt angles, and zoom
         self.rho_c = 0.0  # [deg]
         self.tau_c = 0.0  # [deg]
+        self.zoom = 0  # -100 to 100 [-]
 
         # Camera pan and tilt rates
         self.rho_dot_c = 0.0  # [deg/s]
@@ -333,11 +368,13 @@ class PtzController(BaseMQTTPubSub):
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
         )  # [deg]
 
-        # TODO: Query camera for pan and tilt? Or rely on estimated values?
+        # Get camera pan, tilt, and zoom
+        if not self.debug:
+            self.rho_a, self.tau_a, self.zoom = self.camera_control.get_ptz()
 
         # Compute slew rate differences
-        self.delta_rho_dot_c = self.gain_pan * (self.rho_a - self.rho_c)
-        self.delta_tau_dot_c = self.gain_tilt * (self.tau_a - self.tau_c)
+        self.delta_rho_dot_c = self.pan_gain * (self.rho_a - self.rho_c)
+        self.delta_tau_dot_c = self.tilt_gain * (self.tau_a - self.tau_c)
 
         # Compute position and velocity in the camera fixed (rst)
         # coordinate system of the aircraft relative to the tripod at
@@ -367,12 +404,19 @@ class PtzController(BaseMQTTPubSub):
         self.rho_dot_c = self.rho_dot_a + self.delta_rho_dot_c
         self.tau_dot_c = self.tau_dot_a + self.delta_tau_dot_c
 
-        # TODO: Publish slew rate, or command camera
-        # example_data = {
-        #     "timestamp": str(int(datetime.utcnow().timestamp())),
-        #     "data": "Example data payload",
-        # }
-        # self.publish_to_topic(self.example_publish_topic, json.dumps(example_data))
+        # Command camera rates
+        if not self.debug:
+            self.camera_control.continuous_move(
+                200
+                / (self.pan_rate_max - self.pan_rate_min)
+                * (self.rho_dot_c - self.pan_rate_min)
+                - 100,
+                200
+                / (self.tilt_rate_max - self.tilt_rate_min)
+                * (self.rho_dot_c - self.tilt_rate_min)
+                - 100,
+                self.zoom,
+            )
 
     def update_pointing(self):
         """Update values of camera pan and tilt using current pan and
@@ -389,7 +433,7 @@ class PtzController(BaseMQTTPubSub):
         """
         self.rho_c += self.rho_dot_c * self.update_interval
         self.tau_c += self.tau_dot_c * self.update_interval
-        
+
     def main(self: Any) -> None:
         """TODO: Complete"""
 
@@ -422,14 +466,21 @@ class PtzController(BaseMQTTPubSub):
 if __name__ == "__main__":
     # Instantiate controller and execute
     ptz_controller = PtzController(
+        camera_ip=os.environ.get("CAMERA_IP"),
+        camera_user=os.environ.get("CAMERA_USER"),
+        camera_password=os.environ.get("CAMERA_PASSWORD"),
         config_topic=os.environ.get("CONFIG_TOPIC"),
+        mqtt_ip=os.environ.get("MQTT_IP"),
         calibration_topic=os.environ.get("CALIBRATION_TOPIC"),
         flight_topic=os.environ.get("FLIGHT_TOPIC"),
         heartbeat_interval=float(os.environ.get("HEARTBEAT_INTERVAL")),
         update_interval=float(os.environ.get("UPDATE_INTERVAL")),
         lead_time=float(os.environ.get("LEAD_TIME")),
-        gain_pan=float(os.environ.get("GAIN_PAN")),
-        gain_tilt=float(os.environ.get("GAIN_TILT")),
-        mqtt_ip=os.environ.get("MQTT_IP"),
+        pan_gain=float(os.environ.get("PAN_GAIN")),
+        pan_rate_min=float(os.environ.get("PAN_RATE_MIN")),
+        pan_rate_max=float(os.environ.get("PAN_RATE_MAX")),
+        tilt_gain=float(os.environ.get("TILT_GAIN")),
+        tilt_rate_min=float(os.environ.get("TILT_RATE_MIN")),
+        tilt_rate_max=float(os.environ.get("TILT_RATE_MAX")),
     )
     ptz_controller.main()
