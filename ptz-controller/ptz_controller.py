@@ -4,7 +4,7 @@ import logging
 import math
 import os
 from pathlib import Path
-from time import sleep
+from time import sleep, time
 from typing import Any, Dict
 import sys
 
@@ -12,12 +12,20 @@ import numpy as np
 import quaternion
 import paho.mqtt.client as mqtt
 import schedule
-from sensecam_control import vapix_control
+from sensecam_control import vapix_config, vapix_control
 
 # TODO: Agree on a method for importing the base class
 sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 import ptz_utilities
+
+root_logger = logging.getLogger()
+ch = logging.StreamHandler()
+formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+ch.setFormatter(formatter)
+root_logger.addHandler(ch)
 
 logger = logging.getLogger("ptz_controller")
 logger.setLevel(logging.INFO)
@@ -36,6 +44,7 @@ class PtzController(BaseMQTTPubSub):
         flight_topic: str,
         heartbeat_interval: float,
         update_interval: float,
+        capture_interval: float,
         lead_time: float,
         pan_gain: float,
         pan_rate_min: float,
@@ -43,7 +52,10 @@ class PtzController(BaseMQTTPubSub):
         tilt_gain: float,
         tilt_rate_min: float,
         tilt_rate_max: float,
-        debug: bool = False,
+        jpeg_resolution: str,
+        jpeg_compression: int,
+        use_mqtt: bool = True,
+        use_camera: bool = True,
         **kwargs: Any,
     ):
         """Instanstiate the PTZ controller by connecting to the
@@ -67,6 +79,8 @@ class PtzController(BaseMQTTPubSub):
             Interval at which heartbeat message is to be published [s]
         update_interval: float
             Interval at which pointing of the camera is computed [s]
+        capture_interval: float
+            Interval at which the camera image is captured [s]
         lead_time: float
             Lead time used when computing camera pointing to the
             aircraft [s]
@@ -82,8 +96,14 @@ class PtzController(BaseMQTTPubSub):
             Camera tilt rate minimum [deg/s]
         tilt_rate_max: float
             Camera tilt rate maximum [deg/s]
-        debug: bool
-            Flag to debug the PTZ controller, or not
+        jpeg_resolution: str
+            Image capture resolution, for example, "1920x1080"
+        jpeg_compression: int
+            Image compression: 0 to 100
+        use_mqtt: bool
+            Flag to use MQTT, or not
+        use_camera: bool
+            Flag to use camera configuration and control, or not
 
         Returns
         -------
@@ -99,6 +119,7 @@ class PtzController(BaseMQTTPubSub):
         self.flight_topic = flight_topic
         self.heartbeat_interval = heartbeat_interval
         self.update_interval = update_interval
+        self.capture_interval = capture_interval
         self.lead_time = lead_time
         self.pan_gain = pan_gain
         self.pan_rate_min = pan_rate_min
@@ -106,18 +127,29 @@ class PtzController(BaseMQTTPubSub):
         self.tilt_gain = tilt_gain
         self.tilt_rate_min = tilt_rate_min
         self.tilt_rate_max = tilt_rate_max
-        self.debug = debug
+        self.jpeg_resolution = jpeg_resolution
+        self.jpeg_compression = jpeg_compression
+        # TODO: Change order
+        self.use_mqtt = use_mqtt
+        self.use_camera = use_camera
 
-        # Construct camera control
-        self.camera_control = vapix_control.CameraControl(
-            self.camera_ip, self.camera_user, self.camera_password
-        )
-
+        # Construct camera configuration and control
+        if self.use_camera:
+            self.camera_configuration = vapix_config.CameraConfiguration(
+                self.camera_ip, self.camera_user, self.camera_password
+            )
+            self.camera_control = vapix_control.CameraControl(
+                self.camera_ip, self.camera_user, self.camera_password
+            )
+        else:
+            self.camera_configuration = None
+            self.camera_control = None
+            
         # Connect MQTT client
-        if not self.debug:
+        if self.use_mqtt:
             self.connect_client()
             sleep(1)
-            self.publish_registration("Template Module Registration")
+            self.publish_registration("PTZ Controller Module Registration")
 
         # Tripod longitude, latitude, and altitude
         self.lambda_t = 0.0  # [deg]
@@ -185,6 +217,10 @@ class PtzController(BaseMQTTPubSub):
         self.delta_rho_dot_c = 0.0  # [deg/s]
         self.delta_tau_dot_c = 0.0  # [deg/s]
 
+        # Capture boolean and last capture time
+        self.do_capture = False
+        self.capture_time = None
+        
     def _config_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
@@ -206,10 +242,10 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign position of the tripod
         # TODO: Complete
-        if self.debug:
-            payload = msg["data"]
-        else:
+        if self.use_mqtt:
             payload = self.decode_payload(msg)
+        else:
+            payload = msg["data"]
         self.lambda_t = payload["tripod_longitude"]  # [deg]
         self.varphi_t = payload["tripod_latitude"]  # [deg]
         self.h_t = payload["tripod_altitude"]  # [m]
@@ -252,10 +288,10 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign camera housing rotation angles
         # TODO: Complete
-        if self.debug:
-            payload = msg["data"]
-        else:
+        if self.use_mqtt:
             payload = self.decode_payload(msg)
+        else:
+            payload = msg["data"]
         self.alpha = payload["tripod_yaw"]  # [deg]
         self.beta = payload["tripod_pitch"]  # [deg]
         self.gamma = payload["tripod_roll"]  # [deg]
@@ -303,10 +339,10 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign position and velocity of the aircraft
         # TODO: Complete
-        if self.debug:
-            payload = msg["data"]
-        else:
+        if self.use_mqtt:
             payload = self.decode_payload(msg)
+        else:
+            payload = msg["data"]
         self.time_a = payload["latLonTime"]  # [sec]
         lambda_a = payload["lon"]  # [deg]
         varphi_a = payload["lat"]  # [deg]
@@ -369,7 +405,7 @@ class PtzController(BaseMQTTPubSub):
         )  # [deg]
 
         # Get camera pan, tilt, and zoom
-        if not self.debug:
+        if self.use_camera:
             self.rho_a, self.tau_a, self.zoom = self.camera_control.get_ptz()
 
         # Compute slew rate differences
@@ -404,8 +440,8 @@ class PtzController(BaseMQTTPubSub):
         self.rho_dot_c = self.rho_dot_a + self.delta_rho_dot_c
         self.tau_dot_c = self.tau_dot_a + self.delta_tau_dot_c
 
-        # Command camera rates
-        if not self.debug:
+        # Command camera rates, and begin capturing images
+        if self.use_camera:
             self.camera_control.continuous_move(
                 200
                 / (self.pan_rate_max - self.pan_rate_min)
@@ -417,8 +453,29 @@ class PtzController(BaseMQTTPubSub):
                 - 100,
                 self.zoom,
             )
+            self.do_capture = True
 
-    def update_pointing(self):
+    def _capture_image(self):
+        """Capture a JPEG image, noting the time, if enabled.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        if self.do_capture:
+            self.capture_time = time()
+            # TODO: Context manager to move into required capture directory?
+            self.camera_configuration.get_jpeg_request(
+                camera=1,
+                resolution=self.jpeg_resolution,
+                compression=self.jpeg_compression,
+            )
+
+    def _update_pointing(self):
         """Update values of camera pan and tilt using current pan and
         tilt rate. Note that these value likely differ slightly from
         the actual camera pan and tilt angles.
@@ -437,29 +494,45 @@ class PtzController(BaseMQTTPubSub):
     def main(self: Any) -> None:
         """TODO: Complete"""
 
-        if not self.debug:
+        if self.use_mqtt:
 
             # Schedule module heartbeat
-            schedule.every(10).seconds.do(
+            heartbeat_job = schedule.every(self.heartbeat_interval).seconds.do(
                 self.publish_heartbeat, payload="PTZ Controller Module Heartbeat"
             )
 
             # Subscribe to required topics
-            # TODO: Add a topic to exit gracefully?
             self.add_subscribe_topic(self.config_topic, self._config_callback)
             self.add_subscribe_topic(self.calibration_topic, self._calibration_callback)
             self.add_subscribe_topic(self.flight_topic, self._flight_callback)
 
-        # Run pending scheduled messages
+        if self.use_camera:
+
+            # Schedule image capture
+            capture_job = schedule.every(self.capture_interval).seconds.do(
+                self._capture_image, payload=""
+            )
+
+        # Enter the main loop
         while True:
             try:
-                if not self.debug:
+                # Run pending scheduled messages
+                if self.use_mqtt:
                     schedule.run_pending()
-                self.update_pointing
+
+                # Update camera pointing
+                if not self.use_camera:
+                    self._update_pointing()
+
+                # Stop capturing images if a flight message has not
+                # been received in twice the capture interval
                 sleep(self.update_interval)
+                if time() - self.capture_time > 2.0 * self.capture_interval:
+                    self.do_capture = False
 
             except Exception as e:
-                if self.debug:
+                # TODO: Use logging
+                if self.use_mqtt:
                     print(e)
 
 
@@ -475,6 +548,7 @@ if __name__ == "__main__":
         flight_topic=os.environ.get("FLIGHT_TOPIC"),
         heartbeat_interval=float(os.environ.get("HEARTBEAT_INTERVAL")),
         update_interval=float(os.environ.get("UPDATE_INTERVAL")),
+        capture_interval=float(os.environ.get("CAPTURE_INTERVAL")),
         lead_time=float(os.environ.get("LEAD_TIME")),
         pan_gain=float(os.environ.get("PAN_GAIN")),
         pan_rate_min=float(os.environ.get("PAN_RATE_MIN")),
@@ -482,5 +556,7 @@ if __name__ == "__main__":
         tilt_gain=float(os.environ.get("TILT_GAIN")),
         tilt_rate_min=float(os.environ.get("TILT_RATE_MIN")),
         tilt_rate_max=float(os.environ.get("TILT_RATE_MAX")),
+        jpeg_resolution=os.environ.get("JPEG_RESOLUTION"),
+        jpeg_compression=os.environ.get("JPEG_COMPRESSION"),
     )
     ptz_controller.main()

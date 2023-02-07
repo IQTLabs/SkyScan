@@ -1,3 +1,4 @@
+import json
 import math
 from pathlib import Path
 
@@ -26,6 +27,7 @@ AIR_SPEED = 100.0  # [m/s]
 
 HEARTBEAT_INTERVAL = 0.10
 UPDATE_INTERVAL = 0.10
+CAPTURE_INTERVAL = 2.0
 LEAD_TIME = 0.0
 PAN_GAIN = 0.2
 PAN_RATE_MIN = 1.0
@@ -33,6 +35,8 @@ PAN_RATE_MAX = 100.0
 TILT_GAIN = 0.2
 TILT_RATE_MIN = 1.0
 TILT_RATE_MAX = 100.0
+JPEG_RESOLUTION = "1920x1080"
+JPEG_COMPRESSION = 5
 
 
 def qnorm(q):
@@ -60,6 +64,7 @@ def controller():
         flight_topic="skyscan/flight/json",
         heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
+        capture_interval=CAPTURE_INTERVAL,
         lead_time=LEAD_TIME,
         pan_gain=PAN_GAIN,
         pan_rate_min=PAN_RATE_MIN,
@@ -67,7 +72,10 @@ def controller():
         tilt_gain=TILT_GAIN,
         tilt_rate_min=TILT_RATE_MIN,
         tilt_rate_max=TILT_RATE_MAX,
-        debug=True,
+        jpeg_resolution=JPEG_RESOLUTION,
+        jpeg_compression=JPEG_COMPRESSION,
+        use_mqtt=False,
+        use_camera=False,
     )
     return controller
 
@@ -75,22 +83,16 @@ def controller():
 @pytest.fixture
 def config_msg():
     """Populate a config message."""
-    msg = {}
-    msg["data"] = {}
-    msg["data"]["tripod_longitude"] = LAMBDA_T
-    msg["data"]["tripod_latitude"] = VARPHI_T
-    msg["data"]["tripod_altitude"] = H_T
+    with open("data/config_msg.json", "r") as f:
+        msg = json.load(f)
     return msg
 
 
 @pytest.fixture
 def calibration_msg_0s():
     """Populate a calibration message with all 0 deg angles."""
-    msg = {}
-    msg["data"] = {}
-    msg["data"]["tripod_yaw"] = 0.0  # [deg]
-    msg["data"]["tripod_pitch"] = 0.0  # [deg]
-    msg["data"]["tripod_roll"] = 0.0  # [deg]
+    with open("data/calibration_msg_0s.json", "r") as f:
+        msg = json.load(f)
     return msg
 
 
@@ -98,16 +100,20 @@ def calibration_msg_0s():
 def calibration_msg_90s():
     """Populate a calibration message with all 90 deg angles."""
     msg = {}
+    msg["timestamp"] = "2023-01-01-00-00-00"
     msg["data"] = {}
     msg["data"]["tripod_yaw"] = 90.0  # [deg]
     msg["data"]["tripod_pitch"] = 90.0  # [deg]
     msg["data"]["tripod_roll"] = 90.0  # [deg]
+    with open("data/calibration_msg_90s.json", "r") as f:
+        msg = json.load(f)
     return msg
 
 
 @pytest.fixture
 def flight_msg():
-    """Populate a flight message with velocity along the line of sight."""
+    """Populate a flight message with velocity along the line of
+    sight, using the calculation noted below.
 
     # ENz at the tripod aligns with XYZ, and the tripod remains stationary
     r_XYZ_t = ptz_utilities.compute_r_XYZ(LAMBDA_T, VARPHI_T, H_T)
@@ -118,16 +124,9 @@ def flight_msg():
     # ENz directly below the aircraft miss-aligns with XYZ slightly
     E_XYZ_to_ENz, _, _, _ = ptz_utilities.compute_E_XYZ_to_ENz(LAMBDA_A, VARPHI_A)
     v_ENz_A_a = np.matmul(E_XYZ_to_ENz, v_ENz_T_a)
-
-    msg = {}
-    msg["data"] = {}
-    msg["data"]["latLonTime"] = 1.0  # [s]
-    msg["data"]["lon"] = LAMBDA_A  # [deg]
-    msg["data"]["lat"] = VARPHI_A  # [deg]
-    msg["data"]["altitude"] = H_A  # [m]
-    msg["data"]["track"] = 0.0  # [deg]
-    msg["data"]["groundSpeed"] = v_ENz_A_a[1]  # [m/s]
-    msg["data"]["verticalRate"] = v_ENz_A_a[2]  # [m/s]
+    """
+    with open("data/flight_msg.json", "r") as f:
+        msg = json.load(f)
     return msg
 
 
