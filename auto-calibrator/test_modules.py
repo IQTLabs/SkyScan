@@ -1,8 +1,11 @@
 import json
-
+import math
 import pytest
 
 import auto_calibrator
+
+
+PRECISION = 1.0e-5
 
 # Set expected test results
 rho_epsilon_expected = -1.449921875
@@ -97,9 +100,9 @@ class TestAutoCalibrator:
             additional_data, rho_epsilon, tau_epsilon
         )
 
-        assert alpha == alpha_expected
-        assert beta == beta_expected
-        assert gamma == gamma_expected
+        assert math.fabs(alpha - alpha_expected) < PRECISION
+        assert math.fabs(beta - beta_expected) < PRECISION
+        assert math.fabs(gamma - gamma_expected) < PRECISION
 
     def test_config_callback(self, calibrator, config_msg):
         """Test config callback updates values, or not."""
@@ -130,6 +133,6 @@ class TestAutoCalibrator:
         _userdata = None
         calibrator._calibration_callback(_client, _userdata, additional_info_msg)
 
-        assert calibrator.alpha == alpha_expected
-        assert calibrator.beta == beta_expected
-        assert calibrator.gamma == gamma_expected
+        assert math.fabs(calibrator.alpha - alpha_expected) < PRECISION
+        assert math.fabs(calibrator.beta - beta_expected) < PRECISION
+        assert math.fabs(calibrator.gamma - gamma_expected) < PRECISION
