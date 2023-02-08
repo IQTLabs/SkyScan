@@ -1,14 +1,17 @@
+from argparse import ArgumentParser
 import json
 import os
+import time
 
 from matplotlib import pyplot as plt
 import pandas as pd
+import schedule
 
 import ptz_controller
 
 
 HEARTBEAT_INTERVAL = 10.0
-UPDATE_INTERVAL = 0.1
+UPDATE_INTERVAL = 0.01
 CAPTURE_INTERVAL = 2.0
 LEAD_TIME = 0.0
 PAN_GAIN = 0.1
@@ -20,8 +23,22 @@ TILT_RATE_MAX = 100.0
 JPEG_RESOLUTION = "1920x1080"
 JPEG_COMPRESSION = 5
 
-def make_controller():
-    """Construct a controller."""
+
+def make_controller(use_mqtt):
+    """Construct a controller.
+
+    Note that if use_mqtt = True then an MQTT broker must be started
+    manually.
+
+    Parameters
+    ----------
+    use_mqtt: bool
+        Flag to use MQTT, or not
+
+    Returns
+    -------
+    None
+    """
     controller = ptz_controller.PtzController(
         camera_ip="",
         camera_user="",
@@ -42,162 +59,264 @@ def make_controller():
         tilt_rate_max=TILT_RATE_MAX,
         jpeg_resolution=JPEG_RESOLUTION,
         jpeg_compression=JPEG_COMPRESSION,
-        use_mqtt=True,
+        use_mqtt=use_mqtt,
         use_camera=False,
     )
     return controller
 
 
 def get_config_msg():
-    """Populate a config message."""
+    """Populate a config message, reading actual, by private longitude
+    and latitude from the environment.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    msg : dict
+        The configuration message
+    """
     msg = {}
     msg["data"] = {}
-    msg["data"]["tripod_longitude"] = float(os.getenv("TRIPOD_LONGITUDE", "-77.0"))  # [deg]
-    msg["data"]["tripod_latitude"] = float(os.getenv("TRIPOD_LATITUDE", "38.0"))  # [deg]
+    msg["data"]["tripod_longitude"] = float(
+        os.getenv("TRIPOD_LONGITUDE", "-77.0")
+    )  # [deg]
+    msg["data"]["tripod_latitude"] = float(
+        os.getenv("TRIPOD_LATITUDE", "38.0")
+    )  # [deg]
     msg["data"]["tripod_altitude"] = 86.46  # [m]
     return msg
 
 
 def get_calibration_msg():
-    """Populate a calibration message with all 0 deg angles."""
+    """Populate a calibration message with all 0 deg angles.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    msg : dict
+        The calibration message
+    """
     with open("data/calibration_msg_0s.json", "r") as f:
         msg = json.load(f)
     return msg
 
 
 def make_flight_msg(track, index):
-    """Populate a flight message with track data."""
+    """Populate a flight message with track data at the specified
+    index.
+
+    Parameters
+    ----------
+    track : pd.DataFrame()
+        The track data
+    index : int
+        The index of the track data to use
+
+    Returns
+    -------
+    msg : dict
+        The flight message
+    """
     msg = {}
     msg["data"] = track.iloc[index, :].to_dict()
     return msg
 
 
-def read_track_data(track_file):
-    """Read a track file and convert to standard units of measure."""
-    track = pd.read_csv("data/" + track_file)
+def read_track_data(track_id):
+    """Read a track file and convert to standard units of measure.
+
+    Parameters
+    ----------
+    track_id : str
+        The track identifier
+
+    Returns
+    -------
+    track : pd.DataFrame()
+        The track data read from the file
+    """
+    track = pd.read_csv(f"data/{track_id}-processed-track.csv")
     track["altitude"] *= 0.3048  # [ft] * [m/ft] = [m]
-    track["groundSpeed"] *= 6076.12 / 3600 * 0.3048  # [nm/h] * [ft/nm] / [s/h] * [m/ft] = [m/s]
+    track["groundSpeed"] *= (
+        6076.12 / 3600 * 0.3048
+    )  # [nm/h] * [ft/nm] / [s/h] * [m/ft] = [m/s]
     track["verticalRate"] *= 0.3048 / 60  # [ft/s] * [m/ft] / [s/m] = [m/s]
     return track
 
 
-# TODO: Add use_mqtt flag
-controller = make_controller()
+def plot_history(history):
+    """Plot time series produced by processing messages.
 
-controller.add_subscribe_topic(controller.config_topic, controller._config_callback)
-controller.add_subscribe_topic(controller.calibration_topic, controller._calibration_callback)
-controller.add_subscribe_topic(controller.flight_topic, controller._flight_callback)
+    Parameters
+    ----------
+    history : dict
+        Dictionary containing time series to plot
 
-_client = None
-_userdata = None
+    Returns
+    -------
+    None
+    """
+    # Convert history dictionary to a data frame
+    print("done")
+    ts = pd.DataFrame.from_dict(history)
 
-config_msg = get_config_msg()
-if controller.use_mqtt:
-    controller.publish_to_topic(controller.config_topic, json.dumps(config_msg))
-else:
-    controller._config_callback(_client, _userdata, config_msg)
+    # Plot pan angle
+    fig, axs = plt.subplots(2, 2, figsize=[12.8, 9.6])
+    axs[0, 0].plot(ts["time_c"], ts["rho_c"] - ts["rho_a"], label="error")
+    axs[0, 0].plot(ts["time_c"], ts["rho_c"], label="camera")
+    axs[0, 0].plot(ts["time_c"], ts["rho_a"], label="aircraft")
+    axs[0, 0].legend()
+    axs[0, 0].set_title("Camera and Aircraft Pan Angle and Difference")
+    axs[0, 0].set_xlabel("Time [s]")
+    axs[0, 0].set_ylabel("Pan Angle [deg]")
 
-calibration_msg = get_calibration_msg()
-if controller.use_mqtt:
-    controller.publish_to_topic(controller.calibration_topic, json.dumps(calibration_msg))
-else:
-    controller._calibration_callback(_client, _userdata, calibration_msg)
+    # Plot tilt angle
+    axs[1, 0].plot(ts["time_c"], ts["tau_c"] - ts["tau_a"], label="error")
+    axs[1, 0].plot(ts["time_c"], ts["tau_c"], label="camera")
+    axs[1, 0].plot(ts["time_c"], ts["tau_a"], label="aircraft")
+    axs[1, 0].legend()
+    axs[1, 0].set_title("Camera and Aircraft Tilt Angle and Difference")
+    axs[1, 0].set_xlabel("Time [s]")
+    axs[1, 0].set_ylabel("Tilt Angle [deg]")
 
-# track = read_track_data("A19A08-processed-track.csv")
-track = read_track_data("A1E946-processed-track.csv")
+    # Plot pan angular rate angle
+    axs[0, 1].plot(ts["time_c"], ts["rho_dot_c"] - ts["rho_dot_a"], label="error")
+    axs[0, 1].plot(ts["time_c"], ts["rho_dot_c"], label="camera")
+    axs[0, 1].plot(ts["time_c"], ts["rho_dot_a"], label="aircraft")
+    axs[0, 1].legend()
+    axs[0, 1].set_title("Camera and Aircraft Pan Angular Rate and Difference")
+    axs[0, 0].set_xlabel("Time [s]")
+    axs[0, 1].set_ylabel("Pan Anglular Rate [deg/s]")
 
-index = 0
-flight_msg = make_flight_msg(track, index)
-if controller.use_mqtt:
-    controller.publish_to_topic(controller.flight_topic, json.dumps(flight_msg))
-else:
-    controller._flight_callback(_client, _userdata, flight_msg)
+    # Plot tilt angular rate angle
+    axs[1, 1].plot(ts["time_c"], ts["tau_dot_c"] - ts["tau_dot_a"], label="error")
+    axs[1, 1].plot(ts["time_c"], ts["tau_dot_c"], label="camera")
+    axs[1, 1].plot(ts["time_c"], ts["tau_dot_a"], label="aircraft")
+    axs[1, 1].legend()
+    axs[1, 1].set_title("Camera and Aircraft Tilt Angular Rate and Difference")
+    axs[0, 0].set_xlabel("Time [s]")
+    axs[1, 1].set_ylabel("Tilt Anglular Rate [deg/s]")
 
-if controller.use_mqtt:
-    schedule.run_pending()
+    plt.show()
 
-history = {}
-history["time_c"] = [flight_msg["data"]["latLonTime"]]
-history["rho_a"] = [controller.rho_a]
-history["tau_a"] = [controller.tau_a]
-history["rho_dot_a"] = [controller.rho_dot_a]
-history["tau_dot_a"] = [controller.tau_dot_a]
-history["rho_c"] = [controller.rho_c]
-history["tau_c"] = [controller.tau_c]
-history["rho_dot_c"] = [controller.rho_dot_c]
-history["tau_dot_c"] = [controller.tau_dot_c]
 
-dt_c = controller.update_interval
-time_c = history["time_c"][0]
-while index < track.shape[0] - 1:
-    time_c += dt_c
+def main():
+    """Read a track file and process the corresponding messages using
+    MQTT, or not.
 
-    if time_c >= track["latLonTime"][index + 1]:
-        index = track["latLonTime"][time_c >= track["latLonTime"]].index[-1]
+    Parameters
+    ----------
+    None
 
-        flight_msg = make_flight_msg(track, index)
-        if controller.use_mqtt:
-            controller.publish_to_topic(controller.flight_topic, json.dumps(flight_msg))
-        else:
-            controller._flight_callback(_client, _userdata, flight_msg)
+    Returns
+    -------
+    None
+    """
 
+    # Provide for some command line arguments
+    parser = ArgumentParser(
+        description="Read a track file and process the corresponding messages"
+    )
+    parser.add_argument(
+        "-t",
+        "--track-id",
+        default="A1E946",
+        help="The track identifier to process: A1E946 (the default) or A19A08",
+    )
+    parser.add_argument(
+        "-m",
+        "--use-mqtt",
+        action="store_true",
+        help="Use MQTT to process messages",
+    )
+    args = parser.parse_args()
+
+    # Read the track data
+    track = read_track_data(args.track_id)
+
+    # Make the controller, subscribe to all topics, and publish, or
+    # process, one message to each topic
+    controller = make_controller(args.use_mqtt)
+    controller.add_subscribe_topic(controller.config_topic, controller._config_callback)
+    controller.add_subscribe_topic(
+        controller.calibration_topic, controller._calibration_callback
+    )
+    controller.add_subscribe_topic(controller.flight_topic, controller._flight_callback)
+    config_msg = get_config_msg()
+    calibration_msg = get_calibration_msg()
+    index = 0
+    flight_msg = make_flight_msg(track, index)
     if controller.use_mqtt:
-        schedule.run_pending()
+        controller.publish_to_topic(controller.config_topic, json.dumps(config_msg))
+        time.sleep(UPDATE_INTERVAL)
+        controller.publish_to_topic(
+            controller.calibration_topic, json.dumps(calibration_msg)
+        )
+        time.sleep(UPDATE_INTERVAL)
+        controller.publish_to_topic(controller.flight_topic, json.dumps(flight_msg))
+        time.sleep(UPDATE_INTERVAL)
 
-    controller._update_pointing()
+    else:
+        _client = None
+        _userdata = None
+        controller._config_callback(_client, _userdata, config_msg)
+        controller._calibration_callback(_client, _userdata, calibration_msg)
+        controller._flight_callback(_client, _userdata, flight_msg)
 
-    history["time_c"].append(time_c)
-    history["rho_a"].append(controller.rho_a)
-    history["tau_a"].append(controller.tau_a)
-    history["rho_dot_a"].append(controller.rho_dot_a)
-    history["tau_dot_a"].append(controller.tau_dot_a)
-    history["rho_c"].append(controller.rho_c)
-    history["tau_c"].append(controller.tau_c)
-    history["rho_dot_c"].append(controller.rho_dot_c)
-    history["tau_dot_c"].append(controller.tau_dot_c)
+    # Initialize history for plotting
+    history = {}
+    history["time_c"] = [flight_msg["data"]["latLonTime"]]
+    history["rho_a"] = [controller.rho_a]
+    history["tau_a"] = [controller.tau_a]
+    history["rho_dot_a"] = [controller.rho_dot_a]
+    history["tau_dot_a"] = [controller.tau_dot_a]
+    history["rho_c"] = [controller.rho_c]
+    history["tau_c"] = [controller.tau_c]
+    history["rho_dot_c"] = [controller.rho_dot_c]
+    history["tau_dot_c"] = [controller.tau_dot_c]
 
-# Convert history dictionary to a data frame
-ts = pd.DataFrame.from_dict(history)
+    # Loop in camera time
+    dt_c = controller.update_interval
+    time_c = history["time_c"][0]
+    while index < track.shape[0] - 1:
+        time_c += dt_c
 
-# Plot pan angle
-fig, axs = plt.subplots(2, 2, figsize=[12.8, 9.6])
-axs[0, 0].plot(ts["time_c"], ts["rho_c"] - ts["rho_a"], label="error")
-axs[0, 0].plot(ts["time_c"], ts["rho_c"], label="camera")
-axs[0, 0].plot(ts["time_c"], ts["rho_a"], label="aircraft")
-axs[0, 0].legend()
-# axs[0, 0].set_ylim((-5, 5))
-axs[0, 0].set_title("Camera and Aircraft Pan Angle and Difference")
-axs[0, 0].set_xlabel("Time [s]")
-axs[0, 0].set_ylabel("Pan Angle [deg]")
+        # Process each flight message when received
+        if time_c >= track["latLonTime"][index + 1]:
+            index = track["latLonTime"][time_c >= track["latLonTime"]].index[-1]
+            flight_msg = make_flight_msg(track, index)
+            if controller.use_mqtt:
+                controller.publish_to_topic(
+                    controller.flight_topic, json.dumps(flight_msg)
+                )
+                time.sleep(UPDATE_INTERVAL)
 
-# Plot tilt angle
-axs[1, 0].plot(ts["time_c"], ts["tau_c"] - ts["tau_a"], label="error")
-axs[1, 0].plot(ts["time_c"], ts["tau_c"], label="camera")
-axs[1, 0].plot(ts["time_c"], ts["tau_a"], label="aircraft")
-axs[1, 0].legend()
-# axs[1, 0].set_ylim((-5, 5))
-axs[1, 0].set_title("Camera and Aircraft Tilt Angle and Difference")
-axs[1, 0].set_xlabel("Time [s]")
-axs[1, 0].set_ylabel("Tilt Angle [deg]")
+            else:
+                controller._flight_callback(_client, _userdata, flight_msg)
 
-# Plot pan angular rate angle
-axs[0, 1].plot(ts["time_c"], ts["rho_dot_c"] - ts["rho_dot_a"], label="error")
-axs[0, 1].plot(ts["time_c"], ts["rho_dot_c"], label="camera")
-axs[0, 1].plot(ts["time_c"], ts["rho_dot_a"], label="aircraft")
-axs[0, 1].legend()
-# axs[0, 1].set_ylim((-5, 5))
-axs[0, 1].set_title("Camera and Aircraft Pan Angular Rate and Difference")
-axs[0, 0].set_xlabel("Time [s]")
-axs[0, 1].set_ylabel("Pan Anglular Rate [deg/s]")
+        # Always update pointing
+        controller._update_pointing()
 
-# Plot tilt angular rate angle
-axs[1, 1].plot(ts["time_c"], ts["tau_dot_c"] - ts["tau_dot_a"], label="error")
-axs[1, 1].plot(ts["time_c"], ts["tau_dot_c"], label="camera")
-axs[1, 1].plot(ts["time_c"], ts["tau_dot_a"], label="aircraft")
-axs[1, 1].legend()
-# axs[1, 1].set_ylim((-5, 5))
-axs[1, 1].set_title("Camera and Aircraft Tilt Angular Rate and Difference")
-axs[0, 0].set_xlabel("Time [s]")
-axs[1, 1].set_ylabel("Tilt Anglular Rate [deg/s]")
+        # Append to history for plotting
+        history["time_c"].append(time_c)
+        history["rho_a"].append(controller.rho_a)
+        history["tau_a"].append(controller.tau_a)
+        history["rho_dot_a"].append(controller.rho_dot_a)
+        history["tau_dot_a"].append(controller.tau_dot_a)
+        history["rho_c"].append(controller.rho_c)
+        history["tau_c"].append(controller.tau_c)
+        history["rho_dot_c"].append(controller.rho_dot_c)
+        history["tau_dot_c"].append(controller.tau_dot_c)
 
-plt.show()
+    # And plot the resulting time series
+    plot_history(history)
+
+
+if __name__ == "__main__":
+    main()

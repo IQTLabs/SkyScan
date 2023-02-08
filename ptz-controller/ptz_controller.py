@@ -21,9 +21,7 @@ import ptz_utilities
 
 root_logger = logging.getLogger()
 ch = logging.StreamHandler()
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(formatter)
 root_logger.addHandler(ch)
 
@@ -144,7 +142,7 @@ class PtzController(BaseMQTTPubSub):
         else:
             self.camera_configuration = None
             self.camera_control = None
-            
+
         # Connect MQTT client
         if self.use_mqtt:
             self.connect_client()
@@ -220,7 +218,7 @@ class PtzController(BaseMQTTPubSub):
         # Capture boolean and last capture time
         self.do_capture = False
         self.capture_time = None
-        
+
     def _config_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
@@ -443,17 +441,71 @@ class PtzController(BaseMQTTPubSub):
         # Command camera rates, and begin capturing images
         if self.use_camera:
             self.camera_control.continuous_move(
-                200
-                / (self.pan_rate_max - self.pan_rate_min)
-                * (self.rho_dot_c - self.pan_rate_min)
-                - 100,
-                200
-                / (self.tilt_rate_max - self.tilt_rate_min)
-                * (self.rho_dot_c - self.tilt_rate_min)
-                - 100,
+                self._get_pan_rate(self.rho_dot_c),
+                self._get_tilt_rate(self.tau_dot_c),
                 self.zoom,
             )
             self.do_capture = True
+
+    def _get_pan_rate(self, rho_dot):
+        """Compute pan rate index between -100 and 100 using rates in
+        deg/s, limiting the results to the specified minimum and
+        maximum.
+
+        Parameters
+        ----------
+        rho_dot : float
+            Pan rate [deg/s]
+
+        Returns
+        -------
+        pan_rate : int
+            Pan rate index
+        """
+        if rho_dot < self.pan_rate_min:
+            pan_rate = -100
+
+        elif self.pan_rate_max < rho_dot:
+            pan_rate = +100
+
+        else:
+            pan_rate = (
+                200
+                / (self.pan_rate_max - self.pan_rate_min)
+                * (rho_dot - self.pan_rate_min)
+                - 100
+            )
+        return pan_rate
+
+    def _get_tilt_rate(self, tau_dot):
+        """Compute tilt rate index between -100 and 100 using rates in
+        deg/s, limiting the results to the specified minimum and
+        maximum.
+
+        Parameters
+        ----------
+        tau_dot : float
+            Tilt rate [deg/s]
+
+        Returns
+        -------
+        tilt_rate : int
+            Tilt rate index
+        """
+        if tau_dot < self.tilt_rate_min:
+            tilt_rate = -100
+
+        elif self.tilt_rate_max < tau_dot:
+            tilt_rate = +100
+
+        else:
+            tilt_rate = (
+                200
+                / (self.tilt_rate_max - self.tilt_rate_min)
+                * (tau_dot - self.tilt_rate_min)
+                - 100
+            )
+        return tilt_rate
 
     def _capture_image(self):
         """Capture a JPEG image, noting the time, if enabled.
@@ -478,7 +530,9 @@ class PtzController(BaseMQTTPubSub):
     def _update_pointing(self):
         """Update values of camera pan and tilt using current pan and
         tilt rate. Note that these value likely differ slightly from
-        the actual camera pan and tilt angles.
+        the actual camera pan and tilt angles, and will be overwritten
+        when processing a flight message. The values are used for
+        development and testing.
 
         Parameters
         ----------
