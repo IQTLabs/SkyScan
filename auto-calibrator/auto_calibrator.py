@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import math
 import os
 import sys
@@ -19,6 +20,17 @@ from base_mqtt_pub_sub import BaseMQTTPubSub
 # TODO: Huh?
 sys.path.append(str(Path("../ptz-controller").expanduser()))
 import ptz_utilities
+
+
+root_logger = logging.getLogger()
+ch = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+root_logger.addHandler(ch)
+root_logger.setLevel(logging.INFO)
+
+logger = logging.getLogger("AutoCalibrator")
+logger.setLevel(logging.INFO)
 
 
 class AutoCalibrator(BaseMQTTPubSub):
