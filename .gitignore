@@ -22,3 +22,4 @@ ml-model/notebooks/*.json
 notes.md
 semgrep.out
 localizer.pt
+vapix.log
