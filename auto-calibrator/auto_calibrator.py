@@ -113,6 +113,23 @@ class AutoCalibrator(BaseMQTTPubSub):
             sleep(1)
             self.publish_registration("Auto Calibration Registration")
 
+        logger.info(f"""AutoCalibrator initialized with parameters: \n
+            calibration_topic = {calibration_topic}
+            config_topic = {config_topic}
+            min_zoom = {min_zoom}
+            max_zoom = {max_zoom}
+            min_horizontal_fov = {min_horizontal_fov}
+            max_horizontal_fov = {max_horizontal_fov}
+            min_vertical_fov = {min_vertical_fov}
+            max_vertical_fov = {max_vertical_fov}
+            horizontal_pixels = {horizontal_pixels}
+            vertical_pixels = {vertical_pixels}
+            alpha = {alpha}
+            beta = {beta}
+            gamma = {gamma}
+            use_mqtt = {use_mqtt}
+            """)
+
     def _calibration_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
@@ -137,13 +154,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         # Decode calibration message
         if self.use_mqtt:
             data = self.decode_payload(msg)
-
-            # TODO: switch to logging
-            print(
-                "Received '{payload}' from `{topic}` topic".format(
-                    payload=msg.payload.decode(), topic=msg.topic
-                )
-            )
+            logger.info(f"Received '{msg.payload.decode()}' from `{msg.topic}` topic")
 
         else:
             data = msg["data"]
@@ -169,6 +180,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         }
         if self.use_mqtt:
             self.publish_to_topic(self.publish_topic, json.dumps(publish_data))
+            logger.info(f"Results published to topic: {self.publish_topic}")
 
     def _config_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
@@ -191,74 +203,56 @@ class AutoCalibrator(BaseMQTTPubSub):
         # Decode config message
         if self.use_mqtt:
             data = self.decode_payload(msg)
-
-            # TODO: switch to logging
-            print(
-                "Received '{payload}' from `{topic}` topic".format(
-                    payload=msg.payload.decode(), topic=msg.topic
-                )
-            )
-
+            logger.info(f"Received '{msg.payload.decode()}' from `{msg.topic}` topic")
         else:
             data = msg["data"]
 
         # Set camera config values. Config message can include any or
         # all values.
-        self.min_zoom = (
-            data["camera"]["min_zoom"]
-            if "min_zoom" in data["camera"]
-            else self.min_zoom
-        )
-        self.max_zoom = (
-            data["camera"]["max_zoom"]
-            if "max_zoom" in data["camera"]
-            else self.max_zoom
-        )
-        self.min_horizontal_fov = (
-            data["camera"]["min_horizontal_fov"]
-            if "min_horizontal_fov" in data["camera"]
-            else self.min_horizontal_fov
-        )
-        self.max_horizontal_fov = (
-            data["camera"]["max_horizontal_fov"]
-            if "max_horizontal_fov" in data["camera"]
-            else self.max_horizontal_fov
-        )
-        self.min_vertical_fov = (
-            data["camera"]["min_vertical_fov"]
-            if "min_vertical_fov" in data["camera"]
-            else self.min_vertical_fov
-        )
-        self.max_vertical_fov = (
-            data["camera"]["max_vertical_fov"]
-            if "max_vertical_fov" in data["camera"]
-            else self.max_vertical_fov
-        )
-        self.horizontal_pixels = (
-            data["camera"]["horizontal_pixels"]
-            if "horizontal_pixels" in data["camera"]
-            else self.horizontal_pixels
-        )
-        self.vertical_pixels = (
-            data["camera"]["vertical_pixels"]
-            if "vertical_pixels" in data["camera"]
-            else self.vertical_pixels
-        )
-        self.alpha = (
-            data["camera"]["tripod_yaw"]
-            if "tripod_yaw" in data["camera"]
-            else self.alpha
-        )
-        self.beta = (
-            data["camera"]["tripod_pitch"]
-            if "tripod_pitch" in data["camera"]
-            else self.beta
-        )
-        self.gamma = (
-            data["camera"]["tripod_roll"]
-            if "tripod_roll" in data["camera"]
-            else self.gamma
-        )
+        if "min_zoom" in data["camera"]:
+            old_min_zoom = self.min_zoom
+            self.min_zoom = data["camera"]["min_zoom"]
+            logger.info(f"Configuration min_zoom updated from {old_min_zoom} to {self.min_zoom}")
+        if "max_zoom" in data["camera"]:
+            old_max_zoom = self.max_zoom
+            self.max_zoom = data["camera"]["max_zoom"]
+            logger.info(f"Configuration max_zoom updated from {old_max_zoom} to {self.max_zoom}")
+        if "min_horizontal_fov" in data["camera"]:
+            old_min_horizontal_fov = self.min_horizontal_fov
+            self.min_horizontal_fov = data["camera"]["min_horizontal_fov"]
+            logger.info(f"Configuration min_horizontal_fov updated from {old_min_horizontal_fov} to {self.min_horizontal_fov}")
+        if "max_horizontal_fov" in data["camera"]:
+            old_max_horizontal_fov = self.max_horizontal_fov
+            self.max_horizontal_fov = data["camera"]["max_horizontal_fov"]
+            logger.info(f"Configuration max_horizontal_fov updated from {old_max_horizontal_fov} to {self.max_horizontal_fov}")
+        if "min_vertical_fov" in data["camera"]:
+            old_min_vertical_fov = self.min_vertical_fov
+            self.min_vertical_fov = data["camera"]["min_vertical_fov"]
+            logger.info(f"Configuration min_vertical_fov updated from {old_min_vertical_fov} to {self.min_vertical_fov}")
+        if "max_vertical_fov" in data["camera"]:
+            old_max_vertical_fov = self.max_vertical_fov
+            self.max_vertical_fov = data["camera"]["max_vertical_fov"]
+            logger.info(f"Configuration max_vertical_fov updated from {old_max_vertical_fov} to {self.max_vertical_fov}")
+        if "horizontal_pixels" in data["camera"]:
+            old_horizontal_pixels = self.horizontal_pixels
+            self.horizontal_pixels = data["camera"]["horizontal_pixels"]
+            logger.info(f"Configuration horizontal_pixels updated from {old_horizontal_pixels} to {self.horizontal_pixels}")
+        if "vertical_pixels" in data["camera"]:
+            old_vertical_pixels = self.vertical_pixels
+            self.vertical_pixels = data["camera"]["vertical_pixels"]
+            logger.info(f"Configuration vertical_pixels updated from {old_vertical_pixels} to {self.vertical_pixels}")
+        if "tripod_yaw" in data["camera"]:
+            old_alpha = self.alpha
+            self.alpha = data["camera"]["tripod_yaw"]
+            logger.info(f"Configuration tripod_yaw updated from {old_alpha} to {self.alpha}")
+        if "tripod_yaw" in data["camera"]:
+            old_beta = self.beta
+            self.beta = data["camera"]["tripod_yaw"]
+            logger.info(f"Configuration tripod_yaw updated from {old_beta} to {self.beta}")
+        if "tripod_yaw" in data["camera"]:
+            old_gamma = self.gamma
+            self.gamma = data["camera"]["tripod_yaw"]
+            logger.info(f"Configuration tripod_yaw updated from {old_gamma} to {self.gamma}")
 
     def _calculate_calibration_error(self, msg):
 
@@ -462,9 +456,8 @@ class AutoCalibrator(BaseMQTTPubSub):
                 sleep(0.001)
 
             except Exception as e:
-                # TODO: Use logging
                 if self.use_mqtt:
-                    print(e)
+                    logger.error(e)
 
 
 if __name__ == "__main__":
