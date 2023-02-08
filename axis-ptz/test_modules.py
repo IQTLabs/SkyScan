@@ -119,9 +119,9 @@ class TestCameraModule:
             # currentPlane["altitudeTime"]
             # currentPlane["track"]  # [deg]
             camera.currentPlane["groundSpeed"] *= (
-                6076.12 / 3600 * 0.3048
-            )  # [nm/h] * [ft/nm] / [s/h] * [m/ft] = [m/s]
-            camera.currentPlane["verticalRate"] *= 0.3048  # [ft/s] * [m/ft] = [m/s]
+                6076.12 * 0.3048 / 3600
+            )  # [nm/h] * [ft/nm] * [m/ft] / [s/h] = [m/s]
+            camera.currentPlane["verticalRate"] *= (0.3048 / 60)  # [ft/min] * [m/ft] / 60 [s/min] = [m/s]
             # currentPlane["icao24"]
             # currentPlane["type"]
 
