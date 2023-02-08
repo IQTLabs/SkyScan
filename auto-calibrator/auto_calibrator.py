@@ -13,13 +13,15 @@ import schedule
 from scipy.optimize import fmin_bfgs
 
 # TODO: standardize method of importing base class
-sys.path.append(str(Path(os.getenv("EDGETECH_CORE_HOME")).expanduser()))
+sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 
 import utils_auto_calibrator
 
 
 class AutoCalibrator(BaseMQTTPubSub):
+    """TODO: Complete"""
+
     def __init__(
         self: Any,
         config_topic: str,
@@ -35,7 +37,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         alpha=0.0,
         beta=0.0,
         gamma=0.0,
-        debug: bool = False,
+        use_mqtt: bool = False,
         **kwargs: Any,
     ):
         """
@@ -67,15 +69,13 @@ class AutoCalibrator(BaseMQTTPubSub):
             Tripod pitch
         gamma: float
             Tripod roll
-        debug: bool
-            Flag to debug the auto calibrator, or not
-
+        use_mqtt: bool
+            Flag to use MQTT, or not
 
         Returns
         -------
         AutoCalibrator
         """
-
         # Parent class handles kwargs
         super().__init__(**kwargs)
         self.calibration_topic = calibration_topic
@@ -91,20 +91,21 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-        self.debug = debug
+        self.use_mqtt = use_mqtt
 
         # Connect client on construction
-        if not self.debug:
+        if self.use_mqtt:
             self.connect_client()
             sleep(1)
             self.publish_registration("Auto Calibration Registration")
 
     def _calibration_callback(
-        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], payload: Any
+        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
         """
-        Process calibration message, find tripod yaw, pitch, and roll that minimizes pointing error.
-        Publish results for use by PTZ controller.
+        Process calibration message by finding tripod yaw, pitch, and
+        roll that minimizes pointing error.  Publish results for use
+        by PTZ controller.
 
         Parameters
         ----------
@@ -112,34 +113,36 @@ class AutoCalibrator(BaseMQTTPubSub):
             MQTT client
         _userdata: dict
             Any required user data
-        payload: Dict
+        msg: Dict
             A Dict with calibration information and a timestamp
+
         Returns
         -------
         None
         """
-
         # Decode calibration message
-        # TODO: get correct msg format
-        if self.debug:
-            data = payload["data"]
-        else:
-            data = str(payload.payload.decode("utf-8"))["data"]
+        if self.use_mqtt:
+            data = self.decode_payload(msg)
 
             # TODO: switch to logging
             print(
                 "Received '{payload}' from `{topic}` topic".format(
-                    payload=payload.payload.decode(), topic=payload.topic
+                    payload=msg.payload.decode(), topic=msg.topic
                 )
             )
 
-        # Find tripod yaw, pitch, and roll that minimize pointing error
+        else:
+            data = msg["data"]
+
+        # Find tripod yaw, pitch, and roll that minimize pointing
+        # error
         rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
         self.alpha, self.beta, self.gamma = self._minimize_pointing_error(
             data, rho_epsilon, tau_epsilon
         )
 
-        # Publish results to topic to be read by PTZ controller
+        # Publish results to calibration topic which is subscribed to
+        # by PTZ controller
         publish_data = {
             "timestamp": str(int(datetime.datetime.utcnow().timestamp())),
             "data": {
@@ -150,16 +153,13 @@ class AutoCalibrator(BaseMQTTPubSub):
                 }
             },
         }
-        if not self.debug:
+        if self.use_mqtt:
             self.publish_to_topic(self.publish_topic, json.dumps(publish_data))
 
-        pass
-
     def _config_callback(
-        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], payload: Any
+        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
-        """
-        Process config message, update camera configuration.
+        """Process config message, update camera configuration.
 
         Parameters
         ----------
@@ -167,29 +167,29 @@ class AutoCalibrator(BaseMQTTPubSub):
             MQTT client
         _userdata: dict
             Any required user data
-        payload: Dict
+        msg: Dict
             A Dict with config information and a timestamp
+
         Returns
         -------
         None
         """
-
         # Decode config message
-        # TODO: get correct msg format
-        if self.debug:
-            data = payload["data"]
-        else:
-            data = str(payload.payload.decode("utf-8"))["data"]
+        if self.use_mqtt:
+            data = self.decode_payload(msg)
 
             # TODO: switch to logging
             print(
                 "Received '{payload}' from `{topic}` topic".format(
-                    payload=payload.payload.decode(), topic=payload.topic
+                    payload=msg.payload.decode(), topic=msg.topic
                 )
             )
 
-        # Set camera config values
-        # Config message can include any or all values
+        else:
+            data = msg["data"]
+
+        # Set camera config values. Config message can include any or
+        # all values.
         self.min_zoom = (
             data["camera"]["min_zoom"]
             if "min_zoom" in data["camera"]
@@ -246,17 +246,17 @@ class AutoCalibrator(BaseMQTTPubSub):
             else self.gamma
         )
 
-        pass
-
     def _calculate_calibration_error(self, msg):
 
         """
-        Calculate calibration error of camera using information from YOLO or equivalent bounding box.
+        Calculate calibration error of camera using information from
+        YOLO or equivalent bounding box.
 
         Parameters
         ----------
         msg: Dict
             A Dict with calibration information
+
         Returns
         -------
         rho_epsilon : float
@@ -264,35 +264,33 @@ class AutoCalibrator(BaseMQTTPubSub):
         tau_epsilon : float
             Tilt error [degrees]
         """
-
         # Calculate FoV based on current zoom
         zoom = msg["camera"]["zoom"]
         zoom_percentage = (zoom - self.min_zoom) / (self.min_zoom + self.max_zoom)
 
-        # FoV is calculated with 1 - zoom_percentage because max zoom indicates minimum FoV
+        # FoV is calculated with 1 - zoom_percentage because max zoom
+        # indicates minimum FoV
         horizontal_fov = (
             (self.max_horizontal_fov - self.min_horizontal_fov) * (1 - zoom_percentage)
         ) + self.min_horizontal_fov
         vertical_fov = (
             (self.max_vertical_fov - self.min_vertical_fov) * (1 - zoom_percentage)
         ) + self.min_vertical_fov
-
         horizontal_degrees_per_pixel = horizontal_fov / self.horizontal_pixels
         vertical_degrees_per_pixel = vertical_fov / self.vertical_pixels
 
-        # Get aircraft bounding box. Top left and bottom right points
-        # Position is in pixels from the upper left corner of image, down and right
+        # Get aircraft bounding box: top left and bottom
+        # right. Position is in pixels from the upper left corner of
+        # image, down and right.
         bbox = msg["aircraft"]["bbox"]
 
-        # Use bounding box information to calculate pan and tilt error in degrees
-
+        # Calculate pan and tilt error in degrees
         center_x = (bbox[1] + bbox[3]) / 2
         center_y = (bbox[0] + bbox[2]) / 2
-
-        # Positive values represents top and right, respectively
-        horizontal_pixel_difference = center_x - (self.horizontal_pixels / 2)
+        horizontal_pixel_difference = center_x - (
+            self.horizontal_pixels / 2
+        )  # Positive values represents top and right, respectively
         vertical_pixel_difference = (self.vertical_pixels / 2) - center_y
-
         rho_epsilon = horizontal_pixel_difference * horizontal_degrees_per_pixel
         tau_epsilon = vertical_pixel_difference * vertical_degrees_per_pixel
 
@@ -301,7 +299,7 @@ class AutoCalibrator(BaseMQTTPubSub):
     @staticmethod
     def _calculate_pointing_error(
         alpha_beta_gamma,  # Independent vars
-        msg,  # Parameters
+        data,  # Parameters
         rho_0,
         tau_0,
         rho_epsilon,
@@ -313,8 +311,9 @@ class AutoCalibrator(BaseMQTTPubSub):
         Parameters
         ----------
         alpha_beta_gamma: List [int]
-            Represents first iteration of yaw pitch and roll [alpha, beta, gamma]
-        msg: Dict
+            Represents first iteration of yaw pitch and roll [alpha,
+            beta, gamma]
+        data: Dict
             A Dict with calibration information
         rho_0 : float
             Current pan [degrees]
@@ -324,33 +323,35 @@ class AutoCalibrator(BaseMQTTPubSub):
             Pan error [degrees]
         tau_epsilon : float
             Tilt error [degrees]
+
         Returns
         -------
         ___ : float
             Pointing error with given yaw, pitch and roll
         """
-
-        # Compute position of the aircraft
-        a_varphi = msg["aircraft"]["lat"]  # [deg]
-        a_lambda = msg["aircraft"]["long"]  # [deg]
-        a_h = msg["aircraft"]["altitude"]  # [m]
+        # Compute position of the aircraft in geocentric (XYZ)
+        # coordinates
+        a_varphi = data["aircraft"]["lat"]  # [deg]
+        a_lambda = data["aircraft"]["long"]  # [deg]
+        a_h = data["aircraft"]["altitude"]  # [m]
         r_XYZ_a = utils_auto_calibrator.compute_r_XYZ(a_lambda, a_varphi, a_h)
 
-        # Compute position of the tripod
-        t_varphi = msg["camera"]["lat"]  # [deg]
-        t_lambda = msg["camera"]["long"]  # [deg]
-        t_h = msg["camera"]["altitude"]  # [m]
+        # Compute position of the tripod in geocentric (XYZ)
+        # coordinates
+        t_varphi = data["camera"]["lat"]  # [deg]
+        t_lambda = data["camera"]["long"]  # [deg]
+        t_h = data["camera"]["altitude"]  # [m]
         r_XYZ_t = utils_auto_calibrator.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
-        # Compute orthogonal transformation matrix from geocentric to
-        # topocentric coordinates, and corresponding unit vectors
-        # system of the tripod
+        # Compute orthogonal transformation matrix from geocentric
+        # (XYZ) to topocentric (ENz) coordinates, and corresponding
+        # topocentric unit vectors
         E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils_auto_calibrator.compute_E(
             t_lambda, t_varphi
         )
 
-        # Compute the rotations from the XYZ coordinate system to the uvw
-        # (camera housing fixed) coordinate system
+        # Compute the rotations from the geocentric (XYZ) coordinate
+        # system to the camera housing fixed (uvw) coordinate system
         alpha = alpha_beta_gamma[0]  # [deg]
         beta = alpha_beta_gamma[1]  # [deg]
         gamma = alpha_beta_gamma[2]  # [deg]
@@ -358,12 +359,12 @@ class AutoCalibrator(BaseMQTTPubSub):
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
         )
 
-        # Compute position in the uvw coordinate system of the aircraft
-        # relative to the tripod
+        # Compute position in the camera housing fixed (uvw)
+        # coordinate system of the aircraft relative to the tripod
         r_uvw_a_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a - r_XYZ_t)
 
-        # Compute pan and tilt to point the camera at the aircraft given
-        # the updated values of alpha, beta, and gamma
+        # Compute pan and tilt to point the camera at the aircraft
+        # given the updated values of alpha, beta, and gamma
         rho = math.degrees(math.atan2(r_uvw_a_t[0], r_uvw_a_t[1]))  # [deg]
         tau = math.degrees(
             math.atan2(r_uvw_a_t[2], utils_auto_calibrator.norm(r_uvw_a_t[0:2]))
@@ -374,18 +375,19 @@ class AutoCalibrator(BaseMQTTPubSub):
             (rho_0 + rho_epsilon - rho) ** 2 + (tau_0 + tau_epsilon - tau) ** 2
         )
 
-    def _minimize_pointing_error(self, msg, rho_epsilon, tau_epsilon):
+    def _minimize_pointing_error(self, data, rho_epsilon, tau_epsilon):
         """
         Find tripod yaw, pitch, and roll that minimizes pointing error.
 
         Parameters
         ----------
-        msg: Dict
+        data: Dict
             A Dict with calibration information
         rho_epsilon : float
             Pan pointing error [degrees]
         tau_epsilon : float
             Tilt pointing error [degrees]
+
         Returns
         -------
         alpha_1: float
@@ -395,7 +397,6 @@ class AutoCalibrator(BaseMQTTPubSub):
         gamma_1: float
             Roll that minimizes pointing error
         """
-
         # Get current yaw, pitch, roll for initial minimization guess
         alpha_0 = self.alpha  # [deg]
         beta_0 = self.beta  # [deg]
@@ -403,21 +404,22 @@ class AutoCalibrator(BaseMQTTPubSub):
         x0 = [alpha_0, beta_0, gamma_0]
 
         # Get current pointing
-        rho_0 = msg["camera"]["pan"]
-        tau_0 = msg["camera"]["tilt"]
+        rho_0 = data["camera"]["pan"]
+        tau_0 = data["camera"]["tilt"]
 
         # Calculate alpha, beta, gamma that minimizes pointing error
         alpha_1, beta_1, gamma_1 = fmin_bfgs(
             self._calculate_pointing_error,
             x0,
-            args=[msg, rho_0, tau_0, rho_epsilon, tau_epsilon],
+            args=[data, rho_0, tau_0, rho_epsilon, tau_epsilon],
         )
 
         return alpha_1, beta_1, gamma_1
 
     def main(self: Any) -> None:
         """
-        Schedule heartbeat and subscribes to calibration and config topics with callbacks.
+        Schedule heartbeat and subscribes to calibration and config
+        topics with callbacks.
 
         Parameters
         ----------
@@ -427,7 +429,6 @@ class AutoCalibrator(BaseMQTTPubSub):
         -------
         None
         """
-
         # Schedule heartbeat
         schedule.every(10).seconds.do(
             self.publish_heartbeat, payload="Template Module Heartbeat"
@@ -443,10 +444,12 @@ class AutoCalibrator(BaseMQTTPubSub):
         while True:
             try:
                 schedule.run_pending()
+                # TODO: Make a parameter
                 sleep(0.001)
 
             except Exception as e:
-                if self.debug:
+                # TODO: Use logging
+                if self.use_mqtt:
                     print(e)
 
 
@@ -463,5 +466,4 @@ if __name__ == "__main__":
         max_vertical_fov=float(os.environ.get("MIN_HORIZONTAL_FOV")),
         mqtt_ip=os.environ.get("MQTT_IP"),
     )
-    # call the main function
     template.main()

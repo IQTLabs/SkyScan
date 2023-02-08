@@ -16,7 +16,7 @@ max_zoom_expected = 9999
 
 @pytest.fixture
 def calibrator():
-    """Construct a controller."""
+    """Construct a calibrator."""
     calibrator = auto_calibrator.AutoCalibrator(
         config_topic="skyscan/config/json",
         calibration_topic="skyscan/calibration/json",
@@ -27,7 +27,7 @@ def calibrator():
         min_vertical_fov=3.8,
         max_vertical_fov=37.2,
         mqtt_ip="mqtt",
-        debug=True,
+        use_mqtt=False,
     )
     return calibrator
 
