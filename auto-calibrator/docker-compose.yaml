@@ -18,7 +18,7 @@ services:
       - CONFIG_TOPIC="skyscan/config/json"
       - CALIBRATION_TOPIC="skyscan/calibration/json"
       - MQTT_IP=mqtt
-      - EDGETECH_CORE_HOME="~/"
+      - CORE_PATH="~/"
     restart: unless-stopped
     depends_on:
       - mqtt

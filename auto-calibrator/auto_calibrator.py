@@ -16,7 +16,9 @@ from scipy.optimize import fmin_bfgs
 sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 
-import utils_auto_calibrator
+# TODO: Huh?
+sys.path.append(str(Path("../ptz-controller").expanduser()))
+import ptz_utilities
 
 
 class AutoCalibrator(BaseMQTTPubSub):
@@ -334,19 +336,19 @@ class AutoCalibrator(BaseMQTTPubSub):
         a_varphi = data["aircraft"]["lat"]  # [deg]
         a_lambda = data["aircraft"]["long"]  # [deg]
         a_h = data["aircraft"]["altitude"]  # [m]
-        r_XYZ_a = utils_auto_calibrator.compute_r_XYZ(a_lambda, a_varphi, a_h)
+        r_XYZ_a = ptz_utilities.compute_r_XYZ(a_lambda, a_varphi, a_h)
 
         # Compute position of the tripod in geocentric (XYZ)
         # coordinates
         t_varphi = data["camera"]["lat"]  # [deg]
         t_lambda = data["camera"]["long"]  # [deg]
         t_h = data["camera"]["altitude"]  # [m]
-        r_XYZ_t = utils_auto_calibrator.compute_r_XYZ(t_lambda, t_varphi, t_h)
+        r_XYZ_t = ptz_utilities.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
         # Compute orthogonal transformation matrix from geocentric
         # (XYZ) to topocentric (ENz) coordinates, and corresponding
         # topocentric unit vectors
-        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils_auto_calibrator.compute_E(
+        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = ptz_utilities.compute_E_XYZ_to_ENz(
             t_lambda, t_varphi
         )
 
@@ -355,7 +357,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         alpha = alpha_beta_gamma[0]  # [deg]
         beta = alpha_beta_gamma[1]  # [deg]
         gamma = alpha_beta_gamma[2]  # [deg]
-        _, _, _, E_XYZ_to_uvw, _, _, _ = utils_auto_calibrator.compute_rotations(
+        _, _, _, E_XYZ_to_uvw, _, _, _ = ptz_utilities.compute_camera_rotations(
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
         )
 
@@ -367,7 +369,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         # given the updated values of alpha, beta, and gamma
         rho = math.degrees(math.atan2(r_uvw_a_t[0], r_uvw_a_t[1]))  # [deg]
         tau = math.degrees(
-            math.atan2(r_uvw_a_t[2], utils_auto_calibrator.norm(r_uvw_a_t[0:2]))
+            math.atan2(r_uvw_a_t[2], ptz_utilities.norm(r_uvw_a_t[0:2]))
         )  # [deg]
 
         # Return pointing error

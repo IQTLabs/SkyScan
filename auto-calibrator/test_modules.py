@@ -5,8 +5,6 @@ import pytest
 import auto_calibrator
 
 
-PRECISION = 1.0e-5
-
 # Set expected test results
 rho_epsilon_expected = -1.449921875
 tau_epsilon_expected = -3.032962962962963
@@ -15,6 +13,9 @@ beta_expected = 31.55893394983606
 gamma_expected = 1.5230141040882903
 min_zoom_expected = 0
 max_zoom_expected = 9999
+
+# Set precision of angle [deg] differences
+PRECISION = 1.0e-5
 
 
 @pytest.fixture
@@ -73,8 +74,8 @@ def additional_data(additional_info_msg):
 
 class TestAutoCalibrator:
     """Test construction of rotations and calculation of camera
-    pointing."""
-
+    pointing.
+    """
     def test_calculate_calibration_error(self, calibrator, calibration_data):
         """Test calculation of calibration error."""
 
@@ -127,8 +128,9 @@ class TestAutoCalibrator:
         assert calibrator.max_zoom == max_zoom_expected
 
     def test_calibration_callback(self, calibrator, additional_info_msg):
-        """Test calibration callback reads message, calculates alpha, beta, and gamma correctly, and updates those values."""
-
+        """Test calibration callback reads message, calculates alpha,
+        beta, and gamma correctly, and updates those values.
+        """
         _client = None
         _userdata = None
         calibrator._calibration_callback(_client, _userdata, additional_info_msg)
