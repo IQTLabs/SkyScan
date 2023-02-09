@@ -3,6 +3,7 @@
 
 import argparse
 from datetime import datetime, timedelta
+from distutils.util import strtobool
 import errno
 import json
 from json.decoder import JSONDecodeError
@@ -84,7 +85,7 @@ camera_latitude = None
 camera_longitude = None
 camera_altitude = None
 camera_lead = None
-
+include_age = strtobool(os.getenv("INCLUDE_AGE", "True"))
 
 def calculate_bearing_correction(b):
     return (b + cameraBearingCorrection) % 360
@@ -413,7 +414,10 @@ def calculateCameraPositionB(
     # Compute lead time accounting for age of message, and specified
     # lead time
     a_datetime = utils.convert_time(a_time)
-    a_lead = (datetime.utcnow() - a_datetime).total_seconds() + camera_lead  # [s]
+    if include_age:
+        a_lead = (datetime.utcnow() - a_datetime).total_seconds() + camera_lead  # [s]
+    else:
+        a_lead = camera_lead  # [s]
 
     # Assign position of the tripod
     t_varphi = camera_latitude  # [deg]
@@ -494,7 +498,7 @@ def calculateCameraPositionA():
     global angularVelocityVertical
     global elevation
 
-    (lat, lon, alt) = utils.calc_travel_3d(currentPlane, camera_lead)
+    (lat, lon, alt) = utils.calc_travel_3d(currentPlane, camera_lead, include_age=include_age)
     distance3d = utils.coordinate_distance_3d(
         camera_latitude, camera_longitude, camera_altitude, lat, lon, alt
     )
@@ -509,7 +513,7 @@ def calculateCameraPositionA():
         distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt
     )
     (angularVelocityHorizontal, angularVelocityVertical) = utils.angular_velocity(
-        currentPlane, camera_latitude, camera_longitude, camera_altitude
+        currentPlane, camera_latitude, camera_longitude, camera_altitude, include_age=include_age
     )
     # logging.info("Angular Velocity - Horizontal: {} Vertical: {}".format(angularVelocityHorizontal, angularVelocityVertical))
     cameraTilt = elevation

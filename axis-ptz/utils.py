@@ -237,7 +237,7 @@ def convert_time(inp_date_time):
     return out_date_time
 
 
-def calc_travel_3d(current_plane, lead_s: float):
+def calc_travel_3d(current_plane, lead_s: float, include_age=True):
     """Extrapolate the 3D position of the aircraft
 
     Arguments:
@@ -264,11 +264,16 @@ def calc_travel_3d(current_plane, lead_s: float):
     heading = current_plane["track"]
     climb_rate = current_plane["verticalRate"]
 
-    lat_lon_age = datetime.utcnow() - lat_lon_time
-    lat_lon_age_s = lat_lon_age.total_seconds() + lead_s
+    if include_age:
+        lat_lon_age = datetime.utcnow() - lat_lon_time
+        lat_lon_age_s = lat_lon_age.total_seconds() + lead_s
 
-    alt_age = datetime.utcnow() - altitude_time
-    alt_age_s = alt_age.total_seconds() + lead_s
+        alt_age = datetime.utcnow() - altitude_time
+        alt_age_s = alt_age.total_seconds() + lead_s
+    
+    else:
+        lat_lon_age_s = lead_s
+        alt_age_s = lead_s
 
     R = float(6371)  # Radius of the Earth in km
     brng = math.radians(heading)  # Bearing is 90 degrees converted to radians.
@@ -294,8 +299,8 @@ def calc_travel_3d(current_plane, lead_s: float):
     return (lat2, lon2, alt2)
 
 
-def angular_velocity(currentPlane, camera_latitude, camera_longitude, camera_altitude):
-    (lat, lon, alt) = calc_travel_3d(currentPlane, 0)
+def angular_velocity(currentPlane, camera_latitude, camera_longitude, camera_altitude, include_age=True):
+    (lat, lon, alt) = calc_travel_3d(currentPlane, 0, include_age=include_age)
     distance2d = coordinate_distance(camera_latitude, camera_longitude, lat, lon)
     bearing1 = bearingFromCoordinate(
         cameraPosition=[camera_latitude, camera_longitude],
@@ -306,7 +311,7 @@ def angular_velocity(currentPlane, camera_latitude, camera_longitude, camera_alt
         distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt
     )
 
-    (lat, lon, alt) = calc_travel_3d(currentPlane, 1)
+    (lat, lon, alt) = calc_travel_3d(currentPlane, 1, include_age=include_age)
     distance2d = coordinate_distance(camera_latitude, camera_longitude, lat, lon)
     bearing2 = bearingFromCoordinate(
         cameraPosition=[camera_latitude, camera_longitude],
