@@ -44,14 +44,14 @@ def make_controller(use_mqtt):
     None
     """
     controller = ptz_controller.PtzController(
-        camera_ip=os.environ.get("CAMERA_IP"),
-        camera_user=os.environ.get("CAMERA_USER"),
-        camera_password=os.environ.get("CAMERA_PASSWORD"),
-        mqtt_ip=os.environ.get("MQTT_IP"),
-        config_topic=os.environ.get("CONFIG_TOPIC"),
-        calibration_topic=os.environ.get("CALIBRATION_TOPIC"),
-        flight_topic=os.environ.get("FLIGHT_TOPIC"),
-        logger_topic=os.environ.get("LOGGER_TOPIC"),
+        camera_ip=os.getenv("CAMERA_IP"),
+        camera_user=os.getenv("CAMERA_USER"),
+        camera_password=os.getenv("CAMERA_PASSWORD"),
+        mqtt_ip=os.getenv("MQTT_IP"),
+        config_topic=os.getenv("CONFIG_TOPIC"),
+        calibration_topic=os.getenv("CALIBRATION_TOPIC"),
+        flight_topic=os.getenv("FLIGHT_TOPIC"),
+        logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
         capture_interval=CAPTURE_INTERVAL,
