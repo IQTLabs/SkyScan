@@ -15,8 +15,6 @@ import paho.mqtt.client as mqtt
 import schedule
 from sensecam_control import vapix_config, vapix_control
 
-# TODO: Agree on a method for importing the base class
-sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 import ptz_utilities
 
@@ -254,7 +252,7 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign position of the tripod
         if self.use_mqtt:
-            data = self.decode_payload(msg)
+            data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
         logger.info(f"Processing config msg data: {data}")
@@ -299,7 +297,7 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign camera housing rotation angles
         if self.use_mqtt:
-            data = self.decode_payload(msg)
+            data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
         logger.info(f"Processing calibration msg data: {data}")
@@ -350,7 +348,7 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign position and velocity of the aircraft
         if self.use_mqtt:
-            data = self.decode_payload(msg)
+            data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
         logger.info(f"Processing flight msg data: {data}")
@@ -636,7 +634,7 @@ class PtzController(BaseMQTTPubSub):
                     self.do_capture = False
 
             except Exception as e:
-                self.logger.error(f"Main loop exception: {e}")
+                logger.error(f"Main loop exception: {e}")
 
 
 if __name__ == "__main__":

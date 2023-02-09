@@ -11,8 +11,6 @@ from typing import Any, Dict
 import paho.mqtt.client as mqtt
 import pandas as pd
 
-# TODO: Agree on a method for importing the base class
-sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 from test_integration import (
     read_track_data,
@@ -110,7 +108,7 @@ class MessageHandler(BaseMQTTPubSub):
         -------
         None
         """
-        data = self.decode_payload(msg)
+        data = self.decode_payload(msg.payload)
         if "camera-pointing" in data:
             p = data["camera-pointing"]
             self.camera_pointing_file.write(
