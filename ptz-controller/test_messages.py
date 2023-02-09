@@ -70,7 +70,7 @@ class MessageHandler(BaseMQTTPubSub):
         # Connect MQTT client
         logger.info("Connecting MQTT client")
         self.connect_client()
-        time.sleep(1)
+        time.sleep(5)
         self.publish_registration("Message Handler Module Registration")
 
         # Open files for logging
