@@ -264,15 +264,11 @@ def calc_travel_3d(current_plane, lead_s: float):
     heading = current_plane["track"]
     climb_rate = current_plane["verticalRate"]
 
-    # TODO: Restore
-    # lat_lon_age = datetime.utcnow() - lat_lon_time
-    # lat_lon_age_s = lat_lon_age.total_seconds() + lead_s
-    lat_lon_age_s = lead_s
+    lat_lon_age = datetime.utcnow() - lat_lon_time
+    lat_lon_age_s = lat_lon_age.total_seconds() + lead_s
 
-    # TODO: Restore
-    # alt_age = datetime.utcnow() - altitude_time
-    # alt_age_s = alt_age.total_seconds() + lead_s
-    alt_age_s = lead_s
+    alt_age = datetime.utcnow() - altitude_time
+    alt_age_s = alt_age.total_seconds() + lead_s
 
     R = float(6371)  # Radius of the Earth in km
     brng = math.radians(heading)  # Bearing is 90 degrees converted to radians.
