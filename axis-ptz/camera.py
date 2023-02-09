@@ -758,6 +758,9 @@ def main():
     global camera_altitude
     global camera_latitude
     global camera_longitude
+    global camera_roll
+    global camera_pitch
+    global camera_yaw
     global camera_lead
     global cameraConfig
     global flight_topic
@@ -767,6 +770,9 @@ def main():
     parser = argparse.ArgumentParser(description="An MQTT based camera controller")
     parser.add_argument("--lat", type=float, help="Latitude of camera")
     parser.add_argument("--lon", type=float, help="Longitude of camera")
+    parser.add_argument("--roll", type=float, help="Roll angle of camera", default=0.0)
+    parser.add_argument("--pitch", type=float, help="Pitch angle of camera", default=0.0)
+    parser.add_argument("--yaw", type=float, help="Yaw angle of camera", default=0.0)
     parser.add_argument(
         "--alt", type=float, help="altitude of camera in METERS!", default=0
     )
@@ -876,6 +882,9 @@ def main():
     camera_longitude = args.lon
     camera_latitude = args.lat
     camera_altitude = args.alt  # Altitude is in METERS
+    camera_roll = args.roll
+    camera_pitch = args.pitch
+    camera_yaw = args.yaw  # Altitude is in METERS
     camera_lead = args.camera_lead
     # cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
