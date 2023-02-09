@@ -6,36 +6,35 @@ services:
       - "1883:1883"
       - "9001:9001"
     build:
-      context: ${MQTT_CONTEXT}
+      context: ./mqtt
       dockerfile: ./Dockerfile
     restart: unless-stopped
-  loop:
+  pointing:
     image: iqtlabs/skyscan-ptz-controller:latest
     build:
       context: ./
       dockerfile: ./Dockerfile
     environment:
-      - CORE_PATH="/root"
-      - CAMERA_IP=""
-      - CAMERA_USER=""
-      - CAMERA_PASSWORD=""
       - MQTT_IP=mqtt
-      - CONFIG_TOPIC="skyscan/config/json"
-      - CALIBRATION_TOPIC="skyscan/calibration/json"
-      - FLIGHT_TOPIC="skyscan/flight/json"
-      - LOGGER_TOPIC="skyscan/logger/json"
-      - HEARTBEAT_INTERVAL=10.0
-      - UPDATE_INTERVAL=0.1
-      - CAPTURE_INTERVAL=2.0
-      - LEAD_TIME=0.25
-      - PAN_GAIN=0.2
-      - PAN_RATE_MIN=1.0
-      - PAN_RATE_MAX=100.0
-      - TILT_GAIN=0.2
-      - TILT_RATE_MIN=1.0
-      - TILT_RATE_MAX=100.0
-      - JPEG_RESOLUTION="1920x1080"
-      - JPEG_COMPRESSION=5
+      - CAMERA_IP=${CAMERA_IP}
+      - CAMERA_USER=${CAMERA_USER}
+      - CAMERA_PASSWORD=${CAMERA_PASSWORD}
+      - CONFIG_TOPIC=${CONFIG_TOPIC}
+      - CALIBRATION_TOPIC=${CALIBRATION_TOPIC}
+      - FLIGHT_TOPIC=${FLIGHT_TOPIC}
+      - LOGGER_TOPIC=${LOGGER_TOPIC}
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
+      - UPDATE_INTERVAL=${UPDATE_INTERVAL}
+      - CAPTURE_INTERVAL=${CAPTURE_INTERVAL}
+      - LEAD_TIME=${LEAD_TIME}
+      - PAN_GAIN=${PAN_GAIN}
+      - PAN_RATE_MIN=${PAN_RATE_MIN}
+      - PAN_RATE_MAX=${PAN_RATE_MAX}
+      - TILT_GAIN=${TILT_GAIN}
+      - TILT_RATE_MIN=${TILT_RATE_MIN}
+      - TILT_RATE_MAX=${TILT_RATE_MAX}
+      - JPEG_RESOLUTION=${JPEG_RESOLUTION}
+      - JPEG_COMPRESSION=${JPEG_COMPRESSION}
       - USE_MQTT=True
       - USE_CAMERA=False
       - LOG_TO_MQTT=True

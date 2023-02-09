@@ -134,11 +134,11 @@ def make_handler():
     None
     """
     handler = MessageHandler(
-        mqtt_ip="127.0.0.1",
-        config_topic="skyscan/config/json",
-        calibration_topic="skyscan/calibration/json",
-        flight_topic="skyscan/flight/json",
-        logger_topic="skyscan/logger/json",
+        mqtt_ip=os.environ.get("MQTT_IP"),
+        config_topic=os.environ.get("CONFIG_TOPIC"),
+        calibration_topic=os.environ.get("CALIBRATION_TOPIC"),
+        flight_topic=os.environ.get("FLIGHT_TOPIC"),
+        logger_topic=os.environ.get("LOGGER_TOPIC"),
     )
     return handler
 
