@@ -25,7 +25,7 @@ VARPHI_A = 89.99  # [deg]
 H_A = 1000.0  # [m]
 AIR_SPEED = 100.0  # [m/s]
 
-HEARTBEAT_INTERVAL = 0.10
+HEARTBEAT_INTERVAL = 10.0
 UPDATE_INTERVAL = 0.10
 CAPTURE_INTERVAL = 2.0
 LEAD_TIME = 0.0
@@ -62,6 +62,7 @@ def controller():
         config_topic="skyscan/config/json",
         calibration_topic="skyscan/calibration/json",
         flight_topic="skyscan/flight/json",
+        logger_topic="skyscan/logger/json",
         heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,
         capture_interval=CAPTURE_INTERVAL,

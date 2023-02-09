@@ -19,13 +19,15 @@ services:
       - CAMERA_IP=""
       - CAMERA_USER=""
       - CAMERA_PASSWORD=""
-      - MQTT_IP="127.0.0.1"
+      - MQTT_IP=mqtt
       - CONFIG_TOPIC="skyscan/config/json"
       - CALIBRATION_TOPIC="skyscan/calibration/json"
       - FLIGHT_TOPIC="skyscan/flight/json"
-      - LEAD_TIME=0.25
+      - LOGGER_TOPIC="skyscan/logger/json"
+      - HEARTBEAT_INTERVAL=10.0
       - UPDATE_INTERVAL=0.1
       - CAPTURE_INTERVAL=2.0
+      - LEAD_TIME=0.25
       - PAN_GAIN=0.2
       - PAN_RATE_MIN=1.0
       - PAN_RATE_MAX=100.0
@@ -34,6 +36,9 @@ services:
       - TILT_RATE_MAX=100.0
       - JPEG_RESOLUTION="1920x1080"
       - JPEG_COMPRESSION=5
+      - USE_MQTT=True
+      - USE_CAMERA=False
+      - LOG_TO_MQTT=True
     restart: unless-stopped
     depends_on:
       - mqtt

@@ -4,12 +4,12 @@ import math
 import numpy as np
 import quaternion
 
-logger = logging.getLogger("ptz_utilities")
-logger.setLevel(logging.INFO)
-
 # WGS84 parameters
 R_OPLUS = 6378137  # [m]
 F_INV = 298.257223563
+
+logger = logging.getLogger("ptz-utilities")
+logger.setLevel(logging.INFO)
 
 
 def compute_e_E_XYZ(d_lambda):
