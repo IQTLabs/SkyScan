@@ -74,6 +74,10 @@ angularVelocityHorizontal = 0  # in meters
 angularVelocityVertical = 0  # in meters
 planeTrack = 0  # This is the direction that the plane is moving in
 
+camera_roll = 0
+camera_pitch = 0
+camera_yaw = 0
+
 currentPlane = None
 
 camera_latitude = None
@@ -528,16 +532,15 @@ def moveCamera(ip, username, password):
     E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
     r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
-    # Compute the rotations from the XYZ coordinate system to the uvw
-    # (camera housing fixed) coordinate system
-    alpha = 0.0  # [deg]
-    beta = 0.0  # [deg]
-    gamma = 0.0  # [deg]
-    q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
-        e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
-    )
-
     while True:
+        # Compute the rotations from the XYZ coordinate system to the uvw
+        # (camera housing fixed) coordinate system
+        alpha = camera_yaw   # [deg]
+        beta = camera_pitch  # [deg]
+        gamma = camera_roll  # [deg]
+        q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
+            e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
+        )
         if active:
             if not "icao24" in currentPlane:
                 logging.info(" 🚨 Active but Current Plane is not set")
@@ -596,10 +599,15 @@ def update_config(config):
     global cameraDelay
     global cameraPan
     global camera_lead
+    global camera_longitude
+    global camera_latitude
     global camera_altitude
     global cameraBearingCorrection
     global inhibitPhotos
     global capturePeriod
+    global camera_roll
+    global camera_pitch
+    global camera_yaw
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -616,6 +624,12 @@ def update_config(config):
     if "cameraAltitude" in config:
         camera_altitude = float(config["cameraAltitude"])
         logging.info("Setting Camera Altitude to: {}".format(camera_altitude))
+    if "cameraLatitude" in config:
+        camera_latitude = float(config["cameraLatitude"])
+        logging.info("Setting Camera Latitude to: {}".format(camera_latitude))
+    if "cameraLongitude" in config:
+        camera_longitude = float(config["cameraLongitude"])
+        logging.info("Setting Camera Longitude to: {}".format(camera_longitude))
     if "cameraBearingCorrection" in config:
         cameraBearingCorrection = float(config["cameraBearingCorrection"])
         logging.info(
@@ -630,6 +644,15 @@ def update_config(config):
     if "capturePeriod" in config:
         capturePeriod = float(config["capturePeriod"])
         logging.info("Setting Camera Capture Period (sec) to: {}".format(capturePeriod))
+    if "cameraRoll" in config:
+        camera_roll = float(config["cameraRoll"])
+        logging.info("Setting Camera Roll Angle to: {}".format(camera_roll))
+    if "cameraPitch" in config:
+        camera_pitch = float(config["cameraPitch"])
+        logging.info("Setting Camera Pitch Angle to: {}".format(camera_pitch))
+    if "cameraYaw" in config:
+        camera_yaw = float(config["cameraYaw"])
+        logging.info("Setting Camera Yaw Angle to: {}".format(camera_yaw))
 
 
 #############################################
@@ -650,6 +673,9 @@ def on_message_impl(client, userdata, message):
     global camera_longitude
     global camera_latitude
     global camera_altitude
+    global camera_roll
+    global camera_pitch
+    global camera_yaw
 
     global active
 
@@ -704,6 +730,9 @@ def on_message_impl(client, userdata, message):
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
         camera_altitude = float(update["alt"])
+        camera_roll = float(update["roll"])
+        camera_pitch = float(update["pitch"])
+        camera_yaw = float(update["yaw"])
     else:
         logging.info(
             "Message: {} Object: {} Flight: {}".format(
