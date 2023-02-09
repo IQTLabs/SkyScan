@@ -401,14 +401,19 @@ def calculateCameraPositionB(
     # Assign position and velocity of the aircraft
     a_varphi = currentPlane["lat"]  # [deg]
     a_lambda = currentPlane["lon"]  # [deg]
-    # currentPlane["latLonTime"]
+    a_time = currentPlane["latLonTime"]  # [s]
     a_h = currentPlane["altitude"]  # [m]
-    # currentPlane["altitudeTime"]
+    # currentPlane["altitudeTime"]  # Expect altitudeTime to equal latLonTime
     a_track = currentPlane["track"]  # [deg]
     a_ground_speed = currentPlane["groundSpeed"]  # [m/s]
     a_vertical_rate = currentPlane["verticalRate"]  # [m/s]
     # currentPlane["icao24"]
     # currentPlane["type"]
+
+    # Compute lead time accounting for age of message, and specified
+    # lead time
+    a_datetime = utils.convert_time(a_time)
+    a_lead = (datetime.utcnow() - a_datetime).total_seconds() + camera_lead  # [s]
 
     # Assign position of the tripod
     t_varphi = camera_latitude  # [deg]
@@ -431,7 +436,7 @@ def calculateCameraPositionB(
             a_vertical_rate,
         ]
     )
-    r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * camera_lead
+    r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * a_lead
 
     # Compute position, at time one, and velocity, at time zero, in
     # the XYZ coordinate system of the aircraft relative to the tripod
