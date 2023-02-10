@@ -100,12 +100,6 @@ def calibration_msg_0s():
 @pytest.fixture
 def calibration_msg_90s():
     """Populate a calibration message with all 90 deg angles."""
-    msg = {}
-    msg["timestamp"] = "2023-01-01-00-00-00"
-    msg["data"] = {}
-    msg["data"]["tripod_yaw"] = 90.0  # [deg]
-    msg["data"]["tripod_pitch"] = 90.0  # [deg]
-    msg["data"]["tripod_roll"] = 90.0  # [deg]
     with open("data/calibration_msg_90s.json", "r") as f:
         msg = json.load(f)
     return msg
@@ -192,15 +186,15 @@ class TestPtzController:
         assert qnorm(controller.q_gamma - q_gamma_exp) < PRECISION
         assert np.linalg.norm(controller.E_XYZ_to_uvw - E_XYZ_to_uvw_exp) < PRECISION
 
-    def test_get_pan_rate(self, controller):
-        assert controller._get_pan_rate(PAN_RATE_MIN / 2.0) == -100
-        assert controller._get_pan_rate((PAN_RATE_MAX + PAN_RATE_MIN) / 2.0) == 0
-        assert controller._get_pan_rate(PAN_RATE_MAX * 2.0) == +100
+    def test_compute_pan_rate_index(self, controller):
+        assert controller._compute_pan_rate_index(PAN_RATE_MIN / 2.0) == -100
+        assert controller._compute_pan_rate_index((PAN_RATE_MAX + PAN_RATE_MIN) / 2.0) == 0
+        assert controller._compute_pan_rate_index(PAN_RATE_MAX * 2.0) == +100
 
-    def test_get_tilt_rate(self, controller):
-        assert controller._get_tilt_rate(TILT_RATE_MIN / 2.0) == -100
-        assert controller._get_tilt_rate((TILT_RATE_MAX + TILT_RATE_MIN) / 2.0) == 0
-        assert controller._get_tilt_rate(TILT_RATE_MAX * 2.0) == +100
+    def test_compute_tilt_rate_index(self, controller):
+        assert controller._compute_tilt_rate_index(TILT_RATE_MIN / 2.0) == -100
+        assert controller._compute_tilt_rate_index((TILT_RATE_MAX + TILT_RATE_MIN) / 2.0) == 0
+        assert controller._compute_tilt_rate_index(TILT_RATE_MAX * 2.0) == +100
 
     def test_flight_callback(
         self, controller, config_msg, calibration_msg_0s, flight_msg

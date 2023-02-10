@@ -4,10 +4,8 @@ import json
 import logging
 import math
 import os
-from pathlib import Path
 from time import sleep, time
 from typing import Any, Dict
-import sys
 
 import numpy as np
 import quaternion
@@ -30,7 +28,7 @@ logger.setLevel(logging.INFO)
 
 class PtzController(BaseMQTTPubSub):
     """Point the camera at the aircraft using a proportional rate
-    controller, and capture intervals while in track."""
+    controller, and capture images while in track."""
 
     def __init__(
         self: Any,
@@ -58,7 +56,7 @@ class PtzController(BaseMQTTPubSub):
         log_to_mqtt: bool = False,
         **kwargs: Any,
     ):
-        """Instanstiate the PTZ controller by connecting to the camera
+        """Instantiate the PTZ controller by connecting to the camera
         and message broker, and initializing data attributes.
 
         Parameters
@@ -168,15 +166,16 @@ class PtzController(BaseMQTTPubSub):
         self.e_N_XYZ = None
         self.e_z_XYZ = None
 
-        # Orthogonal transformation matrix from geocentric to
-        # topocentric coordinates
+        # Orthogonal transformation matrix from geocentric (XYZ) to
+        # topocentric (ENz) coordinates
         self.E_XYZ_to_ENz = None
 
-        # Tripod position in the geocentric coordinate system
+        # Tripod position in the geocentric (XYZ) coordinate system
         self.r_XYZ_t = None
 
         # Aircraft identifier, time of flight message and
-        # corresponding aircraft position and velocity
+        # corresponding aircraft position and velocity relative to the
+        # tripod in the camera fixed (rst) coordinate system
         self.icao24 = "NA"
         self.time_a = 0.0  # [s]
         self.r_rst_a_0_t = None  # [m/s]
@@ -346,7 +345,8 @@ class PtzController(BaseMQTTPubSub):
         None
 
         """
-        # Assign position and velocity of the aircraft
+        # Assign identifier, time, position, and velocity of the
+        # aircraft
         if self.use_mqtt:
             data = self.decode_payload(msg.payload)
         else:
@@ -403,8 +403,7 @@ class PtzController(BaseMQTTPubSub):
         #     varphi_a,
         # )  # [m]
 
-        # Compute the bearing from north of the aircraft from the
-        # tripod
+        # Compute the bearing from north to the aircraft
         # TODO: Restore?
         # bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
 
@@ -457,8 +456,8 @@ class PtzController(BaseMQTTPubSub):
                 f"Commanding pan and tilt rates: {self.rho_dot_c}, {self.tau_dot_c} [deg/s]"
             )
             self.camera_control.continuous_move(
-                self._get_pan_rate(self.rho_dot_c),
-                self._get_tilt_rate(self.tau_dot_c),
+                self._compute_pan_rate_index(self.rho_dot_c),
+                self._compute_tilt_rate_index(self.tau_dot_c),
                 self.zoom,
             )
             logger.info(f"Starting image capture of aircraft: {self.icao24}")
@@ -485,7 +484,7 @@ class PtzController(BaseMQTTPubSub):
             logger.info(f"Publishing logger msg: {msg}")
             self.publish_to_topic(self.logger_topic, json.dumps(msg))
 
-    def _get_pan_rate(self, rho_dot):
+    def _compute_pan_rate_index(self, rho_dot):
         """Compute pan rate index between -100 and 100 using rates in
         deg/s, limiting the results to the specified minimum and
         maximum.
@@ -515,7 +514,7 @@ class PtzController(BaseMQTTPubSub):
             )
         return pan_rate
 
-    def _get_tilt_rate(self, tau_dot):
+    def _compute_tilt_rate_index(self, tau_dot):
         """Compute tilt rate index between -100 and 100 using rates in
         deg/s, limiting the results to the specified minimum and
         maximum.
@@ -590,8 +589,8 @@ class PtzController(BaseMQTTPubSub):
     def main(self: Any) -> None:
         """Schedule module heartbeat and image capture, subscribe to
         all required topics, then loop forever. Update pointing for
-        logging, and stop capturing images after twice the capture
-        interval has elapsed.
+        logging, and command zero camera pan and tilt rates and stop
+        capturing images after twice the capture interval has elapsed.
         """
         if self.use_mqtt:
 
@@ -624,12 +623,19 @@ class PtzController(BaseMQTTPubSub):
                 if not self.use_camera:
                     self._update_pointing()
 
-                # Stop capturing images if a flight message has not
-                # been received in twice the capture interval
+                # Command zero camera pan and tilt rates, and stop
+                # capturing images if a flight message has not been
+                # received in twice the capture interval
                 if (
                     self.do_capture
                     and time() - self.capture_time > 2.0 * self.capture_interval
                 ):
+                    logger.info(f"Commanding pan and tilt rates: 0.0, 0.0 [deg/s]")
+                    self.camera_control.continuous_move(
+                        self._compute_pan_rate_index(0.0),
+                        self._compute_tilt_rate_index(0.0),
+                        self.zoom,
+                    )
                     logger.info(f"Stopping image capture of aircraft: {self.icao24}")
                     self.do_capture = False
 
