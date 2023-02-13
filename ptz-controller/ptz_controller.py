@@ -40,17 +40,20 @@ class PtzController(BaseMQTTPubSub):
         flight_topic: str,
         logger_topic: str,
         heartbeat_interval: float,
-        update_interval: float,
-        capture_interval: float,
-        lead_time: float,
-        pan_gain: float,
         pan_rate_min: float,
         pan_rate_max: float,
-        tilt_gain: float,
         tilt_rate_min: float,
         tilt_rate_max: float,
         jpeg_resolution: str,
         jpeg_compression: int,
+        lambda_t: float = 0.0,
+        varphi_t: float = 0.0,
+        h_t: float = 0.0,
+        update_interval: float = 0.1,
+        capture_interval: float = 2.0,
+        lead_time: float = 0.25,
+        pan_gain: float = 0.2,
+        tilt_gain: float = 0.2,
         use_mqtt: bool = True,
         use_camera: bool = True,
         log_to_mqtt: bool = False,
@@ -77,6 +80,24 @@ class PtzController(BaseMQTTPubSub):
             MQTT topic for publishing or subscribing to logger messages
         heartbeat_interval: float
             Interval at which heartbeat message is to be published [s]
+        pan_rate_min: float
+            Camera pan rate minimum [deg/s]
+        pan_rate_max: float
+            Camera pan rate maximum [deg/s]
+        tilt_rate_min: float
+            Camera tilt rate minimum [deg/s]
+        tilt_rate_max: float
+            Camera tilt rate maximum [deg/s]
+        jpeg_resolution: str
+            Image capture resolution, for example, "1920x1080"
+        jpeg_compression: int
+            Image compression: 0 to 100
+        lambda_t: float
+            Tripod geodetic longitude [deg]
+        varphi_t: float = 0.0,
+            Tripod geodetic latitude [deg]
+        h_t: float = 0.0,
+            Tripod geodetic altitude [deg]
         update_interval: float
             Interval at which pointing of the camera is computed [s]
         capture_interval: float
@@ -86,20 +107,8 @@ class PtzController(BaseMQTTPubSub):
             aircraft [s]
         pan_gain: float
             Proportional control gain for pan error [1/s]
-        pan_rate_min: float
-            Camera pan rate minimum [deg/s]
-        pan_rate_max: float
-            Camera pan rate maximum [deg/s]
         tilt_gain: float
             Proportional control gain for tilt error [1/s]
-        tilt_rate_min: float
-            Camera tilt rate minimum [deg/s]
-        tilt_rate_max: float
-            Camera tilt rate maximum [deg/s]
-        jpeg_resolution: str
-            Image capture resolution, for example, "1920x1080"
-        jpeg_compression: int
-            Image compression: 0 to 100
         use_mqtt: bool
             Flag to use MQTT, or not
         use_camera: bool
@@ -121,17 +130,20 @@ class PtzController(BaseMQTTPubSub):
         self.flight_topic = flight_topic
         self.logger_topic = logger_topic
         self.heartbeat_interval = heartbeat_interval
-        self.update_interval = update_interval
-        self.capture_interval = capture_interval
-        self.lead_time = lead_time
-        self.pan_gain = pan_gain
         self.pan_rate_min = pan_rate_min
         self.pan_rate_max = pan_rate_max
-        self.tilt_gain = tilt_gain
         self.tilt_rate_min = tilt_rate_min
         self.tilt_rate_max = tilt_rate_max
         self.jpeg_resolution = jpeg_resolution
         self.jpeg_compression = jpeg_compression
+        self.lambda_t = lambda_t
+        self.varphi_t = varphi_t
+        self.h_t = h_t
+        self.update_interval = update_interval
+        self.capture_interval = capture_interval
+        self.lead_time = lead_time
+        self.pan_gain = pan_gain
+        self.tilt_gain = tilt_gain
         self.use_mqtt = use_mqtt
         self.use_camera = use_camera
         self.log_to_mqtt = log_to_mqtt
@@ -155,23 +167,6 @@ class PtzController(BaseMQTTPubSub):
             self.connect_client()
             sleep(1)
             self.publish_registration("PTZ Controller Module Registration")
-
-        # Tripod longitude, latitude, and altitude
-        self.lambda_t = 0.0  # [deg]
-        self.varphi_t = 0.0  # [deg]
-        self.h_t = 0.0  # [m]
-
-        # East, North, and zenith unit vectors
-        self.e_E_XYZ = None
-        self.e_N_XYZ = None
-        self.e_z_XYZ = None
-
-        # Orthogonal transformation matrix from geocentric (XYZ) to
-        # topocentric (ENz) coordinates
-        self.E_XYZ_to_ENz = None
-
-        # Tripod position in the geocentric (XYZ) coordinate system
-        self.r_XYZ_t = None
 
         # Aircraft identifier, time of flight message and
         # corresponding aircraft position and velocity relative to the
@@ -230,8 +225,38 @@ class PtzController(BaseMQTTPubSub):
         self.do_capture = False
         self.capture_time = 0.0
 
+        # Initialize tripod position in the geocentric (XYZ)
+        # coordinate system, orthogonal transformation matrix from
+        # geocentric (XYZ) to topocentric (ENz) coordinates, and East,
+        # North, and zenith unit vectors
+        config_msg = {
+            "data": {
+                "lambda_t": self.lambda_t,
+                "varphi_t": self.varphi_t,
+                "h_t": self.h_t,
+            }
+        }
+        self._config_callback(None, None, config_msg)
+
+        # Initialize the rotations from the geocentric (XYZ)
+        # coordinate system to the camera housing fixed (uvw)
+        # coordinate system
+        calibration_msg = {
+            "data": {
+                "camera": {
+                    "tripod_yaw": self.alpha,
+                    "tripod_pitch": self.beta,
+                    "tripod_roll": self.gamma,
+                }
+            }
+        }
+        self._calibration_callback(None, None, calibration_msg)
+
     def _config_callback(
-        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
+        self: Any,
+        _client: mqtt.Client,
+        _userdata: Dict[Any, Any],
+        msg: Any,
     ) -> None:
         """
         Process configuration message.
@@ -249,16 +274,23 @@ class PtzController(BaseMQTTPubSub):
         -------
         None
         """
-        # Assign position of the tripod
-        if self.use_mqtt:
+        # Assign data attributes allowed to change during operation
+        if type(msg) == mqtt.MQTTMessage:
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
         logger.info(f"Processing config msg data: {data}")
-        self.lambda_t = data["tripod_longitude"]  # [deg]
-        self.varphi_t = data["tripod_latitude"]  # [deg]
-        self.h_t = data["tripod_altitude"]  # [m]
-        # TODO: Set other values?
+        self.lambda_t = data.get("tripod_longitude", self.lambda_t)  # [deg]
+        self.varphi_t = data.get("tripod_latitude", self.varphi_t)  # [deg]
+        self.h_t = data.get("tripod_altitude", self.h_t)  # [m]
+        self.update_interval = data.get("update_interval", self.update_interval)  # [s]
+        self.capture_interval = data.get(
+            "capture_interval", self.capture_interval
+        )  # [s]
+        self.lead_time = data.get("lead_time", self.lead_time)  # [s]
+        self.pan_gain = data.get("pan_gain", self.pan_gain)  # [1/s]
+        self.tilt_gain = data.get("tilt_gain", self.tilt_gain)  # [1/s]
+        self.log_to_mqtt = data.get("log_to_mqtt", self.log_to_mqtt)
 
         # Compute tripod position in the geocentric (XYZ) coordinate
         # system
@@ -295,7 +327,7 @@ class PtzController(BaseMQTTPubSub):
         None
         """
         # Assign camera housing rotation angles
-        if self.use_mqtt:
+        if type(msg) == mqtt.MQTTMessage:
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
@@ -347,7 +379,7 @@ class PtzController(BaseMQTTPubSub):
         """
         # Assign identifier, time, position, and velocity of the
         # aircraft
-        if self.use_mqtt:
+        if type(msg) == mqtt.MQTTMessage:
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
@@ -655,17 +687,20 @@ if __name__ == "__main__":
         flight_topic=os.getenv("FLIGHT_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=float(os.getenv("HEARTBEAT_INTERVAL")),
-        update_interval=float(os.getenv("UPDATE_INTERVAL")),
-        capture_interval=float(os.getenv("CAPTURE_INTERVAL")),
-        lead_time=float(os.getenv("LEAD_TIME")),
-        pan_gain=float(os.getenv("PAN_GAIN")),
         pan_rate_min=float(os.getenv("PAN_RATE_MIN")),
         pan_rate_max=float(os.getenv("PAN_RATE_MAX")),
-        tilt_gain=float(os.getenv("TILT_GAIN")),
         tilt_rate_min=float(os.getenv("TILT_RATE_MIN")),
         tilt_rate_max=float(os.getenv("TILT_RATE_MAX")),
         jpeg_resolution=os.getenv("JPEG_RESOLUTION"),
         jpeg_compression=os.getenv("JPEG_COMPRESSION"),
+        lambda_t=float(os.getenv("TRIPOD_LONGITUDE")),
+        varphi_t=float(os.getenv("TRIPOD_LATITUDE")),
+        h_t=float(os.getenv("TRIPOD_ALTITUDE")),
+        update_interval=float(os.getenv("UPDATE_INTERVAL")),
+        capture_interval=float(os.getenv("CAPTURE_INTERVAL")),
+        lead_time=float(os.getenv("LEAD_TIME")),
+        pan_gain=float(os.getenv("PAN_GAIN")),
+        tilt_gain=float(os.getenv("TILT_GAIN")),
         use_mqtt=strtobool(os.getenv("USE_MQTT")),
         use_camera=strtobool(os.getenv("USE_CAMERA")),
         log_to_mqtt=strtobool(os.getenv("LOG_TO_MQTT")),
