@@ -9,8 +9,8 @@ curl -fsSL https://opensky-network.org/datasets/metadata/aircraftDatabase.csv -o
 printf "\n\nDownload Docker Containers..."
 docker-compose pull
 
-printf "\n\n\n\n----------------------------------------------------------"
+printf "\n\n\n\n--------------------------------------------------------------------"
 printf "\n1: Configure network interface to same as Axis Camera (192.168.1.x)"
 printf "\n2: Configure .env file appropriately"
 printf "\n3: docker-compose up"
-printf "\n----------------------------------------------------------"
+printf "\n--------------------------------------------------------------------\n\n"
