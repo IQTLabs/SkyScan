@@ -40,6 +40,7 @@ class PtzController(BaseMQTTPubSub):
         flight_topic: str,
         logger_topic: str,
         heartbeat_interval: float,
+        # TODO: Offer sensible defaults
         pan_rate_min: float,
         pan_rate_max: float,
         tilt_rate_min: float,
@@ -251,6 +252,8 @@ class PtzController(BaseMQTTPubSub):
             }
         }
         self._calibration_callback(None, None, calibration_msg)
+
+        # TODO: Log configuration parameters
 
     def _config_callback(
         self: Any,
