@@ -138,7 +138,7 @@ def make_handler():
     handler = MessageHandler(
         mqtt_ip=os.getenv("MQTT_IP"),
         config_topic=os.getenv("CONFIG_TOPIC"),
-        config_topic=os.getenv("POINTING_ERROR_TOPIC")
+        pointing_error_topic=os.getenv("POINTING_ERROR_TOPIC"),
         calibration_topic=os.getenv("CALIBRATION_TOPIC"),
         flight_topic=os.getenv("FLIGHT_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
