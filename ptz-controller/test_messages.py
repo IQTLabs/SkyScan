@@ -3,8 +3,6 @@ from datetime import datetime
 import json
 import logging
 import os
-from pathlib import Path
-import sys
 import time
 from typing import Any, Dict
 
@@ -32,6 +30,7 @@ class MessageHandler(BaseMQTTPubSub):
     def __init__(
         self: Any,
         config_topic: str,
+        pointing_error_topic: str,
         calibration_topic: str,
         flight_topic: str,
         logger_topic: str,
@@ -45,6 +44,9 @@ class MessageHandler(BaseMQTTPubSub):
         ----------
         config_topic: str
             MQTT topic for publishing or subscribing to configuration
+            messages
+        pointing_error_topic: str
+            MQTT topic for publishing or subscribing to pointing error
             messages
         calibration_topic: str
             MQTT topic for publishing or subscribing to calibration
@@ -63,6 +65,7 @@ class MessageHandler(BaseMQTTPubSub):
         # Parent class handles kwargs, including MQTT IP
         super().__init__(**kwargs)
         self.config_topic = config_topic
+        self.pointing_error_topic = pointing_error_topic
         self.calibration_topic = calibration_topic
         self.flight_topic = flight_topic
         self.logger_topic = logger_topic
@@ -129,11 +132,13 @@ def make_handler():
 
     Returns
     -------
-    None
+    handler: MessageHandler
+        The message handler
     """
     handler = MessageHandler(
         mqtt_ip=os.getenv("MQTT_IP"),
         config_topic=os.getenv("CONFIG_TOPIC"),
+        config_topic=os.getenv("POINTING_ERROR_TOPIC")
         calibration_topic=os.getenv("CALIBRATION_TOPIC"),
         flight_topic=os.getenv("FLIGHT_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
@@ -171,7 +176,7 @@ def main():
     logger.info(f"Reading track for id: {args.track_id}")
     track = read_track_data(args.track_id)
 
-    # Make the controller, and subscribe to the logger topic
+    # Make the handler, and subscribe to the logger topic
     logger.info("Making the handler, and subscribing to topics")
     handler = make_handler()
     handler.add_subscribe_topic(handler.logger_topic, handler._logger_callback)
