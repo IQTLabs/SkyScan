@@ -1,0 +1,11 @@
+{
+  "timestamp": "2023-01-12-17-54-36",
+  "data": {
+    "camera": {
+      "min_horizontal_fov": 6.7,
+      "max_horizontal_fov": 61.8,
+      "min_vertical_fov": 3.8,
+      "max_vertical_fov": 37.2
+    }
+  }
+}

@@ -13,14 +13,10 @@ import paho.mqtt.client as mqtt
 import schedule
 from scipy.optimize import fmin_bfgs
 
-# TODO: standardize method of importing base class
-sys.path.append(str(Path(os.getenv("CORE_PATH")).expanduser()))
 from base_mqtt_pub_sub import BaseMQTTPubSub
 
-# TODO: Huh?
 sys.path.append(str(Path("../ptz-controller").expanduser()))
 import ptz_utilities
-
 
 root_logger = logging.getLogger()
 ch = logging.StreamHandler()
@@ -34,23 +30,26 @@ logger.setLevel(logging.INFO)
 
 
 class AutoCalibrator(BaseMQTTPubSub):
-    """TODO: Complete"""
+    """Calibrate offset of tilt, pan, and zoom of the
+    camera tripod and publish results"""
 
     def __init__(
         self: Any,
-        config_topic: str,
+        pointing_error_topic: str,
         calibration_topic: str,
-        min_zoom,
-        max_zoom,
-        min_horizontal_fov,
-        max_horizontal_fov,
-        min_vertical_fov,
-        max_vertical_fov,
-        horizontal_pixels=1920,
-        vertical_pixels=1080,
-        alpha=0.0,
-        beta=0.0,
-        gamma=0.0,
+        config_topic: str,
+        heartbeat_interval: float,
+        min_zoom: int = 0,
+        max_zoom: int = 9999,
+        min_horizontal_fov: float = 6.7,
+        max_horizontal_fov: float = 61.8,
+        min_vertical_fov: float = 3.8,
+        max_vertical_fov: float = 37.2,
+        horizontal_pixels: int = 1920,
+        vertical_pixels: int = 1080,
+        alpha: float = 0.0,
+        beta: float = 0.0,
+        gamma: float = 0.0,
         use_mqtt: bool = False,
         **kwargs: Any,
     ):
@@ -59,10 +58,14 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         Parameters
         ----------
-        config_topic: str
-            MQTT topic for subscribing to configuration messages
+        pointing_error_topic: str
+            MQTT topic for subscribing to pointing error messages
         calibration_topic: str
             MQTT topic for subscribing to calibration messages
+        config_topic: str
+            MQTT topic for subscribing to configuration messages
+        heartbeat_interval: float
+            Interval at which heartbeat message is to be published [s]
         min_zoom: int
             Minimum zoom setting on camera
         max_zoom: int
@@ -92,8 +95,10 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Parent class handles kwargs
         super().__init__(**kwargs)
+        self.pointing_error_topic = pointing_error_topic
         self.calibration_topic = calibration_topic
         self.config_topic = config_topic
+        self.heartbeat_interval = heartbeat_interval
         self.min_zoom = min_zoom
         self.max_zoom = max_zoom
         self.min_horizontal_fov = min_horizontal_fov
@@ -113,9 +118,12 @@ class AutoCalibrator(BaseMQTTPubSub):
             sleep(1)
             self.publish_registration("Auto Calibration Registration")
 
-        logger.info(f"""AutoCalibrator initialized with parameters: \n
+        logger.info(
+            f"""AutoCalibrator initialized with parameters: \n
+            pointing_error_topic = {pointing_error_topic}
             calibration_topic = {calibration_topic}
             config_topic = {config_topic}
+            heartbeat_interval = {heartbeat_interval}
             min_zoom = {min_zoom}
             max_zoom = {max_zoom}
             min_horizontal_fov = {min_horizontal_fov}
@@ -128,9 +136,10 @@ class AutoCalibrator(BaseMQTTPubSub):
             beta = {beta}
             gamma = {gamma}
             use_mqtt = {use_mqtt}
-            """)
+            """
+        )
 
-    def _calibration_callback(
+    def _pointing_error_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
         """
@@ -151,7 +160,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         -------
         None
         """
-        # Decode calibration message
+        # Decode pointing error message
         if self.use_mqtt:
             data = self.decode_payload(msg)
             logger.info(f"Received '{msg.payload.decode()}' from `{msg.topic}` topic")
@@ -179,8 +188,8 @@ class AutoCalibrator(BaseMQTTPubSub):
             },
         }
         if self.use_mqtt:
-            self.publish_to_topic(self.publish_topic, json.dumps(publish_data))
-            logger.info(f"Results published to topic: {self.publish_topic}")
+            self.publish_to_topic(self.calibration_topic, json.dumps(publish_data))
+            logger.info(f"Results published to topic: {self.calibration_topic}")
 
     def _config_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
@@ -212,47 +221,69 @@ class AutoCalibrator(BaseMQTTPubSub):
         if "min_zoom" in data["camera"]:
             old_min_zoom = self.min_zoom
             self.min_zoom = data["camera"]["min_zoom"]
-            logger.info(f"Configuration min_zoom updated from {old_min_zoom} to {self.min_zoom}")
+            logger.info(
+                f"Configuration min_zoom updated from {old_min_zoom} to {self.min_zoom}"
+            )
         if "max_zoom" in data["camera"]:
             old_max_zoom = self.max_zoom
             self.max_zoom = data["camera"]["max_zoom"]
-            logger.info(f"Configuration max_zoom updated from {old_max_zoom} to {self.max_zoom}")
+            logger.info(
+                f"Configuration max_zoom updated from {old_max_zoom} to {self.max_zoom}"
+            )
         if "min_horizontal_fov" in data["camera"]:
             old_min_horizontal_fov = self.min_horizontal_fov
             self.min_horizontal_fov = data["camera"]["min_horizontal_fov"]
-            logger.info(f"Configuration min_horizontal_fov updated from {old_min_horizontal_fov} to {self.min_horizontal_fov}")
+            logger.info(
+                f"Configuration min_horizontal_fov updated from {old_min_horizontal_fov} to {self.min_horizontal_fov}"
+            )
         if "max_horizontal_fov" in data["camera"]:
             old_max_horizontal_fov = self.max_horizontal_fov
             self.max_horizontal_fov = data["camera"]["max_horizontal_fov"]
-            logger.info(f"Configuration max_horizontal_fov updated from {old_max_horizontal_fov} to {self.max_horizontal_fov}")
+            logger.info(
+                f"Configuration max_horizontal_fov updated from {old_max_horizontal_fov} to {self.max_horizontal_fov}"
+            )
         if "min_vertical_fov" in data["camera"]:
             old_min_vertical_fov = self.min_vertical_fov
             self.min_vertical_fov = data["camera"]["min_vertical_fov"]
-            logger.info(f"Configuration min_vertical_fov updated from {old_min_vertical_fov} to {self.min_vertical_fov}")
+            logger.info(
+                f"Configuration min_vertical_fov updated from {old_min_vertical_fov} to {self.min_vertical_fov}"
+            )
         if "max_vertical_fov" in data["camera"]:
             old_max_vertical_fov = self.max_vertical_fov
             self.max_vertical_fov = data["camera"]["max_vertical_fov"]
-            logger.info(f"Configuration max_vertical_fov updated from {old_max_vertical_fov} to {self.max_vertical_fov}")
+            logger.info(
+                f"Configuration max_vertical_fov updated from {old_max_vertical_fov} to {self.max_vertical_fov}"
+            )
         if "horizontal_pixels" in data["camera"]:
             old_horizontal_pixels = self.horizontal_pixels
             self.horizontal_pixels = data["camera"]["horizontal_pixels"]
-            logger.info(f"Configuration horizontal_pixels updated from {old_horizontal_pixels} to {self.horizontal_pixels}")
+            logger.info(
+                f"Configuration horizontal_pixels updated from {old_horizontal_pixels} to {self.horizontal_pixels}"
+            )
         if "vertical_pixels" in data["camera"]:
             old_vertical_pixels = self.vertical_pixels
             self.vertical_pixels = data["camera"]["vertical_pixels"]
-            logger.info(f"Configuration vertical_pixels updated from {old_vertical_pixels} to {self.vertical_pixels}")
+            logger.info(
+                f"Configuration vertical_pixels updated from {old_vertical_pixels} to {self.vertical_pixels}"
+            )
         if "tripod_yaw" in data["camera"]:
             old_alpha = self.alpha
             self.alpha = data["camera"]["tripod_yaw"]
-            logger.info(f"Configuration tripod_yaw updated from {old_alpha} to {self.alpha}")
+            logger.info(
+                f"Configuration tripod_yaw updated from {old_alpha} to {self.alpha}"
+            )
         if "tripod_yaw" in data["camera"]:
             old_beta = self.beta
             self.beta = data["camera"]["tripod_yaw"]
-            logger.info(f"Configuration tripod_yaw updated from {old_beta} to {self.beta}")
+            logger.info(
+                f"Configuration tripod_yaw updated from {old_beta} to {self.beta}"
+            )
         if "tripod_yaw" in data["camera"]:
             old_gamma = self.gamma
             self.gamma = data["camera"]["tripod_yaw"]
-            logger.info(f"Configuration tripod_yaw updated from {old_gamma} to {self.gamma}")
+            logger.info(
+                f"Configuration tripod_yaw updated from {old_gamma} to {self.gamma}"
+            )
 
     def _calculate_calibration_error(self, msg):
 
@@ -438,12 +469,14 @@ class AutoCalibrator(BaseMQTTPubSub):
         None
         """
         # Schedule heartbeat
-        schedule.every(10).seconds.do(
-            self.publish_heartbeat, payload="Template Module Heartbeat"
+        schedule.every(self.heartbeat_interval).seconds.do(
+            self.publish_heartbeat, payload="Auto-Calibrator Module Heartbeat"
         )
 
         # Subscribe to calibration topic with callback
-        self.add_subscribe_topic(self.calibration_topic, self._calibration_callback)
+        self.add_subscribe_topic(
+            self.pointing_error_topic, self._pointing_error_callback
+        )
 
         # Subscribe to config topic with callback
         self.add_subscribe_topic(self.config_topic, self._config_callback)
@@ -462,15 +495,19 @@ class AutoCalibrator(BaseMQTTPubSub):
 
 if __name__ == "__main__":
     # Instantiate auto calibrator and execute
-    template = AutoCalibrator(
-        calibration_topic=os.environ.get("CALIBRATION_TOPIC"),
-        config_topic=os.environ.get("CONFIG_TOPIC"),
-        min_zoom=int(os.environ.get("MIN_ZOOM")),
-        max_zoom=int(os.environ.get("MAX_ZOOM")),
-        min_horizontal_fov=float(os.environ.get("MIN_HORIZONTAL_FOV")),
-        max_horizontal_fov=float(os.environ.get("MAX_HORIZONTAL_FOV")),
-        min_vertical_fov=float(os.environ.get("MIN_VERTICAL_FOV")),
-        max_vertical_fov=float(os.environ.get("MIN_HORIZONTAL_FOV")),
-        mqtt_ip=os.environ.get("MQTT_IP"),
+    auto_calibrator = AutoCalibrator(
+        pointing_error_topic=os.getenv("POINTING_ERROR_TOPIC"),
+        calibration_topic=os.getenv("CALIBRATION_TOPIC"),
+        config_topic=os.getenv("CONFIG_TOPIC"),
+        heartbeat_interval=float(os.getenv("HEARTBEAT_INTERVAL")),
+        min_zoom=int(os.getenv("MIN_ZOOM")),
+        max_zoom=int(os.getenv("MAX_ZOOM")),
+        min_horizontal_fov=float(os.getenv("MIN_HORIZONTAL_FOV")),
+        max_horizontal_fov=float(os.getenv("MAX_HORIZONTAL_FOV")),
+        min_vertical_fov=float(os.getenv("MIN_VERTICAL_FOV")),
+        max_vertical_fov=float(os.getenv("MIN_HORIZONTAL_FOV")),
+        horizontal_pixels=int(os.getenv("HORIZONTAL_PIXELS")),
+        vertical_pixels=int(os.getenv("VERTICAL_PIXELS")),
+        mqtt_ip=os.getenv("MQTT_IP"),
     )
-    template.main()
+    auto_calibrator.main()

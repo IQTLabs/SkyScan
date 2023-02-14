@@ -6,13 +6,13 @@ import auto_calibrator
 
 
 # Set expected test results
-rho_epsilon_expected = -1.449921875
-tau_epsilon_expected = -3.032962962962963
-alpha_expected = 96.22945929035237
-beta_expected = 31.55893394983606
-gamma_expected = 1.5230141040882903
-min_zoom_expected = 0
-max_zoom_expected = 9999
+RHO_EPSILON_EXPECTED = -1.449921875
+TAU_EPSILON_EXPECTED = -3.032962962962963
+ALPHA_EXPECTED = 96.22945929035237
+BETA_EXPECTED = 31.55893394983606
+GAMMA_EXPECTED = 1.5230141040882903
+MIN_ZOOM_EXPECTED = 0
+MAX_ZOOM_EXPECTED = 9999
 
 # Set precision of angle [deg] differences
 PRECISION = 1.0e-5
@@ -22,10 +22,12 @@ PRECISION = 1.0e-5
 def calibrator():
     """Construct a calibrator."""
     calibrator = auto_calibrator.AutoCalibrator(
-        config_topic="skyscan/config/json",
+        pointing_error_topic="skyscan/pointing_error/json",
         calibration_topic="skyscan/calibration/json",
-        min_zoom=min_zoom_expected,
-        max_zoom=max_zoom_expected,
+        config_topic="skyscan/config/json",
+        heartbeat_interval=10.0,
+        min_zoom=MIN_ZOOM_EXPECTED,
+        max_zoom=MAX_ZOOM_EXPECTED,
         min_horizontal_fov=6.7,
         max_horizontal_fov=61.8,
         min_vertical_fov=3.8,
@@ -39,7 +41,7 @@ def calibrator():
 @pytest.fixture
 def config_msg():
     """Load mock config message."""
-    with open("data/config_msg.json") as f:
+    with open("data/config_msg_module.json") as f:
         msg = json.load(f)
     return msg
 
@@ -47,7 +49,7 @@ def config_msg():
 @pytest.fixture
 def calibration_msg():
     """Load mock calibration message."""
-    with open("data/calibration_msg.json") as f:
+    with open("data/pointing_error_msg.json") as f:
         msg = json.load(f)
     return msg
 
@@ -76,6 +78,7 @@ class TestAutoCalibrator:
     """Test construction of rotations and calculation of camera
     pointing.
     """
+
     def test_calculate_calibration_error(self, calibrator, calibration_data):
         """Test calculation of calibration error."""
 
@@ -84,8 +87,8 @@ class TestAutoCalibrator:
             tau_epsilon,
         ) = calibrator._calculate_calibration_error(calibration_data)
 
-        assert rho_epsilon == rho_epsilon_expected
-        assert tau_epsilon == tau_epsilon_expected
+        assert rho_epsilon == RHO_EPSILON_EXPECTED
+        assert tau_epsilon == TAU_EPSILON_EXPECTED
 
     def test_calculate_pointing_error(self):
         """Tested implicitly."""
@@ -94,16 +97,16 @@ class TestAutoCalibrator:
     def test_minimize_pointing_error(self, calibrator, additional_data):
         """Test pointing error minimization."""
 
-        rho_epsilon = rho_epsilon_expected
-        tau_epsilon = tau_epsilon_expected
+        rho_epsilon = RHO_EPSILON_EXPECTED
+        tau_epsilon = TAU_EPSILON_EXPECTED
 
         alpha, beta, gamma = calibrator._minimize_pointing_error(
             additional_data, rho_epsilon, tau_epsilon
         )
 
-        assert math.fabs(alpha - alpha_expected) < PRECISION
-        assert math.fabs(beta - beta_expected) < PRECISION
-        assert math.fabs(gamma - gamma_expected) < PRECISION
+        assert math.fabs(alpha - ALPHA_EXPECTED) < PRECISION
+        assert math.fabs(beta - BETA_EXPECTED) < PRECISION
+        assert math.fabs(gamma - GAMMA_EXPECTED) < PRECISION
 
     def test_config_callback(self, calibrator, config_msg):
         """Test config callback updates values, or not."""
@@ -124,8 +127,8 @@ class TestAutoCalibrator:
         assert calibrator.gamma == 1.0
 
         # Assert no changes for values not in config msg
-        assert calibrator.min_zoom == min_zoom_expected
-        assert calibrator.max_zoom == max_zoom_expected
+        assert calibrator.min_zoom == MIN_ZOOM_EXPECTED
+        assert calibrator.max_zoom == MAX_ZOOM_EXPECTED
 
     def test_calibration_callback(self, calibrator, additional_info_msg):
         """Test calibration callback reads message, calculates alpha,
@@ -133,8 +136,8 @@ class TestAutoCalibrator:
         """
         _client = None
         _userdata = None
-        calibrator._calibration_callback(_client, _userdata, additional_info_msg)
+        calibrator._pointing_error_callback(_client, _userdata, additional_info_msg)
 
-        assert math.fabs(calibrator.alpha - alpha_expected) < PRECISION
-        assert math.fabs(calibrator.beta - beta_expected) < PRECISION
-        assert math.fabs(calibrator.gamma - gamma_expected) < PRECISION
+        assert math.fabs(calibrator.alpha - ALPHA_EXPECTED) < PRECISION
+        assert math.fabs(calibrator.beta - BETA_EXPECTED) < PRECISION
+        assert math.fabs(calibrator.gamma - GAMMA_EXPECTED) < PRECISION
