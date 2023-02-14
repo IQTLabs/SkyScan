@@ -22,9 +22,9 @@ PRECISION = 1.0e-5
 def calibrator():
     """Construct a calibrator."""
     calibrator = auto_calibrator.AutoCalibrator(
+        config_topic="skyscan/config/json",
         pointing_error_topic="skyscan/pointing_error/json",
         calibration_topic="skyscan/calibration/json",
-        config_topic="skyscan/config/json",
         heartbeat_interval=10.0,
         min_zoom=MIN_ZOOM_EXPECTED,
         max_zoom=MAX_ZOOM_EXPECTED,
@@ -47,7 +47,7 @@ def config_msg():
 
 
 @pytest.fixture
-def calibration_msg():
+def pointing_error_msg():
     """Load mock calibration message."""
     with open("data/pointing_error_msg.json") as f:
         msg = json.load(f)
@@ -55,9 +55,9 @@ def calibration_msg():
 
 
 @pytest.fixture
-def calibration_data(calibration_msg):
+def pointing_error_data(pointing_error_msg):
     """Load calibration data from message."""
-    return calibration_msg["data"]
+    return pointing_error_msg["data"]
 
 
 @pytest.fixture
@@ -79,13 +79,13 @@ class TestAutoCalibrator:
     pointing.
     """
 
-    def test_calculate_calibration_error(self, calibrator, calibration_data):
+    def test_calculate_calibration_error(self, calibrator, pointing_error_data):
         """Test calculation of calibration error."""
 
         (
             rho_epsilon,
             tau_epsilon,
-        ) = calibrator._calculate_calibration_error(calibration_data)
+        ) = calibrator._calculate_calibration_error(pointing_error_data)
 
         assert rho_epsilon == RHO_EPSILON_EXPECTED
         assert tau_epsilon == TAU_EPSILON_EXPECTED

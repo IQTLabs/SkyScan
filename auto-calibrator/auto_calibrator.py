@@ -1,4 +1,5 @@
 import datetime
+from distutils.util import strtobool
 import json
 import logging
 import math
@@ -14,8 +15,6 @@ import schedule
 from scipy.optimize import fmin_bfgs
 
 from base_mqtt_pub_sub import BaseMQTTPubSub
-
-sys.path.append(str(Path("../ptz-controller").expanduser()))
 import ptz_utilities
 
 root_logger = logging.getLogger()
@@ -35,9 +34,9 @@ class AutoCalibrator(BaseMQTTPubSub):
 
     def __init__(
         self: Any,
+        config_topic: str,
         pointing_error_topic: str,
         calibration_topic: str,
-        config_topic: str,
         heartbeat_interval: float,
         min_zoom: int = 0,
         max_zoom: int = 9999,
@@ -50,7 +49,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         alpha: float = 0.0,
         beta: float = 0.0,
         gamma: float = 0.0,
-        use_mqtt: bool = False,
+        use_mqtt: bool = True,
         **kwargs: Any,
     ):
         """
@@ -58,12 +57,12 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         Parameters
         ----------
+        config_topic: str
+            MQTT topic for subscribing to configuration messages
         pointing_error_topic: str
             MQTT topic for subscribing to pointing error messages
         calibration_topic: str
             MQTT topic for subscribing to calibration messages
-        config_topic: str
-            MQTT topic for subscribing to configuration messages
         heartbeat_interval: float
             Interval at which heartbeat message is to be published [s]
         min_zoom: int
@@ -95,9 +94,9 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Parent class handles kwargs
         super().__init__(**kwargs)
+        self.config_topic = config_topic
         self.pointing_error_topic = pointing_error_topic
         self.calibration_topic = calibration_topic
-        self.config_topic = config_topic
         self.heartbeat_interval = heartbeat_interval
         self.min_zoom = min_zoom
         self.max_zoom = max_zoom
@@ -120,9 +119,9 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         logger.info(
             f"""AutoCalibrator initialized with parameters: \n
+            config_topic = {config_topic}
             pointing_error_topic = {pointing_error_topic}
             calibration_topic = {calibration_topic}
-            config_topic = {config_topic}
             heartbeat_interval = {heartbeat_interval}
             min_zoom = {min_zoom}
             max_zoom = {max_zoom}
@@ -162,11 +161,11 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Decode pointing error message
         if self.use_mqtt:
-            data = self.decode_payload(msg)
-            logger.info(f"Received '{msg.payload.decode()}' from `{msg.topic}` topic")
-
+            data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
+
+        logger.info(f"Received '{data}' from `{self.pointing_error_topic}` topic")
 
         # Find tripod yaw, pitch, and roll that minimize pointing
         # error
@@ -211,10 +210,11 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Decode config message
         if self.use_mqtt:
-            data = self.decode_payload(msg)
-            logger.info(f"Received '{msg.payload.decode()}' from `{msg.topic}` topic")
+            data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
+
+        logger.info(f"Received '{data}' from `{self.config_topic}` topic")
 
         # Set camera config values. Config message can include any or
         # all values.
@@ -473,13 +473,13 @@ class AutoCalibrator(BaseMQTTPubSub):
             self.publish_heartbeat, payload="Auto-Calibrator Module Heartbeat"
         )
 
-        # Subscribe to calibration topic with callback
+        # Subscribe to config topic with callback
+        self.add_subscribe_topic(self.config_topic, self._config_callback)
+
+        # Subscribe to pointing error topic with callback
         self.add_subscribe_topic(
             self.pointing_error_topic, self._pointing_error_callback
         )
-
-        # Subscribe to config topic with callback
-        self.add_subscribe_topic(self.config_topic, self._config_callback)
 
         # Run
         while True:
@@ -496,9 +496,10 @@ class AutoCalibrator(BaseMQTTPubSub):
 if __name__ == "__main__":
     # Instantiate auto calibrator and execute
     auto_calibrator = AutoCalibrator(
+        mqtt_ip=os.getenv("MQTT_IP"),
+        config_topic=os.getenv("CONFIG_TOPIC"),
         pointing_error_topic=os.getenv("POINTING_ERROR_TOPIC"),
         calibration_topic=os.getenv("CALIBRATION_TOPIC"),
-        config_topic=os.getenv("CONFIG_TOPIC"),
         heartbeat_interval=float(os.getenv("HEARTBEAT_INTERVAL")),
         min_zoom=int(os.getenv("MIN_ZOOM")),
         max_zoom=int(os.getenv("MAX_ZOOM")),
@@ -508,6 +509,6 @@ if __name__ == "__main__":
         max_vertical_fov=float(os.getenv("MIN_HORIZONTAL_FOV")),
         horizontal_pixels=int(os.getenv("HORIZONTAL_PIXELS")),
         vertical_pixels=int(os.getenv("VERTICAL_PIXELS")),
-        mqtt_ip=os.getenv("MQTT_IP"),
+        use_mqtt=strtobool(os.getenv("USE_MQTT")),
     )
     auto_calibrator.main()

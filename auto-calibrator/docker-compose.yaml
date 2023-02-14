@@ -6,19 +6,29 @@ services:
       - "1883:1883"
       - "9001:9001"
     build:
-      context: ${MQTT_CONTEXT}
-      dockerfile: Dockerfile
+      context: ./mqtt
+      dockerfile: ./Dockerfile
     restart: unless-stopped
-  filesaver:
+  calibrator:
     image: iqtlabs/skyscan-auto-calibrator:latest
     build:
       context: ./
       dockerfile: ./Dockerfile
     environment:
-      - CONFIG_TOPIC="skyscan/config/json"
-      - CALIBRATION_TOPIC="skyscan/calibration/json"
       - MQTT_IP=mqtt
-      - CORE_PATH="~/"
+      - CONFIG_TOPIC=${CONFIG_TOPIC}
+      - POINTING_ERROR_TOPIC=${POINTING_ERROR_TOPIC}
+      - CALIBRATION_TOPIC=${CALIBRATION_TOPIC}
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
+      - MIN_ZOOM=${MIN_ZOOM}
+      - MAX_ZOOM=${MAX_ZOOM}
+      - MIN_HORIZONTAL_FOV=${MIN_HORIZONTAL_FOV}
+      - MAX_HORIZONTAL_FOV=${MAX_HORIZONTAL_FOV}
+      - MIN_VERTICAL_FOV=${MIN_VERTICAL_FOV}
+      - MAX_VERTICAL_FOV=${MAX_VERTICAL_FOV}
+      - HORIZONTAL_PIXELS=${HORIZONTAL_PIXELS}
+      - VERTICAL_PIXELS=${VERTICAL_PIXELS}
+      - USE_MQTT=${USE_MQTT}
     restart: unless-stopped
     depends_on:
       - mqtt

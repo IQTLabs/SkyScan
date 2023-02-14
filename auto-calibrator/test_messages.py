@@ -1,32 +1,93 @@
 import json
 import logging
 import math
-from pathlib import Path
 import time
-import sys
+from typing import Any, Dict
 
-sys.path.append(str(Path("../ptz-controller").expanduser()))
-import MessageHandler
-import make_handler
+import paho.mqtt.client as mqtt
 
-ALPHA_EXPECTED = 96.22945929035237
-BETA_EXPECTED = 31.55893394983606
-GAMMA_EXPECTED = 1.5230141040882903
-HEARTBEAT_INTERVAL = 10.0
-JPEG_RESOLUTION = "1920x1080"
-UPDATE_INTERVAL = 0.01
-MIN_ZOOM_EXPECTED = 0
-MAX_ZOOM_EXPECTED = 9999
+from base_mqtt_pub_sub import BaseMQTTPubSub
 
-# Set precision of angle [deg] differences
-PRECISION = 1.0e-5
+UPDATE_INTERVAL = 0.1
 
-logger = logging.getLogger("calibrator-integration")
+logger = logging.getLogger("calibrator-messages")
+ch = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 logger.setLevel(logging.INFO)
 
-def get_config_msg():
-    """Populate a config message, by max and min horizontal
-     and vertical FoV of camera.
+
+class MessageHandler(BaseMQTTPubSub):
+    """Subscribe to all required topics."""
+
+    def __init__(
+        self: Any,
+        config_topic: str,
+        pointing_error_topic: str,
+        calibration_topic: str,
+        **kwargs: Any,
+    ):
+        """Initialize a MessageHandler by subscribing to all required
+        topics, connecting to the MQTT broker.
+
+        Parameters
+        ----------
+        config_topic: str
+            MQTT topic for publishing or subscribing to configuration
+            messages
+        pointing_error_topic: str
+            MQTT topic for publishing or subscribing to pointing error
+            messages
+        calibration_topic: str
+            MQTT topic for publishing or subscribing to calibration
+            messages
+
+        Returns
+        -------
+        MessageHandler
+        """
+        # Parent class handles kwargs, including MQTT IP
+        super().__init__(**kwargs)
+        self.config_topic = config_topic
+        self.pointing_error_topic = pointing_error_topic
+        self.calibration_topic = calibration_topic
+
+        # Connect MQTT client
+        logger.info("Connecting MQTT client")
+        self.connect_client()
+        time.sleep(5)
+        self.publish_registration("Message Handler Module Registration")
+
+    def _calibration_callback(
+            self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
+    ) -> None:
+        """Test content of calibration message.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        data = self.decode_payload(msg.payload)
+        alpha_expected = 96.22945929035237
+        beta_expected = 31.55893394983606
+        gamma_expected = 1.5230141040882903
+        precision = 1.0e-5
+
+        assert math.fabs(data["camera"]["tripod_yaw"] - alpha_expected) < precision
+        assert math.fabs(data["camera"]["tripod_pitch"] - beta_expected) < precision
+        assert math.fabs(data["camera"]["tripod_roll"] - gamma_expected) < precision
+        logger.info("Calibration successful")
+
+
+def make_handler():
+    """Construct a MessageHandler.
+
+    Note that an MQTT broker must be started manually.
 
     Parameters
     ----------
@@ -34,34 +95,33 @@ def get_config_msg():
 
     Returns
     -------
-    msg : dict
-        The configuration message
+    handler: MessageHandler
+        The message handler
     """
-    with open("data/config_msg_integration.json", "r") as f:
+    handler = MessageHandler(
+        mqtt_ip="127.0.0.1",
+        config_topic="skyscan/config/json",
+        pointing_error_topic="skyscan/pointing_error/json",
+        calibration_topic="skyscan/calibration/json",
+    )
+    return handler
+
+def get_config_msg():
+    """Load mock config message."""
+    with open("data/config_msg_integration.json") as f:
         msg = json.load(f)
     return msg
 
-
 def get_pointing_error_msg():
-    """Populate a pointing error message with test parameters.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    msg : dict
-        The pointing error message
-    """
-    with open("data/additional_info_msg.json", "r") as f:
+    """Load mock calibration message."""
+    with open("data/additional_info_msg.json") as f:
         msg = json.load(f)
     return msg
 
 
 def main():
-    """Processes the config and pointing error messages using
-    MQTT.
+    """Publish config and pointing error messages, and subscribe
+    to calibration topic for testing.
 
     Parameters
     ----------
@@ -71,36 +131,20 @@ def main():
     -------
     None
     """
-    # Make the calibrator, subscribe to all topics, and publish, or
-    # process, one message to each topic
-    logger.info("Making the calibrator, and subscribing to topics")
+    # Make the handler, and subscribe to the logger topic
+    logger.info("Making the handler, and subscribing to topics")
     handler = make_handler()
-    handler.add_subscribe_topic(handler.logger_topic, handler._logger_callback)
-    logger_msg = {
-        "timestamp": str(int(datetime.utcnow().timestamp())),
-        "data": {
-            "info": {
-                "message": "Subscribed to the logger",
-            }
-        },
-    }
-    handler.publish_to_topic(handler.logger_topic, json.dumps(logger_msg))
+    handler.add_subscribe_topic(handler.calibration_topic, handler._calibration_callback)
 
-    # Publish messages
+    # Publish the configuration and pointing error message
     config_msg = get_config_msg()
     pointing_error_msg = get_pointing_error_msg()
     logger.info(f"Publishing config msg: {config_msg}")
     handler.publish_to_topic(handler.config_topic, json.dumps(config_msg))
     time.sleep(UPDATE_INTERVAL)
-    logger.info(f"Publishing pointing error msg: {pointing_error_msg}")
-    calibrator.publish_to_topic(
-        calibrator.pointing_error_topic, json.dumps(pointing_error_msg)
-    )
+    logger.info(f"Publishing pointing_error msg: {pointing_error_msg}")
+    handler.publish_to_topic(handler.pointing_error_topic, json.dumps(pointing_error_msg))
     time.sleep(UPDATE_INTERVAL)
-
-    assert math.fabs(calibrator.alpha - ALPHA_EXPECTED) < PRECISION
-    assert math.fabs(calibrator.beta - BETA_EXPECTED) < PRECISION
-    assert math.fabs(calibrator.gamma - GAMMA_EXPECTED) < PRECISION
 
 
 if __name__ == "__main__":
