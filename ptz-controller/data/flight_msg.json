@@ -1,0 +1,13 @@
+{
+    "timestamp": "2023-01-01-00-00-00",
+    "data": {
+        "icao24": "a1e946",
+        "latLonTime": 1.0,
+        "lon": 270.0,
+        "lat": 89.99,
+        "altitude": 1000.0,
+        "track": 0.0,
+        "groundSpeed": -74.4999211024472,
+        "verticalRate": 66.7065345804228
+    }
+}

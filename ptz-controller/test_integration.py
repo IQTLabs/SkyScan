@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import json
+import logging
 import os
 import time
 
@@ -9,19 +10,21 @@ import schedule
 
 import ptz_controller
 
-
 HEARTBEAT_INTERVAL = 10.0
-UPDATE_INTERVAL = 0.01
-CAPTURE_INTERVAL = 2.0
-LEAD_TIME = 0.0
-PAN_GAIN = 0.1
 PAN_RATE_MIN = 1.0
 PAN_RATE_MAX = 100.0
-TILT_GAIN = 0.4
 TILT_RATE_MIN = 1.0
 TILT_RATE_MAX = 100.0
 JPEG_RESOLUTION = "1920x1080"
 JPEG_COMPRESSION = 5
+UPDATE_INTERVAL = 0.01
+CAPTURE_INTERVAL = 2.0
+LEAD_TIME = 0.0
+PAN_GAIN = 0.1
+TILT_GAIN = 0.4
+
+logger = logging.getLogger("ptz-integration")
+logger.setLevel(logging.INFO)
 
 
 def make_controller(use_mqtt):
@@ -40,25 +43,26 @@ def make_controller(use_mqtt):
     None
     """
     controller = ptz_controller.PtzController(
-        camera_ip="",
-        camera_user="",
-        camera_password="",
-        mqtt_ip="127.0.0.1",
-        config_topic="skyscan/config/json",
-        calibration_topic="skyscan/calibration/json",
-        flight_topic="skyscan/flight/json",
+        camera_ip=os.getenv("CAMERA_IP"),
+        camera_user=os.getenv("CAMERA_USER"),
+        camera_password=os.getenv("CAMERA_PASSWORD"),
+        mqtt_ip=os.getenv("MQTT_IP"),
+        config_topic=os.getenv("CONFIG_TOPIC"),
+        calibration_topic=os.getenv("CALIBRATION_TOPIC"),
+        flight_topic=os.getenv("FLIGHT_TOPIC"),
+        logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=HEARTBEAT_INTERVAL,
-        update_interval=UPDATE_INTERVAL,
-        capture_interval=CAPTURE_INTERVAL,
-        lead_time=LEAD_TIME,
-        pan_gain=PAN_GAIN,
         pan_rate_min=PAN_RATE_MIN,
         pan_rate_max=PAN_RATE_MAX,
-        tilt_gain=TILT_GAIN,
         tilt_rate_min=TILT_RATE_MIN,
         tilt_rate_max=TILT_RATE_MAX,
         jpeg_resolution=JPEG_RESOLUTION,
         jpeg_compression=JPEG_COMPRESSION,
+        update_interval=UPDATE_INTERVAL,
+        capture_interval=CAPTURE_INTERVAL,
+        lead_time=LEAD_TIME,
+        pan_gain=PAN_GAIN,
+        tilt_gain=TILT_GAIN,
         use_mqtt=use_mqtt,
         use_camera=False,
     )
@@ -150,21 +154,18 @@ def read_track_data(track_id):
     return track
 
 
-def plot_history(history):
+def plot_time_series(ts):
     """Plot time series produced by processing messages.
 
     Parameters
     ----------
-    history : dict
-        Dictionary containing time series to plot
+    ts : pd.DataFrame()
+        Dataframe containing time series to plot
 
     Returns
     -------
     None
     """
-    # Convert history dictionary to a data frame
-    print("done")
-    ts = pd.DataFrame.from_dict(history)
 
     # Plot pan angle
     fig, axs = plt.subplots(2, 2, figsize=[12.8, 9.6])
@@ -218,7 +219,6 @@ def main():
     -------
     None
     """
-
     # Provide for some command line arguments
     parser = ArgumentParser(
         description="Read a track file and process the corresponding messages"
@@ -238,10 +238,12 @@ def main():
     args = parser.parse_args()
 
     # Read the track data
+    logger.info(f"Reading track for id: {args.track_id}")
     track = read_track_data(args.track_id)
 
     # Make the controller, subscribe to all topics, and publish, or
     # process, one message to each topic
+    logger.info("Making the controller, and subscribing to topics")
     controller = make_controller(args.use_mqtt)
     controller.add_subscribe_topic(controller.config_topic, controller._config_callback)
     controller.add_subscribe_topic(
@@ -253,12 +255,15 @@ def main():
     index = 0
     flight_msg = make_flight_msg(track, index)
     if controller.use_mqtt:
+        logger.info(f"Publishing config msg: {config_msg}")
         controller.publish_to_topic(controller.config_topic, json.dumps(config_msg))
         time.sleep(UPDATE_INTERVAL)
+        logger.info(f"Publishing calibration msg: {calibration_msg}")
         controller.publish_to_topic(
             controller.calibration_topic, json.dumps(calibration_msg)
         )
         time.sleep(UPDATE_INTERVAL)
+        logger.info(f"Publishing flight msg: {flight_msg}")
         controller.publish_to_topic(controller.flight_topic, json.dumps(flight_msg))
         time.sleep(UPDATE_INTERVAL)
 
@@ -291,6 +296,7 @@ def main():
         if time_c >= track["latLonTime"][index + 1]:
             index = track["latLonTime"][time_c >= track["latLonTime"]].index[-1]
             flight_msg = make_flight_msg(track, index)
+            logger.info(f"Publishing flight msg: {flight_msg}")
             if controller.use_mqtt:
                 controller.publish_to_topic(
                     controller.flight_topic, json.dumps(flight_msg)
@@ -314,8 +320,9 @@ def main():
         history["rho_dot_c"].append(controller.rho_dot_c)
         history["tau_dot_c"].append(controller.tau_dot_c)
 
-    # And plot the resulting time series
-    plot_history(history)
+    # Convert history dictionary to a dataframe, and plot
+    ts = pd.DataFrame.from_dict(history)
+    plot_time_series(ts)
 
 
 if __name__ == "__main__":
