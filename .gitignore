@@ -2,7 +2,6 @@
 .DS_Store
 .bashrc
 .dir-locals.el
-.env
 .idea
 .ipynb
 .pre-commit-config.yaml
@@ -20,6 +19,9 @@ ml-model/*.json
 ml-model/notebooks/.Trash-0/*
 ml-model/notebooks/*.json
 notes.md
+ptz-controller/mqtt
+ptz-controller/base_mqtt_pub_sub.py
+ptz-controller/camera-pointing.csv
 semgrep.out
 localizer.pt
 vapix.log
