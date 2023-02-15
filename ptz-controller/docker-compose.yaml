@@ -1,3 +1,7 @@
+# Prior to building, copy the following resources from
+# IQTLabs/edgetech-core to the build directory:
+#   - core/base_mqtt_pub_sub.py
+#   - mqtt/*
 version: "3"
 services:
   mqtt:
@@ -9,7 +13,7 @@ services:
       context: ./mqtt
       dockerfile: ./Dockerfile
     restart: unless-stopped
-  pointing:
+  controller:
     image: iqtlabs/skyscan-ptz-controller:latest
     build:
       context: ./
