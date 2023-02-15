@@ -7,6 +7,9 @@
 .pre-commit-config.yaml
 .requirements.txt
 __pycache__
+auto-calibrator/mqtt
+auto-calibrator/base_mqtt_pub_sub.py
+auto-calibrator/ptz_utilities.py
 axis-ptz/*.jpg
 axis-ptz/capture/*
 labelbox-import/labelbox.env
