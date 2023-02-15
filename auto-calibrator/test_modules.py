@@ -22,6 +22,7 @@ PRECISION = 1.0e-5
 def calibrator():
     """Construct a calibrator."""
     calibrator = auto_calibrator.AutoCalibrator(
+        mqtt_ip="mqtt",
         config_topic="skyscan/config/json",
         pointing_error_topic="skyscan/pointing_error/json",
         calibration_topic="skyscan/calibration/json",
@@ -32,7 +33,6 @@ def calibrator():
         max_horizontal_fov=61.8,
         min_vertical_fov=3.8,
         max_vertical_fov=37.2,
-        mqtt_ip="mqtt",
         use_mqtt=False,
     )
     return calibrator

@@ -29,8 +29,9 @@ logger.setLevel(logging.INFO)
 
 
 class AutoCalibrator(BaseMQTTPubSub):
-    """Calibrate offset of tilt, pan, and zoom of the
-    camera tripod and publish results"""
+    """Calibrate offset of tilt, pan, and zoom of the camera tripod
+    and publish results.
+    """
 
     def __init__(
         self: Any,
@@ -181,7 +182,6 @@ class AutoCalibrator(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
-
         logger.info(f"Received '{data}' from `{self.pointing_error_topic}` topic")
 
         # Find tripod yaw, pitch, and roll that minimize pointing
@@ -230,11 +230,10 @@ class AutoCalibrator(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
-
         logger.info(f"Received '{data}' from `{self.config_topic}` topic")
 
         # Set camera config values. Config message can include any or
-        # all values.
+        # all values
         if "min_zoom" in data["camera"]:
             old_min_zoom = self.min_zoom
             self.min_zoom = data["camera"]["min_zoom"]
@@ -304,9 +303,8 @@ class AutoCalibrator(BaseMQTTPubSub):
 
     def _calculate_calibration_error(self, msg):
 
-        """
-        Calculate calibration error of camera using information from
-        YOLO or equivalent bounding box.
+        """Calculate calibration error of camera using information
+        from YOLO or equivalent bounding box.
 
         Parameters
         ----------
@@ -361,8 +359,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         rho_epsilon,
         tau_epsilon,
     ):
-        """
-        Calculates the pointing error with given yaw, pitch, and roll.
+        """Calculates the pointing error with given yaw, pitch, and
+        roll.
 
         Parameters
         ----------
@@ -432,8 +430,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         )
 
     def _minimize_pointing_error(self, data, rho_epsilon, tau_epsilon):
-        """
-        Find tripod yaw, pitch, and roll that minimizes pointing error.
+        """Find tripod yaw, pitch, and roll that minimizes pointing
+        error.
 
         Parameters
         ----------
@@ -473,8 +471,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         return alpha_1, beta_1, gamma_1
 
     def main(self: Any) -> None:
-        """
-        Schedule heartbeat and subscribes to calibration and config
+        """Schedule heartbeat and subscribes to calibration and config
         topics with callbacks.
 
         Parameters

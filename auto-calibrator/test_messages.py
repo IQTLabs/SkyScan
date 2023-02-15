@@ -29,7 +29,7 @@ class MessageHandler(BaseMQTTPubSub):
         **kwargs: Any,
     ):
         """Initialize a MessageHandler by subscribing to all required
-        topics, connecting to the MQTT broker.
+        topics, and connecting to the MQTT broker.
 
         Parameters
         ----------
