@@ -87,6 +87,23 @@ class MessageHandler(BaseMQTTPubSub):
         ]
         self.camera_pointing_file.write(",".join(self.camera_pointing_keys) + "\n")
 
+    def decode_payload(self, payload):
+        """
+        Decode the payload carried by a message.
+
+        Parameters
+        ----------
+        payload: Any
+            A JSON string with {timestamp: ____, data: ____,}
+
+        Returns
+        -------
+        data : dict
+            The data component of the payload
+        """
+        data = json.loads(str(payload.decode("utf-8")))["data"]
+        return data
+
     def _logger_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:

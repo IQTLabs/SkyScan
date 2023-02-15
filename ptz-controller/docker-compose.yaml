@@ -1,3 +1,7 @@
+# Prior to building, copy the following resources from
+# IQTLabs/edgetech-core to the build directory:
+#   - core/base_mqtt_pub_sub.py
+#   - mqtt/*
 version: "3"
 services:
   mqtt:
@@ -9,7 +13,7 @@ services:
       context: ./mqtt
       dockerfile: ./Dockerfile
     restart: unless-stopped
-  pointing:
+  controller:
     image: iqtlabs/skyscan-ptz-controller:latest
     build:
       context: ./
@@ -24,12 +28,6 @@ services:
       - FLIGHT_TOPIC=${FLIGHT_TOPIC}
       - LOGGER_TOPIC=${LOGGER_TOPIC}
       - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
-      - PAN_RATE_MIN=${PAN_RATE_MIN}
-      - PAN_RATE_MAX=${PAN_RATE_MAX}
-      - TILT_RATE_MIN=${TILT_RATE_MIN}
-      - TILT_RATE_MAX=${TILT_RATE_MAX}
-      - JPEG_RESOLUTION=${JPEG_RESOLUTION}
-      - JPEG_COMPRESSION=${JPEG_COMPRESSION}
       - TRIPOD_LONGITUDE=${TRIPOD_LONGITUDE}
       - TRIPOD_LATITUDE=${TRIPOD_LATITUDE}
       - TRIPOD_ALTITUDE=${TRIPOD_ALTITUDE}
@@ -37,7 +35,13 @@ services:
       - CAPTURE_INTERVAL=${CAPTURE_INTERVAL}
       - LEAD_TIME=${LEAD_TIME}
       - PAN_GAIN=${PAN_GAIN}
+      - PAN_RATE_MIN=${PAN_RATE_MIN}
+      - PAN_RATE_MAX=${PAN_RATE_MAX}
       - TILT_GAIN=${TILT_GAIN}
+      - TILT_RATE_MIN=${TILT_RATE_MIN}
+      - TILT_RATE_MAX=${TILT_RATE_MAX}
+      - JPEG_RESOLUTION=${JPEG_RESOLUTION}
+      - JPEG_COMPRESSION=${JPEG_COMPRESSION}
       - USE_MQTT=True
       - USE_CAMERA=False
       - LOG_TO_MQTT=True

@@ -40,13 +40,6 @@ class PtzController(BaseMQTTPubSub):
         flight_topic: str,
         logger_topic: str,
         heartbeat_interval: float,
-        # TODO: Offer sensible defaults
-        pan_rate_min: float,
-        pan_rate_max: float,
-        tilt_rate_min: float,
-        tilt_rate_max: float,
-        jpeg_resolution: str,
-        jpeg_compression: int,
         lambda_t: float = 0.0,
         varphi_t: float = 0.0,
         h_t: float = 0.0,
@@ -54,7 +47,13 @@ class PtzController(BaseMQTTPubSub):
         capture_interval: float = 2.0,
         lead_time: float = 0.25,
         pan_gain: float = 0.2,
+        pan_rate_min: float = 1.8,
+        pan_rate_max: float = 150.0,
         tilt_gain: float = 0.2,
+        tilt_rate_min: float = 1.8,
+        tilt_rate_max: float = 150.0,
+        jpeg_resolution: str = "1920x1080",
+        jpeg_compression: int = 5,
         use_mqtt: bool = True,
         use_camera: bool = True,
         log_to_mqtt: bool = False,
@@ -81,18 +80,6 @@ class PtzController(BaseMQTTPubSub):
             MQTT topic for publishing or subscribing to logger messages
         heartbeat_interval: float
             Interval at which heartbeat message is to be published [s]
-        pan_rate_min: float
-            Camera pan rate minimum [deg/s]
-        pan_rate_max: float
-            Camera pan rate maximum [deg/s]
-        tilt_rate_min: float
-            Camera tilt rate minimum [deg/s]
-        tilt_rate_max: float
-            Camera tilt rate maximum [deg/s]
-        jpeg_resolution: str
-            Image capture resolution, for example, "1920x1080"
-        jpeg_compression: int
-            Image compression: 0 to 100
         lambda_t: float
             Tripod geodetic longitude [deg]
         varphi_t: float = 0.0,
@@ -108,8 +95,20 @@ class PtzController(BaseMQTTPubSub):
             aircraft [s]
         pan_gain: float
             Proportional control gain for pan error [1/s]
+        pan_rate_min: float
+            Camera pan rate minimum [deg/s]
+        pan_rate_max: float
+            Camera pan rate maximum [deg/s]
         tilt_gain: float
             Proportional control gain for tilt error [1/s]
+        tilt_rate_min: float
+            Camera tilt rate minimum [deg/s]
+        tilt_rate_max: float
+            Camera tilt rate maximum [deg/s]
+        jpeg_resolution: str
+            Image capture resolution, for example, "1920x1080"
+        jpeg_compression: int
+            Image compression: 0 to 100
         use_mqtt: bool
             Flag to use MQTT, or not
         use_camera: bool
@@ -131,12 +130,6 @@ class PtzController(BaseMQTTPubSub):
         self.flight_topic = flight_topic
         self.logger_topic = logger_topic
         self.heartbeat_interval = heartbeat_interval
-        self.pan_rate_min = pan_rate_min
-        self.pan_rate_max = pan_rate_max
-        self.tilt_rate_min = tilt_rate_min
-        self.tilt_rate_max = tilt_rate_max
-        self.jpeg_resolution = jpeg_resolution
-        self.jpeg_compression = jpeg_compression
         self.lambda_t = lambda_t
         self.varphi_t = varphi_t
         self.h_t = h_t
@@ -144,7 +137,13 @@ class PtzController(BaseMQTTPubSub):
         self.capture_interval = capture_interval
         self.lead_time = lead_time
         self.pan_gain = pan_gain
+        self.pan_rate_min = pan_rate_min
+        self.pan_rate_max = pan_rate_max
         self.tilt_gain = tilt_gain
+        self.tilt_rate_min = tilt_rate_min
+        self.tilt_rate_max = tilt_rate_max
+        self.jpeg_resolution = jpeg_resolution
+        self.jpeg_compression = jpeg_compression
         self.use_mqtt = use_mqtt
         self.use_camera = use_camera
         self.log_to_mqtt = log_to_mqtt
@@ -254,6 +253,23 @@ class PtzController(BaseMQTTPubSub):
         self._calibration_callback(None, None, calibration_msg)
 
         # TODO: Log configuration parameters
+
+    def decode_payload(self, payload):
+        """
+        Decode the payload carried by a message.
+
+        Parameters
+        ----------
+        payload: Any
+            A JSON string with {timestamp: ____, data: ____,}
+
+        Returns
+        -------
+        data : dict
+            The data component of the payload
+        """
+        data = json.loads(str(payload.decode("utf-8")))["data"]
+        return data
 
     def _config_callback(
         self: Any,
@@ -690,12 +706,6 @@ if __name__ == "__main__":
         flight_topic=os.getenv("FLIGHT_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=float(os.getenv("HEARTBEAT_INTERVAL")),
-        pan_rate_min=float(os.getenv("PAN_RATE_MIN")),
-        pan_rate_max=float(os.getenv("PAN_RATE_MAX")),
-        tilt_rate_min=float(os.getenv("TILT_RATE_MIN")),
-        tilt_rate_max=float(os.getenv("TILT_RATE_MAX")),
-        jpeg_resolution=os.getenv("JPEG_RESOLUTION"),
-        jpeg_compression=os.getenv("JPEG_COMPRESSION"),
         lambda_t=float(os.getenv("TRIPOD_LONGITUDE")),
         varphi_t=float(os.getenv("TRIPOD_LATITUDE")),
         h_t=float(os.getenv("TRIPOD_ALTITUDE")),
@@ -703,7 +713,13 @@ if __name__ == "__main__":
         capture_interval=float(os.getenv("CAPTURE_INTERVAL")),
         lead_time=float(os.getenv("LEAD_TIME")),
         pan_gain=float(os.getenv("PAN_GAIN")),
+        pan_rate_min=float(os.getenv("PAN_RATE_MIN")),
+        pan_rate_max=float(os.getenv("PAN_RATE_MAX")),
         tilt_gain=float(os.getenv("TILT_GAIN")),
+        tilt_rate_min=float(os.getenv("TILT_RATE_MIN")),
+        tilt_rate_max=float(os.getenv("TILT_RATE_MAX")),
+        jpeg_resolution=os.getenv("JPEG_RESOLUTION"),
+        jpeg_compression=os.getenv("JPEG_COMPRESSION"),
         use_mqtt=strtobool(os.getenv("USE_MQTT")),
         use_camera=strtobool(os.getenv("USE_CAMERA")),
         log_to_mqtt=strtobool(os.getenv("LOG_TO_MQTT")),
