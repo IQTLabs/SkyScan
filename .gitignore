@@ -15,7 +15,6 @@ ml-model/.ipynb_checkpoints
 ml-model/notebooks/.ipynb_checkpoints
 *-checkpoint.ipynb
 ml-model/*.json
-*.env
 ml-model/notebooks/.Trash-0/*
 ml-model/notebooks/*.json
 notes.md
