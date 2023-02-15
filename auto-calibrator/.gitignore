@@ -1,4 +1,3 @@
 mqtt
 base_mqtt_pub_sub.py
 ptz_utilities.py
-.env
