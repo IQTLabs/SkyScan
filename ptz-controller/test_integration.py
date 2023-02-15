@@ -11,17 +11,17 @@ import schedule
 import ptz_controller
 
 HEARTBEAT_INTERVAL = 10.0
-PAN_RATE_MIN = 1.0
-PAN_RATE_MAX = 100.0
-TILT_RATE_MIN = 1.0
-TILT_RATE_MAX = 100.0
-JPEG_RESOLUTION = "1920x1080"
-JPEG_COMPRESSION = 5
 UPDATE_INTERVAL = 0.01
 CAPTURE_INTERVAL = 2.0
 LEAD_TIME = 0.0
 PAN_GAIN = 0.1
+PAN_RATE_MIN = 1.0
+PAN_RATE_MAX = 100.0
 TILT_GAIN = 0.4
+TILT_RATE_MIN = 1.0
+TILT_RATE_MAX = 100.0
+JPEG_RESOLUTION = "1920x1080"
+JPEG_COMPRESSION = 5
 
 logger = logging.getLogger("ptz-integration")
 logger.setLevel(logging.INFO)
@@ -52,17 +52,17 @@ def make_controller(use_mqtt):
         flight_topic=os.getenv("FLIGHT_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=HEARTBEAT_INTERVAL,
-        pan_rate_min=PAN_RATE_MIN,
-        pan_rate_max=PAN_RATE_MAX,
-        tilt_rate_min=TILT_RATE_MIN,
-        tilt_rate_max=TILT_RATE_MAX,
-        jpeg_resolution=JPEG_RESOLUTION,
-        jpeg_compression=JPEG_COMPRESSION,
         update_interval=UPDATE_INTERVAL,
         capture_interval=CAPTURE_INTERVAL,
         lead_time=LEAD_TIME,
         pan_gain=PAN_GAIN,
+        pan_rate_min=PAN_RATE_MIN,
+        pan_rate_max=PAN_RATE_MAX,
         tilt_gain=TILT_GAIN,
+        tilt_rate_min=TILT_RATE_MIN,
+        tilt_rate_max=TILT_RATE_MAX,
+        jpeg_resolution=JPEG_RESOLUTION,
+        jpeg_compression=JPEG_COMPRESSION,
         use_mqtt=use_mqtt,
         use_camera=False,
     )
