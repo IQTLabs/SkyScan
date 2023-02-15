@@ -1,3 +1,9 @@
+# Prior to building, copy the following resources from
+# IQTLabs/edgetech-core to the build directory:
+#   - core/base_mqtt_pub_sub.py
+#   - mqtt/*
+# And from SkyScan/ptz-controller:
+#   - ptz_utilities.py
 version: "3"
 services:
   mqtt:

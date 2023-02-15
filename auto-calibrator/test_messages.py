@@ -59,8 +59,25 @@ class MessageHandler(BaseMQTTPubSub):
         time.sleep(5)
         self.publish_registration("Message Handler Module Registration")
 
+    def decode_payload(self, payload):
+        """
+        Decode the payload carried by a message.
+
+        Parameters
+        ----------
+        payload: Any
+            A JSON string with {timestamp: ____, data: ____,}
+
+        Returns
+        -------
+        data : dict
+            The data component of the payload
+        """
+        data = json.loads(str(payload.decode("utf-8")))["data"]
+        return data
+
     def _calibration_callback(
-            self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
+        self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
     ) -> None:
         """Test content of calibration message.
 
@@ -106,11 +123,13 @@ def make_handler():
     )
     return handler
 
+
 def get_config_msg():
     """Load mock config message."""
     with open("data/config_msg_integration.json") as f:
         msg = json.load(f)
     return msg
+
 
 def get_pointing_error_msg():
     """Load mock calibration message."""
@@ -134,7 +153,9 @@ def main():
     # Make the handler, and subscribe to the logger topic
     logger.info("Making the handler, and subscribing to topics")
     handler = make_handler()
-    handler.add_subscribe_topic(handler.calibration_topic, handler._calibration_callback)
+    handler.add_subscribe_topic(
+        handler.calibration_topic, handler._calibration_callback
+    )
 
     # Publish the configuration and pointing error message
     config_msg = get_config_msg()
@@ -143,7 +164,9 @@ def main():
     handler.publish_to_topic(handler.config_topic, json.dumps(config_msg))
     time.sleep(UPDATE_INTERVAL)
     logger.info(f"Publishing pointing_error msg: {pointing_error_msg}")
-    handler.publish_to_topic(handler.pointing_error_topic, json.dumps(pointing_error_msg))
+    handler.publish_to_topic(
+        handler.pointing_error_topic, json.dumps(pointing_error_msg)
+    )
     time.sleep(UPDATE_INTERVAL)
 
 
