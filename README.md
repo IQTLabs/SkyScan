@@ -96,8 +96,7 @@ The third pipeline uses the [YOLTv4 model](https://github.com/avanetten/yoltv4) 
 Follow the steps below for installing the edge software.
 
 1. [Install and Configure Raspberry Pi](./configure-pi.md)
-2. [Configure PiAware](configure-piaware.md)
-3. [Configure Camera](./configure-camera.md)
+2. [Configure Camera](./configure-camera.md)
 
 ## System Operation
 After the system has been installed, follow the steps below to set up the hardware and start the software.
