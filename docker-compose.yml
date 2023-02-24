@@ -49,7 +49,7 @@ services:
       - mqtt
 
   mqtt:
-    image: iqtlabs/skyscan-mqtt
+    image: iqtlabs/edgetech-mqtt
     ports:
         - "9001:9001"
         - "1883:1883"
