@@ -1,3 +1,7 @@
+printf "\n\nCreating SkyScan Project Folder..."
+mkdir ./SkyScan
+cd SkyScan
+
 printf "\n\nDownload Docker-Compose SkyScan Files..."
 curl -fsSL https://raw.githubusercontent.com/IQTLabs/SkyScan/main/docker-compose.yml -o docker-compose.yml
 curl -fsSL https://raw.githubusercontent.com/IQTLabs/SkyScan/main/env-example -o .env
