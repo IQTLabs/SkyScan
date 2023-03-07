@@ -14,7 +14,7 @@ services:
 
   axis-ptz:
     image: iqtlabs/skyscan-axis-ptz
-    command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT}"
+    command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT} --roll ${ROLL} --pitch ${PITCH} --yaw ${YAW}"
     volumes:
       - /flash/raw:/app/capture
     depends_on:
@@ -49,7 +49,7 @@ services:
       - mqtt
 
   mqtt:
-    image: iqtlabs/skyscan-mqtt
+    image: iqtlabs/edgetech-mqtt
     ports:
         - "9001:9001"
         - "1883:1883"
