@@ -2,6 +2,8 @@
 .DS_Store
 .bashrc
 .dir-locals.el
+.env-11
+docker-compose-11.yaml
 .idea
 .ipynb
 .pre-commit-config.yaml
