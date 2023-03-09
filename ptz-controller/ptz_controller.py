@@ -269,8 +269,8 @@ class PtzController(BaseMQTTPubSub):
             The data component of the payload
         """
         # TODO: Confirm message format
-        # data = json.loads(str(payload.decode("utf-8")))["data"]
-        data = json.loads(str(payload.decode("utf-8")))
+        data = json.loads(str(payload.decode("utf-8")))["data"]
+        # data = json.loads(str(payload.decode("utf-8")))
         return data
 
     def _config_callback(
@@ -466,11 +466,15 @@ class PtzController(BaseMQTTPubSub):
         self.tau_a = math.degrees(
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
         )  # [deg]
+        logger.info(f"Aircraft pan and tilt: {self.rho_a}, {self.tau_a} [deg]")
 
         # Get camera pan, tilt, and zoom
         if self.use_camera:
-            self.rho_a, self.tau_a, self.zoom = self.camera_control.get_ptz()
-
+            self.rho_c, self.tau_c, self.zoom = self.camera_control.get_ptz()
+            logger.info(f"Camera pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
+        else:
+            logger.info(f"Controller pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
+            
         # Compute slew rate differences
         self.delta_rho_dot_c = self.pan_gain * (self.rho_a - self.rho_c)
         self.delta_tau_dot_c = self.tilt_gain * (self.tau_a - self.tau_c)
@@ -696,9 +700,8 @@ class PtzController(BaseMQTTPubSub):
                 logger.error(f"Main loop exception: {e}")
 
 
-if __name__ == "__main__":
-    # Instantiate controller and execute
-    ptz_controller = PtzController(
+def make_controller():
+    return PtzController(
         camera_ip=os.getenv("CAMERA_IP"),
         camera_user=os.getenv("CAMERA_USER"),
         camera_password=os.getenv("CAMERA_PASSWORD"),
@@ -726,4 +729,9 @@ if __name__ == "__main__":
         use_camera=strtobool(os.getenv("USE_CAMERA")),
         log_to_mqtt=strtobool(os.getenv("LOG_TO_MQTT")),
     )
+
+
+if __name__ == "__main__":
+    # Instantiate controller and execute
+    ptz_controller = make_controller()
     ptz_controller.main()
