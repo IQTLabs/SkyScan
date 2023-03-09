@@ -520,7 +520,7 @@ if __name__ == "__main__":
         min_horizontal_fov=float(os.getenv("MIN_HORIZONTAL_FOV")),
         max_horizontal_fov=float(os.getenv("MAX_HORIZONTAL_FOV")),
         min_vertical_fov=float(os.getenv("MIN_VERTICAL_FOV")),
-        max_vertical_fov=float(os.getenv("MIN_HORIZONTAL_FOV")),
+        max_vertical_fov=float(os.getenv("MAX_VERTICAL_FOV")),
         horizontal_pixels=int(os.getenv("HORIZONTAL_PIXELS")),
         vertical_pixels=int(os.getenv("VERTICAL_PIXELS")),
         use_mqtt=strtobool(os.getenv("USE_MQTT")),
