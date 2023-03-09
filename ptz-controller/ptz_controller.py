@@ -268,7 +268,9 @@ class PtzController(BaseMQTTPubSub):
         data : dict
             The data component of the payload
         """
-        data = json.loads(str(payload.decode("utf-8")))["data"]
+        # TODO: Confirm message format
+        # data = json.loads(str(payload.decode("utf-8")))["data"]
+        data = json.loads(str(payload.decode("utf-8")))
         return data
 
     def _config_callback(
@@ -659,7 +661,7 @@ class PtzController(BaseMQTTPubSub):
 
             # Schedule image capture
             capture_job = schedule.every(self.capture_interval).seconds.do(
-                self._capture_image, payload=""
+                self._capture_image
             )
 
         # Enter the main loop
