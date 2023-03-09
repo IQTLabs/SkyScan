@@ -211,7 +211,7 @@ class PtzController(BaseMQTTPubSub):
         self.time_c = 0.0  # [s]
         self.rho_c = 0.0  # [deg]
         self.tau_c = 0.0  # [deg]
-        self.zoom = 0  # -100 to 100 [-]
+        self.zoom = 1000  # 1 to 9999 [-]
 
         # Camera pan and tilt rates
         self.rho_dot_c = 0.0  # [deg/s]
@@ -269,8 +269,8 @@ class PtzController(BaseMQTTPubSub):
             The data component of the payload
         """
         # TODO: Confirm message format
-        data = json.loads(str(payload.decode("utf-8")))["data"]
-        # data = json.loads(str(payload.decode("utf-8")))
+        # data = json.loads(str(payload.decode("utf-8")))["data"]
+        data = json.loads(str(payload.decode("utf-8")))
         return data
 
     def _config_callback(
@@ -405,7 +405,7 @@ class PtzController(BaseMQTTPubSub):
         else:
             data = msg["data"]
         logger.info(f"Processing flight msg data: {data}")
-        self.icao24 = data["icao24"]
+        self.icao24 = data.get("icao24", self.icao24)
         self.time_a = data["latLonTime"]  # [s]
         self.time_c = self.time_a
         lambda_a = data["lon"]  # [deg]
@@ -421,6 +421,12 @@ class PtzController(BaseMQTTPubSub):
         r_XYZ_a_0 = ptz_utilities.compute_r_XYZ(lambda_a, varphi_a, h_a)
         r_XYZ_a_0_t = r_XYZ_a_0 - self.r_XYZ_t
 
+        # Compute lead time accounting for age of message, and
+        # specified lead time
+        datetime_a = ptz_utilities.convert_time(self.time_a)
+        lead_time = (datetime.utcnow() - datetime_a).total_seconds() + self.lead_time  # [s]
+        logger.info(f"Using lead time: {lead_time} [s]")
+
         # Compute position and velocity in the topocentric (ENz)
         # coordinate system of the aircraft relative to the tripod at
         # time zero, and position at slightly later time one
@@ -433,7 +439,7 @@ class PtzController(BaseMQTTPubSub):
                 vertical_rate_a,
             ]
         )
-        r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * self.lead_time
+        r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * lead_time
 
         # Compute position, at time one, and velocity, at time zero,
         # in the geocentric (XYZ) coordinate system of the aircraft
@@ -468,9 +474,23 @@ class PtzController(BaseMQTTPubSub):
         )  # [deg]
         logger.info(f"Aircraft pan and tilt: {self.rho_a}, {self.tau_a} [deg]")
 
+        # TODO: Remove
+        # if self.rho_a < 30.0 or 100.0 < self.rho_a:
+        #     logger.info("Skipping aircraft with pan not in the interval (30, 100)")
+        #     self.camera_control.stop_move()
+        #     return
+
+        # TODO: Remove
+        # Point at the aircraft if the identifier has changed
+        # if self.icao24 != icao24:
+        #     self.icao24 = icao24
+        #     logger.info(f"Pointing at aircraft: {self.icao24}")
+        #     self.camera_control.absolute_move(self.rho_a, self.tau_a, self.zoom, 100)
+        #     return
+
         # Get camera pan, tilt, and zoom
         if self.use_camera:
-            self.rho_c, self.tau_c, self.zoom = self.camera_control.get_ptz()
+            self.rho_c, self.tau_c, _zoom = self.camera_control.get_ptz()
             logger.info(f"Camera pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
         else:
             logger.info(f"Controller pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
@@ -478,6 +498,7 @@ class PtzController(BaseMQTTPubSub):
         # Compute slew rate differences
         self.delta_rho_dot_c = self.pan_gain * (self.rho_a - self.rho_c)
         self.delta_tau_dot_c = self.tilt_gain * (self.tau_a - self.tau_c)
+        logger.info(f"Delta pan and tilt rates: {self.delta_rho_dot_c}, {self.delta_tau_dot_c} [deg/s]")
 
         # Compute position and velocity in the camera fixed (rst)
         # coordinate system of the aircraft relative to the tripod at
@@ -502,10 +523,12 @@ class PtzController(BaseMQTTPubSub):
         )
         self.rho_dot_a = math.degrees(-omega[2])
         self.tau_dot_a = math.degrees(omega[0])
+        logger.info(f"Aircraft pan and tilt rates: {self.rho_dot_a}, {self.tau_dot_a} [deg/s]")
 
         # Update camera pan and tilt rate
         self.rho_dot_c = self.rho_dot_a + self.delta_rho_dot_c
         self.tau_dot_c = self.tau_dot_a + self.delta_tau_dot_c
+        logger.info(f"Camera pan and tilt rates: {self.rho_dot_c}, {self.tau_dot_c} [deg/s]")
 
         # Command camera rates, and begin capturing images
         if self.use_camera:
@@ -515,10 +538,11 @@ class PtzController(BaseMQTTPubSub):
             self.camera_control.continuous_move(
                 self._compute_pan_rate_index(self.rho_dot_c),
                 self._compute_tilt_rate_index(self.tau_dot_c),
-                self.zoom,
+                0.0,
             )
             logger.info(f"Starting image capture of aircraft: {self.icao24}")
             self.do_capture = True
+            self.capture_time = time()
 
         # Log camera pointing using MQTT
         if self.log_to_mqtt:
@@ -544,7 +568,7 @@ class PtzController(BaseMQTTPubSub):
     def _compute_pan_rate_index(self, rho_dot):
         """Compute pan rate index between -100 and 100 using rates in
         deg/s, limiting the results to the specified minimum and
-        maximum.
+        maximum. Note that the dead zone from -1.8 to 1.8 deg/s is ignored.
 
         Parameters
         ----------
@@ -556,25 +580,20 @@ class PtzController(BaseMQTTPubSub):
         pan_rate : int
             Pan rate index
         """
-        if rho_dot < self.pan_rate_min:
+        if rho_dot < -self.pan_rate_max:
             pan_rate = -100
 
         elif self.pan_rate_max < rho_dot:
             pan_rate = +100
 
         else:
-            pan_rate = (
-                200
-                / (self.pan_rate_max - self.pan_rate_min)
-                * (rho_dot - self.pan_rate_min)
-                - 100
-            )
+            pan_rate = round((100 / self.pan_rate_max) * rho_dot)
         return pan_rate
 
     def _compute_tilt_rate_index(self, tau_dot):
         """Compute tilt rate index between -100 and 100 using rates in
         deg/s, limiting the results to the specified minimum and
-        maximum.
+        maximum. Note that the dead zone from -1.8 to 1.8 deg/s is ignored.
 
         Parameters
         ----------
@@ -586,19 +605,14 @@ class PtzController(BaseMQTTPubSub):
         tilt_rate : int
             Tilt rate index
         """
-        if tau_dot < self.tilt_rate_min:
+        if tau_dot < -self.tilt_rate_max:
             tilt_rate = -100
 
         elif self.tilt_rate_max < tau_dot:
             tilt_rate = +100
 
         else:
-            tilt_rate = (
-                200
-                / (self.tilt_rate_max - self.tilt_rate_min)
-                * (tau_dot - self.tilt_rate_min)
-                - 100
-            )
+            tilt_rate = round((100 / self.tilt_rate_max) * tau_dot)
         return tilt_rate
 
     def _capture_image(self):
@@ -687,12 +701,8 @@ class PtzController(BaseMQTTPubSub):
                     self.do_capture
                     and time() - self.capture_time > 2.0 * self.capture_interval
                 ):
-                    logger.info(f"Commanding pan and tilt rates: 0.0, 0.0 [deg/s]")
-                    self.camera_control.continuous_move(
-                        self._compute_pan_rate_index(0.0),
-                        self._compute_tilt_rate_index(0.0),
-                        self.zoom,
-                    )
+                    logger.info("Stopping continuous pan and tilt")
+                    self.camera_control.stop_move()
                     logger.info(f"Stopping image capture of aircraft: {self.icao24}")
                     self.do_capture = False
 
