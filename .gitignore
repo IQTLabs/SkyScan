@@ -1,6 +1,6 @@
 *~
 .DS_Store
-.bashrc
+.bashrc*
 .dir-locals.el
 .env-11
 docker-compose-11.yaml
