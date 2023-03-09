@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import logging
 import math
 
@@ -434,3 +435,36 @@ def compute_great_circle_distance(lambda_1, varphi_1, lambda_2, varphi_2):
             )
         )
     )
+
+def convert_time(time_a):
+    """Convert aircraft time to datetime object.
+
+    Parameters
+    ----------
+    time_a : str
+        Aircraft time reported by ADS-B
+
+    Returns
+    -------
+    datetime_a : datetime
+        Aircraft datetime object
+    """
+    # Parse aircraft time as string with decimal seconds
+    try:
+        datetime_a = datetime.strptime(time_a, "%Y-%m-%d %H:%M:%S.%f")
+    except Exception as e:
+        logger.warning(f"Could not parse aircraft time as string with decimal seconds: {e}")
+
+        # Parse aircraft time as string
+        try:
+            datetime_a = datetime.strptime(time_a, "%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            logger.warning(f"Could not parse aircraft time as string: {e}")
+
+            # Construct datetime from aircraft time
+            try:
+                datetime_a = datetime.fromtimestamp(time_a)
+            except Exception as e:
+                logger.warning(f"Could not construct datetime from aircraft time: {e}")
+
+    return datetime_a
