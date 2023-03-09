@@ -19,7 +19,7 @@ services:
       context: ./
       dockerfile: ./Dockerfile
     environment:
-      - MQTT_IP=mqtt
+      - MQTT_IP=${MQTT_IP}
       - CAMERA_IP=${CAMERA_IP}
       - CAMERA_USER=${CAMERA_USER}
       - CAMERA_PASSWORD=${CAMERA_PASSWORD}
@@ -42,9 +42,9 @@ services:
       - TILT_RATE_MAX=${TILT_RATE_MAX}
       - JPEG_RESOLUTION=${JPEG_RESOLUTION}
       - JPEG_COMPRESSION=${JPEG_COMPRESSION}
-      - USE_MQTT=True
-      - USE_CAMERA=False
-      - LOG_TO_MQTT=True
+      - USE_MQTT=${USE_MQTT}
+      - USE_CAMERA=${USE_CAMERA}
+      - LOG_TO_MQTT=${LOG_TO_MQTT}
     restart: unless-stopped
     depends_on:
       - mqtt
