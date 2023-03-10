@@ -33,6 +33,7 @@ services:
       - TRIPOD_ALTITUDE=${TRIPOD_ALTITUDE}
       - UPDATE_INTERVAL=${UPDATE_INTERVAL}
       - CAPTURE_INTERVAL=${CAPTURE_INTERVAL}
+      - CAPTURE_DIR=${CAPTURE_DIR}
       - LEAD_TIME=${LEAD_TIME}
       - PAN_GAIN=${PAN_GAIN}
       - PAN_RATE_MIN=${PAN_RATE_MIN}
@@ -45,6 +46,8 @@ services:
       - USE_MQTT=${USE_MQTT}
       - USE_CAMERA=${USE_CAMERA}
       - LOG_TO_MQTT=${LOG_TO_MQTT}
+    volumes:
+      - ./data:/data
     restart: unless-stopped
     depends_on:
       - mqtt
