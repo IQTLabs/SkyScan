@@ -81,14 +81,45 @@ camera_yaw = 0
 
 currentPlane = None
 
-camera_latitude = None
-camera_longitude = None
-camera_altitude = None
 camera_lead = None
 include_age = strtobool(os.getenv("INCLUDE_AGE", "True"))
 
 def calculate_bearing_correction(b):
     return (b + cameraBearingCorrection) % 360
+
+def _format_file_save_filepath(file_extension: str = None):
+    """
+    A method for formatting the filepath of an image based off of the current state of global variables.
+    For use in JPEG, BMP, and JSON saving. 
+    Args:
+        file_extension: The desired file extension with leading dot (.jpg, .bmp)
+    Returns:
+        A String object representing the filepath without the filetype extension. 
+    """
+    captureDir = None
+
+    if args.flat_file_structure:
+        captureDir = "capture"
+    else:
+        captureDir = "capture{}".format(currentPlane["type"])
+    try:
+        os.makedirs(captureDir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise  # This was not a "directory exist" error..
+    filepath = "{}/{}_{}_{}_{}_{}".format(
+        captureDir,
+        currentPlane["icao24"],
+        int(bearing),
+        int(elevation),
+        int(distance3d),
+        datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+    )
+
+    if file_extension is not None:
+        filepath = filepath + str(file_extension)
+
+    return str(filepath)
 
 
 # Copied from VaPix/Sensecam to customize the folder structure for saving pictures
@@ -139,25 +170,7 @@ def get_jpeg_request():  # 5.2.4.1
 
     disk_time = datetime.now()
     if resp.status_code == 200:
-        captureDir = None
-
-        if args.flat_file_structure:
-            captureDir = "capture/"
-        else:
-            captureDir = "capture/{}".format(currentPlane["type"])
-        try:
-            os.makedirs(captureDir)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}_{}_{}_{}.jpg".format(
-            captureDir,
-            currentPlane["icao24"],
-            int(bearing),
-            int(elevation),
-            int(distance3d),
-            datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
-        )
+        filename = _format_file_save_filepath(file_extension=".jpg")
 
         # Original
         with open(filename, "wb") as var:
@@ -224,20 +237,7 @@ def get_bmp_request():  # 5.2.4.1
     )
 
     if resp.status_code == 200:
-        captureDir = "capture/{}".format(currentPlane["type"])
-        try:
-            os.makedirs(captureDir)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}_{}_{}_{}.bmp".format(
-            captureDir,
-            currentPlane["icao24"],
-            int(bearing),
-            int(elevation),
-            int(distance3d),
-            datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
-        )
+        filename = _format_file_save_filepath(file_extension=".bmp")
 
         with open(filename, "wb") as var:
             var.write(resp.content)
@@ -522,8 +522,50 @@ def calculateCameraPositionA():
     )
     cameraPan = calculate_bearing_correction(cameraPan)
 
+def get_json_request():
+    """
+    A method to save the metadata of the currently-tracking aircraft and the camera to a JSON file alongside BMP and 
+    JPEG requests. 
+    Args:
+        None
+    Returns:
+        A dictionary containing the contents os the JSON metadata file.  
+    """
+    image_filepath = _format_file_save_filepath(file_extension=".jpg")
+    filepath = os.path.join(
+        logging_directory,
+        os.path.basename(_format_file_save_filepath(file_extension=".json"))
+    )
 
-def moveCamera(ip, username, password):
+    file_content_dictionary = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+        "imagefile": image_filepath,
+        "camera": {
+            "bearing": bearing,
+            "zoom": cameraZoom,
+            "pan": cameraPan,
+            "tilt": cameraTilt,
+            "lat": camera_latitude,
+            "long": camera_longitude,
+            "alt": camera_altitude
+        },
+        "aircraft": {
+            "lat": currentPlane["lat"],
+            "long": currentPlane["lon"],
+            "alt": currentPlane["altitude"]
+        }
+    }
+
+    try:
+        with open(filepath, "w") as fh:
+            fh.write(json.dumps(file_content_dictionary))
+    except Exception as e:
+        print("Error saving JSON log - " + str(e))
+        
+    return file_content_dictionary
+
+
+def moveCamera(ip, username, password, mqtt_client):
 
     movePeriod = 100  # milliseconds
     moveTimeout = datetime.now()
@@ -582,6 +624,13 @@ def moveCamera(ip, username, password):
                 if captureTimeout <= datetime.now():
                     time.sleep(cameraDelay)
                     get_jpeg_request()
+                    capture_metadata = get_json_request()
+                    mqtt_client.publish(
+                        "skyscan/captures/data",
+                        json.dumps(capture_metadata),
+                        0,
+                        False
+                    )
                     captureTimeout = captureTimeout + timedelta(
                         milliseconds=capturePeriod
                     )
@@ -774,6 +823,7 @@ def main():
     global cameraConfig
     global flight_topic
     global object_topic
+    global logging_directory
     global Active
 
     parser = argparse.ArgumentParser(description="An MQTT based camera controller")
@@ -836,7 +886,19 @@ def main():
         help="The zoom setting for the camera (0-9999)",
         default=9999,
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    parser.add_argument(
+        "-l",
+        "--log-directory",
+        type=str,
+        help="The directory for the camera to write capture logs to.",
+        default="/flash/processed/log"
+    )
+    parser.add_argument(
+        "-v", 
+        "--verbose", 
+        action="store_true", 
+        help="Verbose output"
+    )
     parser.add_argument(
         "-f",
         "--flat-file-structure",
@@ -897,15 +959,8 @@ def main():
     camera_lead = args.camera_lead
     # cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
-    cameraMove = threading.Thread(
-        target=moveCamera,
-        args=[args.axis_ip, args.axis_username, args.axis_password],
-        daemon=True,
-    )
-    cameraMove.start()
-    # Sleep for a bit so we're not hammering the HAT with updates
-    delay = 0.005
-    time.sleep(delay)
+    logging_directory = args.log_directory
+
     flight_topic = args.mqtt_flight_topic
     object_topic = args.mqtt_object_topic
     print(
@@ -932,6 +987,16 @@ def main():
         0,
         False,
     )
+
+    cameraMove = threading.Thread(
+        target=moveCamera,
+        args=[args.axis_ip, args.axis_username, args.axis_password, client],
+        daemon=True,
+    )
+    cameraMove.start()
+    # Sleep for a bit so we're not hammering the HAT with updates
+    delay = 0.005
+    time.sleep(delay)
 
     #############################################
     ##                Main Loop                ##
