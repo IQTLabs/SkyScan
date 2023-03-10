@@ -314,7 +314,9 @@ class PtzController(BaseMQTTPubSub):
         self.varphi_t = data.get("tripod_latitude", self.varphi_t)  # [deg]
         self.h_t = data.get("tripod_altitude", self.h_t)  # [m]
         self.update_interval = data.get("update_interval", self.update_interval)  # [s]
-        self.capture_interval = data.get("capture_interval", self.capture_interval)  # [s]
+        self.capture_interval = data.get(
+            "capture_interval", self.capture_interval
+        )  # [s]
         self.capture_dir = data.get("capture_dir", self.capture_dir)
         self.lead_time = data.get("lead_time", self.lead_time)  # [s]
         self.pan_gain = data.get("pan_gain", self.pan_gain)  # [1/s]
@@ -414,7 +416,17 @@ class PtzController(BaseMQTTPubSub):
         else:
             data = msg["data"]
         self.icao24 = data.get("icao24", self.icao24)
-        if not set(["latLonTime", "lon", "lat", "altitude", "track", "groundSpeed", "verticalRate"]) <= set(data.keys()):
+        if not set(
+            [
+                "latLonTime",
+                "lon",
+                "lat",
+                "altitude",
+                "track",
+                "groundSpeed",
+                "verticalRate",
+            ]
+        ) <= set(data.keys()):
             logger.info(f"Required keys missing from flight message data: {data}")
             return
         logger.info(f"Processing flight msg data: {data}")
@@ -436,7 +448,9 @@ class PtzController(BaseMQTTPubSub):
         # Compute lead time accounting for age of message, and
         # specified lead time
         datetime_a = ptz_utilities.convert_time(self.time_a)
-        lead_time = (datetime.utcnow() - datetime_a).total_seconds() + self.lead_time  # [s]
+        lead_time = (
+            datetime.utcnow() - datetime_a
+        ).total_seconds() + self.lead_time  # [s]
         logger.info(f"Using lead time: {lead_time} [s]")
 
         # Compute position and velocity in the topocentric (ENz)
@@ -506,11 +520,13 @@ class PtzController(BaseMQTTPubSub):
             logger.info(f"Camera pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
         else:
             logger.info(f"Controller pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
-            
+
         # Compute slew rate differences
         self.delta_rho_dot_c = self.pan_gain * (self.rho_a - self.rho_c)
         self.delta_tau_dot_c = self.tilt_gain * (self.tau_a - self.tau_c)
-        logger.info(f"Delta pan and tilt rates: {self.delta_rho_dot_c}, {self.delta_tau_dot_c} [deg/s]")
+        logger.info(
+            f"Delta pan and tilt rates: {self.delta_rho_dot_c}, {self.delta_tau_dot_c} [deg/s]"
+        )
 
         # Compute position and velocity in the camera fixed (rst)
         # coordinate system of the aircraft relative to the tripod at
@@ -535,12 +551,16 @@ class PtzController(BaseMQTTPubSub):
         )
         self.rho_dot_a = math.degrees(-omega[2])
         self.tau_dot_a = math.degrees(omega[0])
-        logger.info(f"Aircraft pan and tilt rates: {self.rho_dot_a}, {self.tau_dot_a} [deg/s]")
+        logger.info(
+            f"Aircraft pan and tilt rates: {self.rho_dot_a}, {self.tau_dot_a} [deg/s]"
+        )
 
         # Update camera pan and tilt rate
         self.rho_dot_c = self.rho_dot_a + self.delta_rho_dot_c
         self.tau_dot_c = self.tau_dot_a + self.delta_tau_dot_c
-        logger.info(f"Camera pan and tilt rates: {self.rho_dot_c}, {self.tau_dot_c} [deg/s]")
+        logger.info(
+            f"Camera pan and tilt rates: {self.rho_dot_c}, {self.tau_dot_c} [deg/s]"
+        )
 
         # Command camera rates, and begin capturing images
         if self.use_camera:
