@@ -1,6 +1,8 @@
+import contextlib
 from datetime import datetime, timedelta
 import logging
 import math
+import os
 
 import numpy as np
 import quaternion
@@ -468,3 +470,24 @@ def convert_time(time_a):
                 logger.warning(f"Could not construct datetime from aircraft time: {e}")
 
     return datetime_a
+
+@contextlib.contextmanager
+def pushd(new_dir):
+    """Change to a new working directory, and back.
+
+    Parameters
+    ----------
+    new_dir : str
+        Path of the target directory
+
+    Returns
+    -------
+    None
+
+    """
+    try:
+        old_dir = os.getcwd()
+        os.chdir(new_dir)
+        yield
+    finally:
+        os.chdir(old_dir)
