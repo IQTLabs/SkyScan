@@ -12,15 +12,6 @@ services:
       - mqtt
     restart: unless-stopped
 
-  axis-ptz:
-    image: iqtlabs/skyscan-axis-ptz
-    command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT} --roll ${ROLL} --pitch ${PITCH} --yaw ${YAW}"
-    volumes:
-      - /flash/raw:/app/capture
-    depends_on:
-      - mqtt
-    restart: unless-stopped
-      
   piaware:
     image: iqtlabs/skyscan-piaware
     tty: true
@@ -55,12 +46,38 @@ services:
         - "1883:1883"
     restart: unless-stopped
 
-  egi:
-    image: iqtlabs/skyscan-egi
-    entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
-    devices:
-      - /dev/ttyACM0
-    privileged: true
+  edge-detect:
+    image: iqtlabs/skyscan-yolo
+    volumes:
+      - /flash/raw:/data/tosort
+      - /flash/processed/plane:/data/plane
+      - /flash/processed/log:/data/log
+      - /flash/processed/noplane:/data/noplane
+      - /flash/weights:/data/weights
+    env_file:
+      - .env
+    depends_on:
+      - mqtt
+
+  proxy:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - 1337:80
+      - 81:81
+      - 443:443
+    #network_mode: "host"
+    volumes:
+      - ./proxydata:/data
+      - ./letsencrypt:/etc/letsencrypt
+
+  axis-ptz:
+    image: meadejs/skyscan-axis-ptz
+    command: "./camera.py -f -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT} --roll ${ROLL} --pitch ${PITCH} --yaw ${YAW}"
+    volumes:
+      - /flash/raw:/app/capture
+      - /flash/processed/log:/flash/processed/log
     depends_on:
       - mqtt
     restart: unless-stopped
+
