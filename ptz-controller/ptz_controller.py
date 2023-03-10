@@ -361,9 +361,10 @@ class PtzController(BaseMQTTPubSub):
         else:
             data = msg["data"]
         logger.info(f"Processing calibration msg data: {data}")
-        self.alpha = data["camera"]["tripod_yaw"]  # [deg]
-        self.beta = data["camera"]["tripod_pitch"]  # [deg]
-        self.gamma = data["camera"]["tripod_roll"]  # [deg]
+        camera = data.get("camera", {})
+        self.alpha = camera.get("tripod_yaw", self.alpha)  # [deg]
+        self.beta = camera.get("tripod_pitch", self.beta)  # [deg]
+        self.gamma = camera.get("tripod_roll", self.gamma)  # [deg]
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system
@@ -412,8 +413,11 @@ class PtzController(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
-        logger.info(f"Processing flight msg data: {data}")
         self.icao24 = data.get("icao24", self.icao24)
+        if not set(["latLonTime", "lon", "lat", "altitude", "track", "groundSpeed", "verticalRate"]) <= set(data.keys()):
+            logger.info(f"Required keys missing from flight message data: {data}")
+            return
+        logger.info(f"Processing flight msg data: {data}")
         self.time_a = data["latLonTime"]  # [s]
         self.time_c = self.time_a
         lambda_a = data["lon"]  # [deg]
