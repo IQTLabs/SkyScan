@@ -544,17 +544,20 @@ class PtzController(BaseMQTTPubSub):
 
         # Command camera rates, and begin capturing images
         if self.use_camera:
+            pan_rate_index = self._compute_pan_rate_index(self.rho_dot_c)
+            tilt_rate_index = self._compute_tilt_rate_index(self.tau_dot_c)
             logger.info(
-                f"Commanding pan and tilt rates: {self.rho_dot_c}, {self.tau_dot_c} [deg/s]"
+                f"Commanding pan and tilt rate indexes: {pan_rate_index}, {tilt_rate_index}"
             )
             self.camera_control.continuous_move(
-                self._compute_pan_rate_index(self.rho_dot_c),
-                self._compute_tilt_rate_index(self.tau_dot_c),
+                pan_rate_index,
+                tilt_rate_index,
                 0.0,
             )
-            logger.info(f"Starting image capture of aircraft: {self.icao24}")
-            self.do_capture = True
-            self.capture_time = time()
+            if not self.do_capture:
+                logger.info(f"Starting image capture of aircraft: {self.icao24}")
+                self.do_capture = True
+                self.capture_time = time()
 
         # Log camera pointing using MQTT
         if self.log_to_mqtt:
@@ -641,14 +644,14 @@ class PtzController(BaseMQTTPubSub):
         if self.do_capture:
             self.capture_time = time()
             logger.info(
-                f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}"
+                f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}, in: {self.capture_dir}"
             )
-            # TODO: Implement context manager to move into required capture directory?
-            self.camera_configuration.get_jpeg_request(
-                camera=1,
-                resolution=self.jpeg_resolution,
-                compression=self.jpeg_compression,
-            )
+            with ptz_utilities.pushd(self.capture_dir):
+                self.camera_configuration.get_jpeg_request(
+                    camera=1,
+                    resolution=self.jpeg_resolution,
+                    compression=self.jpeg_compression,
+                )
 
     def _update_pointing(self):
         """Update values of camera pan and tilt using current pan and
