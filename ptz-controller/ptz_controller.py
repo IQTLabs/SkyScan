@@ -45,6 +45,7 @@ class PtzController(BaseMQTTPubSub):
         h_t: float = 0.0,
         update_interval: float = 0.1,
         capture_interval: float = 2.0,
+        capture_dir: str = ".",
         lead_time: float = 0.25,
         pan_gain: float = 0.2,
         pan_rate_min: float = 1.8,
@@ -90,6 +91,8 @@ class PtzController(BaseMQTTPubSub):
             Interval at which pointing of the camera is computed [s]
         capture_interval: float
             Interval at which the camera image is captured [s]
+        capture_dir: str
+            Directory in which to place captured images
         lead_time: float
             Lead time used when computing camera pointing to the
             aircraft [s]
@@ -135,6 +138,7 @@ class PtzController(BaseMQTTPubSub):
         self.h_t = h_t
         self.update_interval = update_interval
         self.capture_interval = capture_interval
+        self.capture_dir = capture_dir
         self.lead_time = lead_time
         self.pan_gain = pan_gain
         self.pan_rate_min = pan_rate_min
@@ -157,6 +161,7 @@ class PtzController(BaseMQTTPubSub):
             self.camera_control = vapix_control.CameraControl(
                 self.camera_ip, self.camera_user, self.camera_password
             )
+
         else:
             self.camera_configuration = None
             self.camera_control = None
@@ -305,9 +310,8 @@ class PtzController(BaseMQTTPubSub):
         self.varphi_t = data.get("tripod_latitude", self.varphi_t)  # [deg]
         self.h_t = data.get("tripod_altitude", self.h_t)  # [m]
         self.update_interval = data.get("update_interval", self.update_interval)  # [s]
-        self.capture_interval = data.get(
-            "capture_interval", self.capture_interval
-        )  # [s]
+        self.capture_interval = data.get("capture_interval", self.capture_interval)  # [s]
+        self.capture_dir = data.get("capture_dir", self.capture_dir)
         self.lead_time = data.get("lead_time", self.lead_time)  # [s]
         self.pan_gain = data.get("pan_gain", self.pan_gain)  # [1/s]
         self.tilt_gain = data.get("tilt_gain", self.tilt_gain)  # [1/s]
@@ -726,6 +730,7 @@ def make_controller():
         h_t=float(os.getenv("TRIPOD_ALTITUDE")),
         update_interval=float(os.getenv("UPDATE_INTERVAL")),
         capture_interval=float(os.getenv("CAPTURE_INTERVAL")),
+        capture_dir=os.getenv("CAPTURE_DIR"),
         lead_time=float(os.getenv("LEAD_TIME")),
         pan_gain=float(os.getenv("PAN_GAIN")),
         pan_rate_min=float(os.getenv("PAN_RATE_MIN")),
