@@ -216,7 +216,7 @@ class PtzController(BaseMQTTPubSub):
         self.time_c = 0.0  # [s]
         self.rho_c = 0.0  # [deg]
         self.tau_c = 0.0  # [deg]
-        self.zoom = 1000  # 1 to 9999 [-]
+        self.zoom = 2000  # 1 to 9999 [-]
 
         # Camera pan and tilt rates
         self.rho_dot_c = 0.0  # [deg/s]
@@ -256,6 +256,10 @@ class PtzController(BaseMQTTPubSub):
             }
         }
         self._calibration_callback(None, None, calibration_msg)
+
+        # Initialize camera pointing
+        if self.use_camera:
+            self.camera_control.absolute_move(self.rho_c, self.tau_c, self.zoom, 100)
 
         # TODO: Log configuration parameters
 
