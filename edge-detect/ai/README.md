@@ -1,1 +1,0 @@
-The files datasets2.py and sort.py are derived from https://github.com/WongKinYiu/yolov7 and are being released under the GNU General Public License v3.0.  (The remainder of this repo is released under the Apache License 2.0.)
