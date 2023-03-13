@@ -80,6 +80,9 @@ camera_pitch = 0
 camera_yaw = 0
 
 currentPlane = None
+camera_altitude = None
+camera_latitude = None
+camera_longitude = None
 
 camera_lead = None
 include_age = strtobool(os.getenv("INCLUDE_AGE", "True"))
