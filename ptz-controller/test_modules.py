@@ -61,6 +61,7 @@ def controller():
         config_topic=os.getenv("CONFIG_TOPIC"),
         calibration_topic=os.getenv("CALIBRATION_TOPIC"),
         flight_topic=os.getenv("FLIGHT_TOPIC"),
+        capture_topic=os.getenv("CAPTURE_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=HEARTBEAT_INTERVAL,
         update_interval=UPDATE_INTERVAL,

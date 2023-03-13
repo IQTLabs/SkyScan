@@ -4,6 +4,8 @@ import json
 import logging
 import math
 import os
+from pathlib import Path
+import tempfile
 from time import sleep, time
 from typing import Any, Dict
 
@@ -38,6 +40,7 @@ class PtzController(BaseMQTTPubSub):
         config_topic: str,
         calibration_topic: str,
         flight_topic: str,
+        capture_topic: str,
         logger_topic: str,
         heartbeat_interval: float,
         lambda_t: float = 0.0,
@@ -77,8 +80,10 @@ class PtzController(BaseMQTTPubSub):
             MQTT topic for subscribing to calibration messages
         flight_topic: str
             MQTT topic for subscribing to flight messages
+        capture_topic: str
+            MQTT topic for publising capture messages
         logger_topic: str
-            MQTT topic for publishing or subscribing to logger messages
+            MQTT topic for publishing logger messages
         heartbeat_interval: float
             Interval at which heartbeat message is to be published [s]
         lambda_t: float
@@ -131,6 +136,7 @@ class PtzController(BaseMQTTPubSub):
         self.config_topic = config_topic
         self.calibration_topic = calibration_topic
         self.flight_topic = flight_topic
+        self.capture_topic = capture_topic
         self.logger_topic = logger_topic
         self.heartbeat_interval = heartbeat_interval
         self.lambda_t = lambda_t
@@ -174,10 +180,14 @@ class PtzController(BaseMQTTPubSub):
             self.publish_registration("PTZ Controller Module Registration")
 
         # Aircraft identifier, time of flight message and
-        # corresponding aircraft position and velocity relative to the
-        # tripod in the camera fixed (rst) coordinate system
+        # corresponding aircraft longitude, latitude, and altitude,
+        # and position and velocity relative to the tripod in the
+        # camera fixed (rst) coordinate system
         self.icao24 = "NA"
         self.time_a = 0.0  # [s]
+        self.lambda_a = 0.0  # [deg]
+        self.varphi_a = 0.0  # [deg]
+        self.h_a = 0.0  # [m]
         self.r_rst_a_0_t = None  # [m/s]
         self.v_rst_a_0_t = None  # [m/s]
 
@@ -194,6 +204,13 @@ class PtzController(BaseMQTTPubSub):
         # Orthogonal transformation matrix from geocentric (XYZ) to
         # camera housing fixed (uvw) coordinates
         self.E_XYZ_to_uvw = None
+
+        # Distance between the aircraft and the tripod at time one
+        distance3d = 0.0  # [m]
+
+        # Aircraft azimuth and elevation angles
+        self.azm_a = 0.0  # [deg]
+        self.elv_a = 0.0  # [deg]
 
         # Aircraft pan and tilt angles
         self.rho_a = 0.0  # [deg]
@@ -420,9 +437,9 @@ class PtzController(BaseMQTTPubSub):
         logger.info(f"Processing flight msg data: {data}")
         self.time_a = data["latLonTime"]  # [s]
         self.time_c = self.time_a
-        lambda_a = data["lon"]  # [deg]
-        varphi_a = data["lat"]  # [deg]
-        h_a = data["altitude"]  # [m]
+        self.lambda_a = data["lon"]  # [deg]
+        self.varphi_a = data["lat"]  # [deg]
+        self.h_a = data["altitude"]  # [m]
         track_a = data["track"]  # [deg]
         ground_speed_a = data["groundSpeed"]  # [m/s]
         vertical_rate_a = data["verticalRate"]  # [m/s]
@@ -430,7 +447,7 @@ class PtzController(BaseMQTTPubSub):
         # Compute position in the geocentric (XYZ) coordinate system
         # of the aircraft relative to the tripod at time zero, the
         # observation time
-        r_XYZ_a_0 = ptz_utilities.compute_r_XYZ(lambda_a, varphi_a, h_a)
+        r_XYZ_a_0 = ptz_utilities.compute_r_XYZ(self.lambda_a, self.varphi_a, self.h_a)
         r_XYZ_a_0_t = r_XYZ_a_0 - self.r_XYZ_t
 
         # Compute lead time accounting for age of message, and
@@ -461,22 +478,25 @@ class PtzController(BaseMQTTPubSub):
 
         # Compute the distance between the aircraft and the tripod at
         # time one
-        # TODO: Restore?
-        # distance3d = ptz_utilities.norm(r_ENz_a_1_t)
+        distance3d = ptz_utilities.norm(r_ENz_a_1_t)
 
         # Compute the distance between the aircraft and the tripod
         # along the surface of a spherical Earth
         # TODO: Restore?
         # distance2d = ptz_utilities.compute_great_circle_distance(
-        #     self.lambda_t,
+        #     self.self.lambda_t,
         #     self.varphi_t,
-        #     lambda_a,
-        #     varphi_a,
+        #     self.lambda_a,
+        #     self.varphi_a,
         # )  # [m]
 
-        # Compute the bearing from north to the aircraft
-        # TODO: Restore?
-        # bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
+        # Compute the aircraft azimuth and elevation relative to the
+        # tripod
+        self.azm_a = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))  # [deg]
+        self.elv_a = math.degrees(
+            math.atan2(r_ENz_a_1_t[2], ptz_utilities.norm(r_ENz_a_1_t[0:2]))
+        )  # [deg]
+        logger.info(f"Aircraft azimuth and elevation: {self.azm_a}, {self.elv_a} [deg]")
 
         # Compute pan and tilt to point the camera at the aircraft
         r_uvw_a_1_t = np.matmul(self.E_XYZ_to_uvw, r_XYZ_a_1_t)
@@ -631,7 +651,8 @@ class PtzController(BaseMQTTPubSub):
         return tilt_rate
 
     def _capture_image(self):
-        """Capture a JPEG image, noting the time, if enabled.
+        """When enabled, capture an image in JPEG format, and publish
+        corresponding image metadata.
 
         Parameters
         ----------
@@ -642,16 +663,53 @@ class PtzController(BaseMQTTPubSub):
         None
         """
         if self.do_capture:
+
+            # Capture an image in JPEG format
             self.capture_time = time()
-            logger.info(
-                f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}, in: {self.capture_dir}"
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            image_filepath = Path(self.capture_dir) / "{}_{}_{}_{}_{}.jpg".format(
+                self.icao24,
+                int(self.azimuth),
+                int(self.elevation),
+                int(self.distance3d),
+                timestamp,
             )
-            with ptz_utilities.pushd(self.capture_dir):
+            logger.info(
+                f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}, in: {self.image_filepath}"
+            )
+            with tempfile.TemporaryDirectory() as d:
                 self.camera_configuration.get_jpeg_request(
                     camera=1,
                     resolution=self.jpeg_resolution,
                     compression=self.jpeg_compression,
                 )
+                d.glob("*.jpg")[0].rename(image_filepath)
+
+            # Populate and publish image metadata
+            image_metadata = {
+                "timestamp": timestamp,
+                "imagefile": str(image_filepath),
+                "camera": {
+                    "bearing": self.azimuth,
+                    "zoom": self.zoom,
+                    "pan": self.rho_c,
+                    "tilt": self.tau_c,
+                    "lat": self.varphi_t,
+                    "long": self.lambda_t,
+                    "alt": self.h_t
+                },
+                "aircraft": {
+                    "lat": self.varphi_a,
+                    "long": self.lambda_a,
+                    "alt": self.h_a
+                }
+            }
+            mqtt_client.publish(
+                self.capture_topic,
+                json.dumps(image_metadata),
+                0,
+                False
+            )
 
     def _update_pointing(self):
         """Update values of camera pan and tilt using current pan and
@@ -734,6 +792,7 @@ def make_controller():
         config_topic=os.getenv("CONFIG_TOPIC"),
         calibration_topic=os.getenv("CALIBRATION_TOPIC"),
         flight_topic=os.getenv("FLIGHT_TOPIC"),
+        capture_topic=os.getenv("CAPTURE_TOPIC"),
         logger_topic=os.getenv("LOGGER_TOPIC"),
         heartbeat_interval=float(os.getenv("HEARTBEAT_INTERVAL")),
         lambda_t=float(os.getenv("TRIPOD_LONGITUDE")),
