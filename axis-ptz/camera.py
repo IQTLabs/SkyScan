@@ -532,10 +532,6 @@ def get_json_request():
         A dictionary containing the contents os the JSON metadata file.  
     """
     image_filepath = _format_file_save_filepath(file_extension=".jpg")
-    filepath = os.path.join(
-        logging_directory,
-        os.path.basename(_format_file_save_filepath(file_extension=".json"))
-    )
 
     file_content_dictionary = {
         "timestamp": datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
@@ -556,12 +552,6 @@ def get_json_request():
         }
     }
 
-    try:
-        with open(filepath, "w") as fh:
-            fh.write(json.dumps(file_content_dictionary))
-    except Exception as e:
-        print("Error saving JSON log - " + str(e))
-        
     return file_content_dictionary
 
 
