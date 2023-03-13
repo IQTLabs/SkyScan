@@ -47,7 +47,7 @@ services:
       - USE_CAMERA=${USE_CAMERA}
       - LOG_TO_MQTT=${LOG_TO_MQTT}
     volumes:
-      - ./data:/data
+      - /flash/raw:/data/tosort
     restart: unless-stopped
     depends_on:
       - mqtt

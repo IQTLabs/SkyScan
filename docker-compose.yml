@@ -46,8 +46,19 @@ services:
         - "1883:1883"
     restart: unless-stopped
 
+  proxy:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - 1337:80
+      - 81:81
+      - 443:443
+    volumes:
+      - ./proxydata:/data
+      - ./letsencrypt:/etc/letsencrypt
+
   edge-detect:
-    image: iqtlabs/skyscan-yolo
+    image: meadejs/skyscan-yolo-detect
     volumes:
       - /flash/raw:/data/tosort
       - /flash/processed/plane:/data/plane
@@ -58,26 +69,3 @@ services:
       - .env
     depends_on:
       - mqtt
-
-  proxy:
-    image: jc21/nginx-proxy-manager:latest
-    restart: unless-stopped
-    ports:
-      - 1337:80
-      - 81:81
-      - 443:443
-    #network_mode: "host"
-    volumes:
-      - ./proxydata:/data
-      - ./letsencrypt:/etc/letsencrypt
-
-  axis-ptz:
-    image: meadejs/skyscan-axis-ptz
-    command: "./camera.py -f -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT} --roll ${ROLL} --pitch ${PITCH} --yaw ${YAW}"
-    volumes:
-      - /flash/raw:/app/capture
-      - /flash/processed/log:/flash/processed/log
-    depends_on:
-      - mqtt
-    restart: unless-stopped
-
