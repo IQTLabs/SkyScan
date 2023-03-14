@@ -533,7 +533,7 @@ class PtzController(BaseMQTTPubSub):
 
         # Compute the distance between the aircraft and the tripod at
         # time one
-        distance3d = ptz_utilities.norm(r_ENz_a_1_t)
+        self.distance3d = ptz_utilities.norm(r_ENz_a_1_t)
 
         # Compute the distance between the aircraft and the tripod
         # along the surface of a spherical Earth
@@ -730,13 +730,13 @@ class PtzController(BaseMQTTPubSub):
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             image_filepath = Path(self.capture_dir) / "{}_{}_{}_{}_{}.jpg".format(
                 self.icao24,
-                int(self.azimuth),
-                int(self.elevation),
+                int(self.azm_a),
+                int(self.elv_a),
                 int(self.distance3d),
                 timestamp,
             )
             logger.info(
-                f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}, in: {self.image_filepath}"
+                f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}, in: {image_filepath}"
             )
             with tempfile.TemporaryDirectory() as d:
                 self.camera_configuration.get_jpeg_request(
@@ -751,7 +751,7 @@ class PtzController(BaseMQTTPubSub):
                 "timestamp": timestamp,
                 "imagefile": str(image_filepath),
                 "camera": {
-                    "bearing": self.azimuth,
+                    "bearing": self.azm_a,  # Why include this value?
                     "zoom": self.zoom,
                     "pan": self.rho_c,
                     "tilt": self.tau_c,
@@ -765,9 +765,10 @@ class PtzController(BaseMQTTPubSub):
                     "alt": self.h_a,
                 },
             }
-            mqtt_client.publish(
-                self.capture_topic, json.dumps(image_metadata), 0, False
+            logger.info(
+                f"Publishing metadata: {image_metadata}, for aircraft: {self.icao24}, at: {self.capture_time}"
             )
+            self.publish_to_topic(self.capture_topic, json.dumps(msg))
 
     def _update_pointing(self):
         """Update values of camera pan and tilt using current pan and
