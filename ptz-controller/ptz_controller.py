@@ -5,6 +5,7 @@ import logging
 import math
 import os
 from pathlib import Path
+import shutil
 import tempfile
 from time import sleep, time
 from typing import Any, Dict
@@ -739,12 +740,13 @@ class PtzController(BaseMQTTPubSub):
                 f"Capturing image of aircraft: {self.icao24}, at: {self.capture_time}, in: {image_filepath}"
             )
             with tempfile.TemporaryDirectory() as d:
-                self.camera_configuration.get_jpeg_request(
-                    camera=1,
-                    resolution=self.jpeg_resolution,
-                    compression=self.jpeg_compression,
-                )
-                d.glob("*.jpg")[0].rename(image_filepath)
+                with ptz_utilities.pushd(d):
+                    self.camera_configuration.get_jpeg_request(
+                        camera=1,
+                        resolution=self.jpeg_resolution,
+                        compression=self.jpeg_compression,
+                    )
+                    shutil.move(list(Path(d).glob("*.jpg"))[0], image_filepath)
 
             # Populate and publish image metadata
             image_metadata = {
@@ -768,7 +770,7 @@ class PtzController(BaseMQTTPubSub):
             logger.info(
                 f"Publishing metadata: {image_metadata}, for aircraft: {self.icao24}, at: {self.capture_time}"
             )
-            self.publish_to_topic(self.capture_topic, json.dumps(msg))
+            self.publish_to_topic(self.capture_topic, json.dumps(image_metadata))
 
     def _update_pointing(self):
         """Update values of camera pan and tilt using current pan and
