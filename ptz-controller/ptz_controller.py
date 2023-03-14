@@ -721,19 +721,16 @@ class PtzController(BaseMQTTPubSub):
                     "tilt": self.tau_c,
                     "lat": self.varphi_t,
                     "long": self.lambda_t,
-                    "alt": self.h_t
+                    "alt": self.h_t,
                 },
                 "aircraft": {
                     "lat": self.varphi_a,
                     "long": self.lambda_a,
-                    "alt": self.h_a
-                }
+                    "alt": self.h_a,
+                },
             }
             mqtt_client.publish(
-                self.capture_topic,
-                json.dumps(image_metadata),
-                0,
-                False
+                self.capture_topic, json.dumps(image_metadata), 0, False
             )
 
     def _update_pointing(self):
