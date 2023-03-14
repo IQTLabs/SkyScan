@@ -66,6 +66,7 @@ def make_controller(use_mqtt):
         jpeg_compression=JPEG_COMPRESSION,
         use_mqtt=use_mqtt,
         use_camera=False,
+        include_age=False,
     )
     return controller
 
