@@ -188,13 +188,13 @@ class TestPtzController:
         assert np.linalg.norm(controller.E_XYZ_to_uvw - E_XYZ_to_uvw_exp) < PRECISION
 
     def test_compute_pan_rate_index(self, controller):
-        assert controller._compute_pan_rate_index(PAN_RATE_MIN / 2.0) == -100
-        assert controller._compute_pan_rate_index((PAN_RATE_MAX + PAN_RATE_MIN) / 2.0) == 0
+        assert controller._compute_pan_rate_index(-PAN_RATE_MAX * 2.0) == -100
+        assert controller._compute_pan_rate_index(0.0) == 0
         assert controller._compute_pan_rate_index(PAN_RATE_MAX * 2.0) == +100
 
     def test_compute_tilt_rate_index(self, controller):
-        assert controller._compute_tilt_rate_index(TILT_RATE_MIN / 2.0) == -100
-        assert controller._compute_tilt_rate_index((TILT_RATE_MAX + TILT_RATE_MIN) / 2.0) == 0
+        assert controller._compute_tilt_rate_index(-TILT_RATE_MAX * 2.0) == -100
+        assert controller._compute_tilt_rate_index(0.0) == 0
         assert controller._compute_tilt_rate_index(TILT_RATE_MAX * 2.0) == +100
 
     def test_flight_callback(
