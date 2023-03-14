@@ -283,6 +283,39 @@ class PtzController(BaseMQTTPubSub):
             self.camera_control.absolute_move(self.rho_c, self.tau_c, self.zoom, 100)
 
         # TODO: Log configuration parameters
+        logger.info(
+            f"""PtzController initialized with parameters:
+
+    camera_ip = {camera_ip}
+    camera_user = {camera_user}
+    camera_password = {camera_password}
+    config_topic = {config_topic}
+    calibration_topic = {calibration_topic}
+    flight_topic = {flight_topic}
+    capture_topic = {capture_topic}
+    logger_topic = {logger_topic}
+    heartbeat_interval = {heartbeat_interval}
+    lambda_t = {lambda_t}
+    varphi_t = {varphi_t}
+    h_t = {h_t}
+    update_interval = {update_interval}
+    capture_interval = {capture_interval}
+    capture_dir = {capture_dir}
+    lead_time = {lead_time}
+    pan_gain = {pan_gain}
+    pan_rate_min = {pan_rate_min}
+    pan_rate_max = {pan_rate_max}
+    tilt_gain = {tilt_gain}
+    tilt_rate_min = {tilt_rate_min}
+    tilt_rate_max = {tilt_rate_max}
+    jpeg_resolution = {jpeg_resolution}
+    jpeg_compression = {jpeg_compression}
+    use_mqtt = {use_mqtt}
+    use_camera = {use_camera}
+    include_age = {include_age}
+    log_to_mqtt = {log_to_mqtt}
+            """
+        )
 
     def decode_payload(self, payload):
         """

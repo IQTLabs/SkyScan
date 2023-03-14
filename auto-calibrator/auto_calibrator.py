@@ -119,23 +119,24 @@ class AutoCalibrator(BaseMQTTPubSub):
             self.publish_registration("Auto Calibration Registration")
 
         logger.info(
-            f"""AutoCalibrator initialized with parameters: \n
-            config_topic = {config_topic}
-            pointing_error_topic = {pointing_error_topic}
-            calibration_topic = {calibration_topic}
-            heartbeat_interval = {heartbeat_interval}
-            min_zoom = {min_zoom}
-            max_zoom = {max_zoom}
-            min_horizontal_fov = {min_horizontal_fov}
-            max_horizontal_fov = {max_horizontal_fov}
-            min_vertical_fov = {min_vertical_fov}
-            max_vertical_fov = {max_vertical_fov}
-            horizontal_pixels = {horizontal_pixels}
-            vertical_pixels = {vertical_pixels}
-            alpha = {alpha}
-            beta = {beta}
-            gamma = {gamma}
-            use_mqtt = {use_mqtt}
+            f"""AutoCalibrator initialized with parameters:
+
+    config_topic = {config_topic}
+    pointing_error_topic = {pointing_error_topic}
+    calibration_topic = {calibration_topic}
+    heartbeat_interval = {heartbeat_interval}
+    min_zoom = {min_zoom}
+    max_zoom = {max_zoom}
+    min_horizontal_fov = {min_horizontal_fov}
+    max_horizontal_fov = {max_horizontal_fov}
+    min_vertical_fov = {min_vertical_fov}
+    max_vertical_fov = {max_vertical_fov}
+    horizontal_pixels = {horizontal_pixels}
+    vertical_pixels = {vertical_pixels}
+    alpha = {alpha}
+    beta = {beta}
+    gamma = {gamma}
+    use_mqtt = {use_mqtt}
             """
         )
 
