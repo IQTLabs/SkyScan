@@ -331,9 +331,12 @@ class PtzController(BaseMQTTPubSub):
         data : dict
             The data component of the payload
         """
-        # TODO: Confirm message format
-        # data = json.loads(str(payload.decode("utf-8")))["data"]
-        data = json.loads(str(payload.decode("utf-8")))
+        # TODO: Establish and use message format convention
+        content = json.loads(str(payload.decode("utf-8")))
+        if "data" in content:
+            data = content["data"]
+        else:
+            data = content
         return data
 
     def _config_callback(
