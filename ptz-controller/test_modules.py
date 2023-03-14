@@ -77,6 +77,7 @@ def controller():
         jpeg_compression=JPEG_COMPRESSION,
         use_mqtt=False,
         use_camera=False,
+        include_age=False,
     )
     return controller
 

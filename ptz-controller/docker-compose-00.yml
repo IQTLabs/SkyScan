@@ -46,6 +46,7 @@ services:
       - JPEG_COMPRESSION=${JPEG_COMPRESSION}
       - USE_MQTT=${USE_MQTT}
       - USE_CAMERA=${USE_CAMERA}
+      - INCLUDE_AGE=${INCLUDE_AGE=True}
       - LOG_TO_MQTT=${LOG_TO_MQTT}
     volumes:
       - /flash/raw:/data/tosort

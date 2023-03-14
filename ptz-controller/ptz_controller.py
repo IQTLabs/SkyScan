@@ -60,6 +60,7 @@ class PtzController(BaseMQTTPubSub):
         jpeg_compression: int = 5,
         use_mqtt: bool = True,
         use_camera: bool = True,
+        include_age: bool = True,
         log_to_mqtt: bool = False,
         **kwargs: Any,
     ):
@@ -121,6 +122,8 @@ class PtzController(BaseMQTTPubSub):
             Flag to use MQTT, or not
         use_camera: bool
             Flag to use camera configuration and control, or not
+        include_age: bool
+            Flag to include flight message age in lead time, or not
         log_to_mqtt: bool
             Flag to publish logger messages to MQTT, or not
 
@@ -156,6 +159,7 @@ class PtzController(BaseMQTTPubSub):
         self.jpeg_compression = jpeg_compression
         self.use_mqtt = use_mqtt
         self.use_camera = use_camera
+        self.include_age = include_age
         self.log_to_mqtt = log_to_mqtt
 
         # Construct camera configuration and control
@@ -338,6 +342,7 @@ class PtzController(BaseMQTTPubSub):
         self.lead_time = data.get("lead_time", self.lead_time)  # [s]
         self.pan_gain = data.get("pan_gain", self.pan_gain)  # [1/s]
         self.tilt_gain = data.get("tilt_gain", self.tilt_gain)  # [1/s]
+        self.include_age = data.get("include_age", self.include_age)
         self.log_to_mqtt = data.get("log_to_mqtt", self.log_to_mqtt)
 
         # Compute tripod position in the geocentric (XYZ) coordinate
@@ -462,12 +467,12 @@ class PtzController(BaseMQTTPubSub):
         r_XYZ_a_0 = ptz_utilities.compute_r_XYZ(self.lambda_a, self.varphi_a, self.h_a)
         r_XYZ_a_0_t = r_XYZ_a_0 - self.r_XYZ_t
 
-        # Compute lead time accounting for age of message, and
-        # specified lead time
-        datetime_a = ptz_utilities.convert_time(self.time_a)
-        lead_time = (
-            datetime.utcnow() - datetime_a
-        ).total_seconds() + self.lead_time  # [s]
+        # Assign lead time, computing and adding age of flight
+        # message, if enabled
+        lead_time = self.lead_time  # [s]
+        if self.include_age:
+            datetime_a = ptz_utilities.convert_time(self.time_a)
+            lead_time += (datetime.utcnow() - datetime_a).total_seconds()  # [s]
         logger.info(f"Using lead time: {lead_time} [s]")
 
         # Compute position and velocity in the topocentric (ENz)
@@ -832,6 +837,7 @@ def make_controller():
         jpeg_compression=os.getenv("JPEG_COMPRESSION"),
         use_mqtt=strtobool(os.getenv("USE_MQTT")),
         use_camera=strtobool(os.getenv("USE_CAMERA")),
+        include_age=strtobool(os.getenv("INCLUDE_AGE")),
         log_to_mqtt=strtobool(os.getenv("LOG_TO_MQTT")),
     )
 
