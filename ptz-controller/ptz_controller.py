@@ -731,7 +731,7 @@ class PtzController(BaseMQTTPubSub):
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             image_filepath = Path(self.capture_dir) / "{}_{}_{}_{}_{}.jpg".format(
                 self.icao24,
-                int(self.azm_a),
+                int(self.azm_a) % 360,
                 int(self.elv_a),
                 int(self.distance3d),
                 timestamp,
@@ -753,7 +753,6 @@ class PtzController(BaseMQTTPubSub):
                 "timestamp": timestamp,
                 "imagefile": str(image_filepath),
                 "camera": {
-                    "bearing": self.azm_a,  # Why include this value?
                     "zoom": self.zoom,
                     "pan": self.rho_c,
                     "tilt": self.tau_c,
