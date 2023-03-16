@@ -112,6 +112,18 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.gamma = gamma
         self.use_mqtt = use_mqtt
 
+
+
+        # TODO: Cleanup
+        self.image_score_min = 0.925
+        self.bbox_area_max = 0.020
+
+        # TODO: Cleanup
+        self.icao24 = "NA"
+        self.image_area = self.horizontal_pixels * self.vertical_pixels
+
+
+
         # Connect client on construction
         if self.use_mqtt:
             self.connect_client()
@@ -154,7 +166,12 @@ class AutoCalibrator(BaseMQTTPubSub):
         data : dict
             The data component of the payload
         """
-        data = json.loads(str(payload.decode("utf-8")))["data"]
+        # TODO: Establish and use message format convention
+        content = json.loads(str(payload.decode("utf-8")))
+        if "data" in content:
+            data = content["data"]
+        else:
+            data = content
         return data
 
     def _pointing_error_callback(
@@ -183,8 +200,28 @@ class AutoCalibrator(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
-        logger.info(f"Received '{data}' from `{self.pointing_error_topic}` topic")
+        logger.info(f"Received: {data}, from topic: {self.pointing_error_topic}")
 
+
+
+        # TODO: Cleanup
+        # Use the first score above the threshold for new aircraft
+        icao24 = Path(data["imagefile"]).stem.split("_")[0]
+        bbox_data = data["aircraft"]["bbox"][0]
+        bbox = bbox_data["bbox"]
+        bbox_area = (bbox[2] - bbox[1]) * (bbox[3] - bbox[1]) / self.image_area
+        score = bbox_data["score"]
+        if (score < self.image_score_min or
+            bbox_area > self.bbox_area_max or
+            icao24 == self.icao24):
+            logger.info(f"Skipping aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}")
+            return
+        else:
+            logger.info(f"Processing aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}")
+            self.icao24 = icao24
+
+
+        
         # Find tripod yaw, pitch, and roll that minimize pointing
         # error
         rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
@@ -194,7 +231,7 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
-        publish_data = {
+        calibration = {
             "timestamp": str(int(datetime.datetime.utcnow().timestamp())),
             "data": {
                 "camera": {
@@ -205,8 +242,8 @@ class AutoCalibrator(BaseMQTTPubSub):
             },
         }
         if self.use_mqtt:
-            self.publish_to_topic(self.calibration_topic, json.dumps(publish_data))
-            logger.info(f"Results published to topic: {self.calibration_topic}")
+            # self.publish_to_topic(self.calibration_topic, json.dumps(calibration))
+            logger.info(f"Published: {calibration}, to topic: {self.calibration_topic}")
 
     def _config_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
@@ -231,7 +268,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
-        logger.info(f"Received '{data}' from `{self.config_topic}` topic")
+        logger.info(f"Received: {data}, from topic: {self.config_topic}")
 
         # Set camera config values. Config message can include any or
         # all values
@@ -302,14 +339,14 @@ class AutoCalibrator(BaseMQTTPubSub):
                 f"Configuration tripod_yaw updated from {old_gamma} to {self.gamma}"
             )
 
-    def _calculate_calibration_error(self, msg):
+    def _calculate_calibration_error(self, data):
 
         """Calculate calibration error of camera using information
         from YOLO or equivalent bounding box.
 
         Parameters
         ----------
-        msg: Dict
+        data: Dict
             A Dict with calibration information
 
         Returns
@@ -320,7 +357,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             Tilt error [degrees]
         """
         # Calculate FoV based on current zoom
-        zoom = msg["camera"]["zoom"]
+        zoom = data["camera"]["zoom"]
         zoom_percentage = (zoom - self.min_zoom) / (self.min_zoom + self.max_zoom)
 
         # FoV is calculated with 1 - zoom_percentage because max zoom
@@ -337,7 +374,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         # Get aircraft bounding box: top left and bottom
         # right. Position is in pixels from the upper left corner of
         # image, down and right.
-        bbox = msg["aircraft"]["bbox"]
+        # TODO: Establish and use message format convention
+        bbox = data["aircraft"]["bbox"][0]["bbox"]
 
         # Calculate pan and tilt error in degrees
         center_x = (bbox[1] + bbox[3]) / 2
@@ -388,14 +426,14 @@ class AutoCalibrator(BaseMQTTPubSub):
         # coordinates
         a_varphi = data["aircraft"]["lat"]  # [deg]
         a_lambda = data["aircraft"]["long"]  # [deg]
-        a_h = data["aircraft"]["altitude"]  # [m]
+        a_h = data["aircraft"]["alt"]  # [m]
         r_XYZ_a = ptz_utilities.compute_r_XYZ(a_lambda, a_varphi, a_h)
 
         # Compute position of the tripod in geocentric (XYZ)
         # coordinates
         t_varphi = data["camera"]["lat"]  # [deg]
         t_lambda = data["camera"]["long"]  # [deg]
-        t_h = data["camera"]["altitude"]  # [m]
+        t_h = data["camera"]["alt"]  # [m]
         r_XYZ_t = ptz_utilities.compute_r_XYZ(t_lambda, t_varphi, t_h)
 
         # Compute orthogonal transformation matrix from geocentric
