@@ -281,7 +281,8 @@ class PtzController(BaseMQTTPubSub):
 
         # Initialize camera pointing
         if self.use_camera:
-            self.camera_control.absolute_move(self.rho_c, self.tau_c, self.zoom, 100)
+            self.camera_control.stop_move()
+            self.camera_control.absolute_move(self.rho_c, self.tau_c, self.zoom, 50)
 
         # TODO: Log configuration parameters
         logger.info(
@@ -474,9 +475,9 @@ class PtzController(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
-        self.icao24 = data.get("icao24", self.icao24)
         if not set(
             [
+                "icao24",
                 "latLonTime",
                 "lon",
                 "lat",
@@ -489,6 +490,13 @@ class PtzController(BaseMQTTPubSub):
             logger.info(f"Required keys missing from flight message data: {data}")
             return
         logger.info(f"Processing flight msg data: {data}")
+
+        # TODO: Cleanup
+        icao24 = data["icao24"]
+        if self.icao24 != icao24:
+            self.icao24 = icao24
+            self.camera_control.stop_move()
+
         self.time_a = data["latLonTime"]  # [s]
         self.time_c = self.time_a
         self.lambda_a = data["lon"]  # [deg]
@@ -566,14 +574,6 @@ class PtzController(BaseMQTTPubSub):
         # if self.rho_a < 30.0 or 100.0 < self.rho_a:
         #     logger.info("Skipping aircraft with pan not in the interval (30, 100)")
         #     self.camera_control.stop_move()
-        #     return
-
-        # TODO: Remove
-        # Point at the aircraft if the identifier has changed
-        # if self.icao24 != icao24:
-        #     self.icao24 = icao24
-        #     logger.info(f"Pointing at aircraft: {self.icao24}")
-        #     self.camera_control.absolute_move(self.rho_a, self.tau_a, self.zoom, 100)
         #     return
 
         # Get camera pan, tilt, and zoom
@@ -834,10 +834,10 @@ class PtzController(BaseMQTTPubSub):
                     self.do_capture
                     and time() - self.capture_time > 2.0 * self.capture_interval
                 ):
-                    logger.info("Stopping continuous pan and tilt")
-                    self.camera_control.stop_move()
                     logger.info(f"Stopping image capture of aircraft: {self.icao24}")
                     self.do_capture = False
+                    logger.info("Stopping continuous pan and tilt")
+                    self.camera_control.stop_move()
 
             except Exception as e:
                 logger.error(f"Main loop exception: {e}")
