@@ -116,7 +116,7 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # TODO: Cleanup
         self.image_score_min = 0.925
-        self.bbox_area_max = 0.020
+        self.bbox_area_max = 0.100
 
         # TODO: Cleanup
         self.icao24 = "NA"
@@ -223,11 +223,15 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         
         # Find tripod yaw, pitch, and roll that minimize pointing
-        # error
+        # error, and assign an exponentially weighted average for the
+        # current yaw, pitch, and roll
         rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
-        self.alpha, self.beta, self.gamma = self._minimize_pointing_error(
+        alpha, beta, gamma = self._minimize_pointing_error(
             data, rho_epsilon, tau_epsilon
         )
+        self.alpha = (self.alpha + alpha) / 2.0
+        self.beta = (self.beta + beta) / 2.0
+        self.gamma = (self.gamma + gamma) / 2.0
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
@@ -242,7 +246,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             },
         }
         if self.use_mqtt:
-            # self.publish_to_topic(self.calibration_topic, json.dumps(calibration))
+            self.publish_to_topic(self.calibration_topic, json.dumps(calibration))
             logger.info(f"Published: {calibration}, to topic: {self.calibration_topic}")
 
     def _config_callback(
@@ -368,8 +372,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         vertical_fov = (
             (self.max_vertical_fov - self.min_vertical_fov) * (1 - zoom_percentage)
         ) + self.min_vertical_fov
-        horizontal_degrees_per_pixel = (horizontal_fov / self.horizontal_pixels) / 12
-        vertical_degrees_per_pixel = (vertical_fov / self.vertical_pixels) / 12
+        horizontal_degrees_per_pixel = (horizontal_fov / self.horizontal_pixels)
+        vertical_degrees_per_pixel = (vertical_fov / self.vertical_pixels)
 
         # Get aircraft bounding box: top left and bottom
         # right. Position is in pixels from the upper left corner of
