@@ -55,12 +55,6 @@ def pointing_error_msg():
 
 
 @pytest.fixture
-def pointing_error_data(pointing_error_msg):
-    """Load calibration data from message."""
-    return pointing_error_msg["data"]
-
-
-@pytest.fixture
 def additional_info_msg():
     """WIP... to be deleted."""
     with open("data/additional_info_msg.json") as f:
@@ -79,13 +73,13 @@ class TestAutoCalibrator:
     pointing.
     """
 
-    def test_calculate_calibration_error(self, calibrator, pointing_error_data):
+    def test_calculate_calibration_error(self, calibrator, pointing_error_msg):
         """Test calculation of calibration error."""
 
         (
             rho_epsilon,
             tau_epsilon,
-        ) = calibrator._calculate_calibration_error(pointing_error_data)
+        ) = calibrator._calculate_calibration_error(pointing_error_msg)
 
         assert rho_epsilon == RHO_EPSILON_EXPECTED
         assert tau_epsilon == TAU_EPSILON_EXPECTED
@@ -94,14 +88,14 @@ class TestAutoCalibrator:
         """Tested implicitly."""
         pass
 
-    def test_minimize_pointing_error(self, calibrator, additional_data):
+    def test_minimize_pointing_error(self, calibrator, pointing_error_msg):
         """Test pointing error minimization."""
 
         rho_epsilon = RHO_EPSILON_EXPECTED
         tau_epsilon = TAU_EPSILON_EXPECTED
 
         alpha, beta, gamma = calibrator._minimize_pointing_error(
-            additional_data, rho_epsilon, tau_epsilon
+            pointing_error_msg, rho_epsilon, tau_epsilon
         )
 
         assert math.fabs(alpha - ALPHA_EXPECTED) < PRECISION
@@ -130,13 +124,13 @@ class TestAutoCalibrator:
         assert calibrator.min_zoom == MIN_ZOOM_EXPECTED
         assert calibrator.max_zoom == MAX_ZOOM_EXPECTED
 
-    def test_calibration_callback(self, calibrator, additional_info_msg):
+    def test_calibration_callback(self, calibrator, pointing_error_msg):
         """Test calibration callback reads message, calculates alpha,
         beta, and gamma correctly, and updates those values.
         """
         _client = None
         _userdata = None
-        calibrator._pointing_error_callback(_client, _userdata, additional_info_msg)
+        calibrator._pointing_error_callback(_client, _userdata, pointing_error_msg)
 
         assert math.fabs(calibrator.alpha - ALPHA_EXPECTED) < PRECISION
         assert math.fabs(calibrator.beta - BETA_EXPECTED) < PRECISION

@@ -199,7 +199,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         if self.use_mqtt:
             data = self.decode_payload(msg.payload)
         else:
-            data = msg["data"]
+            data = msg
         logger.info(f"Received: {data}, from topic: {self.pointing_error_topic}")
 
 
@@ -358,7 +358,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Calculate FoV based on current zoom
         zoom = data["camera"]["zoom"]
-        zoom_percentage = (zoom - self.min_zoom) / (self.min_zoom + self.max_zoom)
+        zoom_percentage = (zoom - self.min_zoom) / (self.max_zoom - self.min_zoom)
 
         # FoV is calculated with 1 - zoom_percentage because max zoom
         # indicates minimum FoV
@@ -368,8 +368,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         vertical_fov = (
             (self.max_vertical_fov - self.min_vertical_fov) * (1 - zoom_percentage)
         ) + self.min_vertical_fov
-        horizontal_degrees_per_pixel = horizontal_fov / self.horizontal_pixels
-        vertical_degrees_per_pixel = vertical_fov / self.vertical_pixels
+        horizontal_degrees_per_pixel = (horizontal_fov / self.horizontal_pixels) / 12
+        vertical_degrees_per_pixel = (vertical_fov / self.vertical_pixels) / 12
 
         # Get aircraft bounding box: top left and bottom
         # right. Position is in pixels from the upper left corner of
@@ -378,8 +378,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         bbox = data["aircraft"]["bbox"][0]["bbox"]
 
         # Calculate pan and tilt error in degrees
-        center_x = (bbox[1] + bbox[3]) / 2
-        center_y = (bbox[0] + bbox[2]) / 2
+        center_x = (bbox[0] + bbox[2]) / 2
+        center_y = (bbox[1] + bbox[3]) / 2
         horizontal_pixel_difference = center_x - (
             self.horizontal_pixels / 2
         )  # Positive values represents top and right, respectively
