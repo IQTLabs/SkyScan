@@ -217,6 +217,10 @@ class PtzController(BaseMQTTPubSub):
         self.azm_a = 0.0  # [deg]
         self.elv_a = 0.0  # [deg]
 
+        # Position at time one in the geocentric (XYZ) coordinate
+        # system of the aircraft relative to the tripod
+        self.r_XYZ_a_1_t = None
+
         # Aircraft pan and tilt angles
         self.rho_a = 0.0  # [deg]
         self.tau_a = 0.0  # [deg]
@@ -537,7 +541,7 @@ class PtzController(BaseMQTTPubSub):
         # Compute position, at time one, and velocity, at time zero,
         # in the geocentric (XYZ) coordinate system of the aircraft
         # relative to the tripod
-        r_XYZ_a_1_t = np.matmul(self.E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
+        self.r_XYZ_a_1_t = np.matmul(self.E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
         v_XYZ_a_0_t = np.matmul(self.E_XYZ_to_ENz.transpose(), v_ENz_a_0_t)
 
         # Compute the distance between the aircraft and the tripod at
@@ -563,7 +567,7 @@ class PtzController(BaseMQTTPubSub):
         logger.info(f"Aircraft azimuth and elevation: {self.azm_a}, {self.elv_a} [deg]")
 
         # Compute pan and tilt to point the camera at the aircraft
-        r_uvw_a_1_t = np.matmul(self.E_XYZ_to_uvw, r_XYZ_a_1_t)
+        r_uvw_a_1_t = np.matmul(self.E_XYZ_to_uvw, self.r_XYZ_a_1_t)
         self.rho_a = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
         self.tau_a = math.degrees(
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
@@ -753,17 +757,14 @@ class PtzController(BaseMQTTPubSub):
                 "timestamp": timestamp,
                 "imagefile": str(image_filepath),
                 "camera": {
+                    "rho_c": self.rho_c,
+                    "tau_c": self.tau_c,
+                    "lambda_t": self.lambda_t,
+                    "varphi_t": self.varphi_t,
                     "zoom": self.zoom,
-                    "pan": self.rho_c,
-                    "tilt": self.tau_c,
-                    "lat": self.varphi_t,
-                    "long": self.lambda_t,
-                    "alt": self.h_t,
                 },
                 "aircraft": {
-                    "lat": self.varphi_a,
-                    "long": self.lambda_a,
-                    "alt": self.h_a,
+                    "r_XYZ_a_1_t": self.r_XYZ_a_1_t.tolist(),
                 },
             }
             logger.info(
