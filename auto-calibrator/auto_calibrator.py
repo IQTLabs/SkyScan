@@ -4,7 +4,6 @@ import json
 import logging
 import math
 import os
-import sys
 from pathlib import Path
 from time import sleep
 from typing import Any, Dict
@@ -41,12 +40,14 @@ class AutoCalibrator(BaseMQTTPubSub):
         heartbeat_interval: float,
         min_zoom: int = 0,
         max_zoom: int = 9999,
-        min_horizontal_fov: float = 6.7,
-        max_horizontal_fov: float = 61.8,
-        min_vertical_fov: float = 3.8,
-        max_vertical_fov: float = 37.2,
+        fit_horizontal_fov_max: float = 48.31584827530176,
+        fit_horizontal_fov_scale: float = 0.001627997881937721,
+        fit_horizontal_fov_min: float = 3.803123285538903,
         horizontal_pixels: int = 1920,
         vertical_pixels: int = 1080,
+        image_score_min: float = 0.925,
+        bbox_area_max: float = 0.100,
+        icao24: str = "NA",
         alpha: float = 0.0,
         beta: float = 0.0,
         gamma: float = 0.0,
@@ -70,16 +71,22 @@ class AutoCalibrator(BaseMQTTPubSub):
             Minimum zoom setting on camera
         max_zoom: int
             Maximum zoom setting on camera
-        min_horizontal_fov: float
+        fit_horizontal_fov_max: float
             Camera horizontal FoV at maximum zoom
-        max_horizontal_fov: float
+        fit_horizontal_fov_min: float
             Camera horizontal FoV at minimum zoom
-        min_vertical_fov: float
-            Camera vertical FoV at maximum zoom
+        fit_horizontal_fov_scale: float
+            Camera horizontal FoV scale
         horizontal_pixels: int
             Horizontal pixel count in image analyzed by bounding box
         vertical_pixels: int
             Vertical pixel count in image analyzed by bounding box
+        image_score_min: float
+            Minimum accepted bbox score from image recognition to process aircraft
+        bbox_area_max: float
+            Maximum accepted area of bbox to process aircraft
+        icao24: str
+            icao24 code of most recently processed aircraft
         alpha: float
             Tripod yaw
         beta: float
@@ -101,28 +108,18 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.heartbeat_interval = heartbeat_interval
         self.min_zoom = min_zoom
         self.max_zoom = max_zoom
-        self.min_horizontal_fov = min_horizontal_fov
-        self.max_horizontal_fov = max_horizontal_fov
-        self.min_vertical_fov = min_vertical_fov
-        self.max_vertical_fov = max_vertical_fov
+        self.fit_horizontal_fov_max = fit_horizontal_fov_max
+        self.fit_horizontal_fov_min = fit_horizontal_fov_min
+        self.fit_horizontal_fov_scale = fit_horizontal_fov_scale
         self.horizontal_pixels = horizontal_pixels
         self.vertical_pixels = vertical_pixels
+        self.image_score_min = image_score_min
+        self.bbox_area_max = bbox_area_max
+        self.icao24 = icao24
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
         self.use_mqtt = use_mqtt
-
-
-
-        # TODO: Cleanup
-        self.image_score_min = 0.925
-        self.bbox_area_max = 0.100
-
-        # TODO: Cleanup
-        self.icao24 = "NA"
-        self.image_area = self.horizontal_pixels * self.vertical_pixels
-
-
 
         # Connect client on construction
         if self.use_mqtt:
@@ -139,12 +136,14 @@ class AutoCalibrator(BaseMQTTPubSub):
     heartbeat_interval = {heartbeat_interval}
     min_zoom = {min_zoom}
     max_zoom = {max_zoom}
-    min_horizontal_fov = {min_horizontal_fov}
-    max_horizontal_fov = {max_horizontal_fov}
-    min_vertical_fov = {min_vertical_fov}
-    max_vertical_fov = {max_vertical_fov}
+    fit_horizontal_fov_max = {fit_horizontal_fov_max}
+    fit_horizontal_fov_scale = {fit_horizontal_fov_scale}
+    fit_horizontal_fov_min = {fit_horizontal_fov_min}
     horizontal_pixels = {horizontal_pixels}
     vertical_pixels = {vertical_pixels}
+    image_score_min = {image_score_min}
+    bbox_area_max = {bbox_area_max}
+    icao24 = {icao24}
     alpha = {alpha}
     beta = {beta}
     gamma = {gamma}
@@ -200,6 +199,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             data = self.decode_payload(msg.payload)
         else:
             data = msg
+
         logger.info(f"Received: {data}, from topic: {self.pointing_error_topic}")
 
         # Process one message per aircraft describing an image with
@@ -207,17 +207,24 @@ class AutoCalibrator(BaseMQTTPubSub):
         icao24 = Path(data["imagefile"]).stem.split("_")[0]
         bbox_data = data["aircraft"]["bbox"][0]
         bbox = bbox_data["bbox"]
-        bbox_area = (bbox[2] - bbox[1]) * (bbox[3] - bbox[1]) / self.image_area
+        image_area = self.horizontal_pixels * self.vertical_pixels
+        bbox_area = (bbox[2] - bbox[1]) * (bbox[3] - bbox[1]) / image_area
         score = bbox_data["score"]
-        if (score < self.image_score_min or
-            bbox_area > self.bbox_area_max or
-            icao24 == self.icao24):
-            logger.info(f"Skipping aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}")
+        if (
+            score < self.image_score_min
+            or bbox_area > self.bbox_area_max
+            or icao24 == self.icao24
+        ):
+            logger.info(
+                f"Skipping aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}"
+            )
             return
         else:
-            logger.info(f"Processing aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}")
+            logger.info(
+                f"Processing aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}"
+            )
             self.icao24 = icao24
-        
+
         # TODO: Review weighting scheme
         # Find tripod yaw, pitch, and roll that minimize pointing
         # error, and assign an exponentially weighted average for the
@@ -273,6 +280,7 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Set camera config values. Config message can include any or
         # all values
+        # TODO: Update with current values
         if "min_zoom" in data["camera"]:
             old_min_zoom = self.min_zoom
             self.min_zoom = data["camera"]["min_zoom"]
@@ -285,29 +293,23 @@ class AutoCalibrator(BaseMQTTPubSub):
             logger.info(
                 f"Configuration max_zoom updated from {old_max_zoom} to {self.max_zoom}"
             )
-        if "min_horizontal_fov" in data["camera"]:
-            old_min_horizontal_fov = self.min_horizontal_fov
-            self.min_horizontal_fov = data["camera"]["min_horizontal_fov"]
+        if "fit_horizontal_fov_max" in data["camera"]:
+            old_fit_horizontal_fov_max = self.fit_horizontal_fov_max
+            self.fit_horizontal_fov_max = data["camera"]["fit_horizontal_fov_max"]
             logger.info(
-                f"Configuration min_horizontal_fov updated from {old_min_horizontal_fov} to {self.min_horizontal_fov}"
+                f"Configuration fit_horizontal_fov_max updated from {old_fit_horizontal_fov_max} to {self.fit_horizontal_fov_max} "
             )
-        if "max_horizontal_fov" in data["camera"]:
-            old_max_horizontal_fov = self.max_horizontal_fov
-            self.max_horizontal_fov = data["camera"]["max_horizontal_fov"]
+        if "fit_horizontal_fov_min" in data["camera"]:
+            old_fit_horizontal_fov_min = self.fit_horizontal_fov_min
+            self.fit_horizontal_fov_min = data["camera"]["fit_horizontal_fov_min"]
             logger.info(
-                f"Configuration max_horizontal_fov updated from {old_max_horizontal_fov} to {self.max_horizontal_fov}"
+                f"Configuration fit_horizontal_fov_min updated from {old_fit_horizontal_fov_min} to {self.fit_horizontal_fov_min} "
             )
-        if "min_vertical_fov" in data["camera"]:
-            old_min_vertical_fov = self.min_vertical_fov
-            self.min_vertical_fov = data["camera"]["min_vertical_fov"]
+        if "fit_horizontal_fov_scale" in data["camera"]:
+            old_fit_horizontal_fov_scale = self.fit_horizontal_fov_scale
+            self.fit_horizontal_fov_scale = data["camera"]["fit_horizontal_fov_scale"]
             logger.info(
-                f"Configuration min_vertical_fov updated from {old_min_vertical_fov} to {self.min_vertical_fov}"
-            )
-        if "max_vertical_fov" in data["camera"]:
-            old_max_vertical_fov = self.max_vertical_fov
-            self.max_vertical_fov = data["camera"]["max_vertical_fov"]
-            logger.info(
-                f"Configuration max_vertical_fov updated from {old_max_vertical_fov} to {self.max_vertical_fov}"
+                f"Configuration fit_horizontal_fov_scale updated from {old_fit_horizontal_fov_scale} to {self.fit_horizontal_fov_scale} "
             )
         if "horizontal_pixels" in data["camera"]:
             old_horizontal_pixels = self.horizontal_pixels
@@ -320,6 +322,18 @@ class AutoCalibrator(BaseMQTTPubSub):
             self.vertical_pixels = data["camera"]["vertical_pixels"]
             logger.info(
                 f"Configuration vertical_pixels updated from {old_vertical_pixels} to {self.vertical_pixels}"
+            )
+        if "image_score_min" in data["camera"]:
+            old_image_score_min = self.image_score_min
+            self.image_score_min = data["camera"]["image_score_min"]
+            logger.info(
+                f"Configuration image_score_min updated from {old_image_score_min} to {self.image_score_min}"
+            )
+        if "bbox_area_max" in data["camera"]:
+            old_bbox_area_max = self.bbox_area_max
+            self.bbox_area_max = data["camera"]["bbox_area_max"]
+            logger.info(
+                f"Configuration bbox_area_max updated from {old_bbox_area_max} to {self.bbox_area_max}"
             )
         if "tripod_yaw" in data["camera"]:
             old_alpha = self.alpha
@@ -358,18 +372,19 @@ class AutoCalibrator(BaseMQTTPubSub):
         """
         # Calculate FoV based on current zoom
         zoom = data["camera"]["zoom"]
-        zoom_percentage = (zoom - self.min_zoom) / (self.max_zoom - self.min_zoom)
+        aspect_ratio = self.vertical_pixels / self.horizontal_pixels
 
-        # FoV is calculated with 1 - zoom_percentage because max zoom
-        # indicates minimum FoV
-        horizontal_fov = (
-            (self.max_horizontal_fov - self.min_horizontal_fov) * (1 - zoom_percentage)
-        ) + self.min_horizontal_fov
-        vertical_fov = (
-            (self.max_vertical_fov - self.min_vertical_fov) * (1 - zoom_percentage)
-        ) + self.min_vertical_fov
-        horizontal_degrees_per_pixel = (horizontal_fov / self.horizontal_pixels)
-        vertical_degrees_per_pixel = (vertical_fov / self.vertical_pixels)
+        # Calculate horizontal and vertical fov based on exponential fov fit
+        fit_horizontal_fov = (
+            self.fit_horizontal_fov_max * np.exp(-self.fit_horizontal_fov_scale * zoom)
+            + self.fit_horizontal_fov_min
+        )
+        fit_vertical_fov = np.degrees(
+            np.arctan(np.tan(np.radians(fit_horizontal_fov)) * aspect_ratio)
+        )
+
+        horizontal_degrees_per_pixel = fit_horizontal_fov / self.horizontal_pixels
+        vertical_degrees_per_pixel = fit_vertical_fov / self.vertical_pixels
 
         # Get aircraft bounding box: top left and bottom
         # right. Position is in pixels from the upper left corner of
@@ -538,10 +553,9 @@ if __name__ == "__main__":
         heartbeat_interval=float(os.getenv("HEARTBEAT_INTERVAL")),
         min_zoom=int(os.getenv("MIN_ZOOM")),
         max_zoom=int(os.getenv("MAX_ZOOM")),
-        min_horizontal_fov=float(os.getenv("MIN_HORIZONTAL_FOV")),
-        max_horizontal_fov=float(os.getenv("MAX_HORIZONTAL_FOV")),
-        min_vertical_fov=float(os.getenv("MIN_VERTICAL_FOV")),
-        max_vertical_fov=float(os.getenv("MAX_VERTICAL_FOV")),
+        fit_horizontal_fov_max=float(os.getenv("FIT_HORIZONTAL_FOV_MAX")),
+        fit_horizontal_fov_min=float(os.getenv("FIT_HORIZONTAL_FOV_MIN")),
+        fit_horizontal_fov_scale=float(os.getenv("FIT_HORIZONTAL_FOV_SCALE")),
         horizontal_pixels=int(os.getenv("HORIZONTAL_PIXELS")),
         vertical_pixels=int(os.getenv("VERTICAL_PIXELS")),
         use_mqtt=strtobool(os.getenv("USE_MQTT")),
