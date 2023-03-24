@@ -288,7 +288,7 @@ class PtzController(BaseMQTTPubSub):
             self.camera_control.stop_move()
             self.camera_control.absolute_move(self.rho_c, self.tau_c, self.zoom, 50)
 
-        # TODO: Log configuration parameters
+        # Log configuration parameters
         logger.info(
             f"""PtzController initialized with parameters:
 
@@ -428,9 +428,9 @@ class PtzController(BaseMQTTPubSub):
             data = msg["data"]
         logger.info(f"Processing calibration msg data: {data}")
         camera = data["camera"]
-        self.alpha = -camera["tripod_yaw"]  # [deg]
-        self.beta = -camera["tripod_pitch"]  # [deg]
-        self.gamma = -camera["tripod_roll"]  # [deg]
+        self.alpha = camera["tripod_yaw"]  # [deg]
+        self.beta = camera["tripod_pitch"]  # [deg]
+        self.gamma = camera["tripod_roll"]  # [deg]
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system

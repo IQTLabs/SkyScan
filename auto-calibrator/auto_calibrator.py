@@ -514,6 +514,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             x0,
             args=[data, rho_epsilon, tau_epsilon],
         )
+        logger.info(f"Minimization gives alpha: {alpha_1}, beta: {beta_1}, and gamma: {gamma_1}")
 
         return alpha_1, beta_1, gamma_1
 
