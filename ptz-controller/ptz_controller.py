@@ -427,10 +427,10 @@ class PtzController(BaseMQTTPubSub):
         else:
             data = msg["data"]
         logger.info(f"Processing calibration msg data: {data}")
-        camera = data.get("camera", {})
-        self.alpha = camera.get("tripod_yaw", self.alpha)  # [deg]
-        self.beta = camera.get("tripod_pitch", self.beta)  # [deg]
-        self.gamma = camera.get("tripod_roll", self.gamma)  # [deg]
+        camera = data["camera"]
+        self.alpha = -camera["tripod_yaw"]  # [deg]
+        self.beta = -camera["tripod_pitch"]  # [deg]
+        self.gamma = -camera["tripod_roll"]  # [deg]
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system
