@@ -434,6 +434,7 @@ class PtzController(BaseMQTTPubSub):
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system
+        logger.info(f"Initial E_XYZ_to_uvw: {self.E_XYZ_to_uvw}")
         (
             self.q_alpha,
             self.q_beta,
@@ -452,6 +453,7 @@ class PtzController(BaseMQTTPubSub):
             self.rho_c,
             self.tau_c,
         )
+        logger.info(f"Final E_XYZ_to_uvw: {self.E_XYZ_to_uvw}")
 
     def _flight_callback(
         self: Any, _client: mqtt.Client, _userdata: Dict[Any, Any], msg: Any
@@ -499,6 +501,9 @@ class PtzController(BaseMQTTPubSub):
         icao24 = data["icao24"]
         if self.icao24 != icao24:
             self.icao24 = icao24
+            logger.info(f"Stopping image capture of aircraft: {self.icao24}")
+            self.do_capture = False
+            logger.info("Stopping continuous pan and tilt")
             self.camera_control.stop_move()
 
         self.time_a = data["latLonTime"]  # [s]
