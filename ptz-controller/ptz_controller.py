@@ -285,7 +285,7 @@ class PtzController(BaseMQTTPubSub):
 
         # Initialize camera pointing
         if self.use_camera:
-            self.camera_control.stop_move()
+            logger.info(f"Absolute move to pan: {self.rho_c}, and tilt: {self.tau_c}")
             self.camera_control.absolute_move(self.rho_c, self.tau_c, self.zoom, 50)
 
         # Log configuration parameters
@@ -505,8 +505,9 @@ class PtzController(BaseMQTTPubSub):
             self.icao24 = icao24
             logger.info(f"Stopping image capture of aircraft: {self.icao24}")
             self.do_capture = False
-            logger.info("Stopping continuous pan and tilt")
-            self.camera_control.stop_move()
+            if self.use_camera:
+                logger.info("Stopping continuous pan and tilt")
+                self.camera_control.stop_move()
 
         self.time_a = data["latLonTime"]  # [s]
         self.time_c = self.time_a
@@ -850,8 +851,9 @@ class PtzController(BaseMQTTPubSub):
                 ):
                     logger.info(f"Stopping image capture of aircraft: {self.icao24}")
                     self.do_capture = False
-                    logger.info("Stopping continuous pan and tilt")
-                    self.camera_control.stop_move()
+                    if self.use_camera:
+                        logger.info("Stopping continuous pan and tilt")
+                        self.camera_control.stop_move()
 
             except Exception as e:
                 logger.error(f"Main loop exception: {e}")
