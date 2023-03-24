@@ -29,9 +29,9 @@ def calibrator():
         heartbeat_interval=10.0,
         min_zoom=MIN_ZOOM_EXPECTED,
         max_zoom=MAX_ZOOM_EXPECTED,
-        fit_horizontal_fov_max=48.31584827530176,
-        fit_horizontal_fov_scale=0.001627997881937721,
-        fit_horizontal_fov_min=3.803123285538903,
+        min_horizontal_fov_fit=3.803123285538903,
+        max_horizontal_fov_fit=48.31584827530176,
+        scale_horizontal_fov_fit=0.001627997881937721,
         use_mqtt=False,
     )
     return calibrator
