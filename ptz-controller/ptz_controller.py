@@ -497,9 +497,11 @@ class PtzController(BaseMQTTPubSub):
             return
         logger.info(f"Processing flight msg data: {data}")
 
-        # TODO: Cleanup
+        # Note first message
+        do_point = False
         icao24 = data["icao24"]
         if self.icao24 != icao24:
+            do_point = True
             self.icao24 = icao24
             logger.info(f"Stopping image capture of aircraft: {self.icao24}")
             self.do_capture = False
@@ -579,16 +581,22 @@ class PtzController(BaseMQTTPubSub):
         )  # [deg]
         logger.info(f"Aircraft pan and tilt: {self.rho_a}, {self.tau_a} [deg]")
 
-        # TODO: Remove
-        # if self.rho_a < 30.0 or 100.0 < self.rho_a:
-        #     logger.info("Skipping aircraft with pan not in the interval (30, 100)")
-        #     self.camera_control.stop_move()
-        #     return
-
         # Get camera pan, tilt, and zoom
         if self.use_camera:
             self.rho_c, self.tau_c, _zoom = self.camera_control.get_ptz()
             logger.info(f"Camera pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
+            if do_point:
+                # Point the camera at the aircraft directly. Note that
+                # this occurs only when the ICAO24 has changed.
+                logger.info(f"Absolute move to pan: {self.rho_a}, and tilt: {self.tau_a}")
+                self.camera_control.absolute_move(self.rho_a, self.tau_a, self.zoom, 50)
+                duration = max(
+                    math.fabs(self.rho_c - self.rho_a) / (self.pan_rate_max / 2),
+                    math.fabs(self.tau_c - self.tau_a) / (self.tilt_rate_max / 2),
+                )
+                logger.info(f"Sleeping: {duration} [s]")
+                sleep(duration)
+
         else:
             logger.info(f"Controller pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
 
