@@ -497,18 +497,6 @@ class PtzController(BaseMQTTPubSub):
             return
         logger.info(f"Processing flight msg data: {data}")
 
-        # Note first message
-        do_point = False
-        icao24 = data["icao24"]
-        if self.icao24 != icao24:
-            do_point = True
-            self.icao24 = icao24
-            logger.info(f"Stopping image capture of aircraft: {self.icao24}")
-            self.do_capture = False
-            if self.use_camera:
-                logger.info("Stopping continuous pan and tilt")
-                self.camera_control.stop_move()
-
         self.time_a = data["latLonTime"]  # [s]
         self.time_c = self.time_a
         self.lambda_a = data["lon"]  # [deg]
@@ -581,14 +569,21 @@ class PtzController(BaseMQTTPubSub):
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
         )  # [deg]
         logger.info(f"Aircraft pan and tilt: {self.rho_a}, {self.tau_a} [deg]")
+        icao24 = data["icao24"]
+        if self.use_camera and self.tau_a < 0:
+            logger.info(f"Stopping image capture of aircraft: {icao24}")
+            self.do_capture = False
+            logger.info("Stopping continuous pan and tilt")
+            self.camera_control.stop_move()
 
-        # Get camera pan, tilt, and zoom
         if self.use_camera:
+            # Get camera pan, tilt, and zoom
             self.rho_c, self.tau_c, _zoom = self.camera_control.get_ptz()
             logger.info(f"Camera pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
-            if do_point:
-                # Point the camera at the aircraft directly. Note that
-                # this occurs only when the ICAO24 has changed.
+
+            # Point the camera at any new aircraft directly
+            if self.icao24 != icao24:
+                self.icao24 = icao24
                 logger.info(f"Absolute move to pan: {self.rho_a}, and tilt: {self.tau_a}")
                 self.camera_control.absolute_move(self.rho_a, self.tau_a, self.zoom, 50)
                 duration = max(
@@ -597,6 +592,7 @@ class PtzController(BaseMQTTPubSub):
                 )
                 logger.info(f"Sleeping: {duration} [s]")
                 sleep(duration)
+                return
 
         else:
             logger.info(f"Controller pan and tilt: {self.rho_c}, {self.tau_c} [deg]")
