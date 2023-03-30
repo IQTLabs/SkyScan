@@ -282,7 +282,6 @@ class PtzController(BaseMQTTPubSub):
                     "tripod_yaw": self.alpha,
                     "tripod_pitch": self.beta,
                     "tripod_roll": self.gamma,
-                    "lead_time": self.lead_time,
                 }
             }
         }
@@ -436,7 +435,6 @@ class PtzController(BaseMQTTPubSub):
         self.alpha = camera["tripod_yaw"]  # [deg]
         self.beta = camera["tripod_pitch"]  # [deg]
         self.gamma = camera["tripod_roll"]  # [deg]
-        self.lead_time = camera["lead_time"]  # [s]
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system
@@ -785,6 +783,7 @@ class PtzController(BaseMQTTPubSub):
                     "zoom": self.zoom,
                 },
                 "aircraft": {
+                    "lead_time": lead_time,
                     "flight_msg_age": self.flight_msg_age,
                     "r_ENz_a_0_t": self.r_ENz_a_0_t.tolist(),
                     "v_ENz_a_0_t": self.v_ENz_a_0_t.tolist(),

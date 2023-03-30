@@ -51,7 +51,6 @@ class AutoCalibrator(BaseMQTTPubSub):
         alpha: float = 0.0,
         beta: float = 0.0,
         gamma: float = 0.0,
-        lead_time: float = 0.5,
         use_mqtt: bool = True,
         **kwargs: Any,
     ):
@@ -94,9 +93,6 @@ class AutoCalibrator(BaseMQTTPubSub):
             Tripod pitch
         gamma: float
             Tripod roll
-        lead_time: float
-            Lead time used when computing camera pointing to the
-            aircraft [s]
         use_mqtt: bool
             Flag to use MQTT, or not
 
@@ -123,7 +119,6 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-        self.lead_time = lead_time
         self.use_mqtt = use_mqtt
 
         # Age of flight message
@@ -161,7 +156,6 @@ class AutoCalibrator(BaseMQTTPubSub):
     alpha = {alpha}
     beta = {beta}
     gamma = {gamma}
-    lead_time = {lead_time}
     use_mqtt = {use_mqtt}
             """
         )
@@ -251,8 +245,6 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Find tripod yaw, pitch, roll and lead time that minimize
         # pointing error.
-        # TODO: Decide
-        # alpha, beta, gamma, lead_time = self._minimize_pointing_error()
         alpha, beta, gamma = self._minimize_pointing_error()
 
         # Clear pointing error data dictionaries and corresponding pan
@@ -267,8 +259,6 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.alpha = (self.alpha + alpha) / 2.0
         self.beta = (self.beta + beta) / 2.0
         self.gamma = (self.gamma + gamma) / 2.0
-        # TODO: Decide
-        # self.lead_time = (self.lead_time + lead_time) / 2.0
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
@@ -279,7 +269,6 @@ class AutoCalibrator(BaseMQTTPubSub):
                     "tripod_yaw": self.alpha,
                     "tripod_pitch": self.beta,
                     "tripod_roll": self.gamma,
-                    "lead_time": self.lead_time
                 }
             },
         }
@@ -496,16 +485,14 @@ class AutoCalibrator(BaseMQTTPubSub):
                 e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
             )
 
+            # TODO: Remove?
             # Compute position in the topocentric (ENz) coordinate system
             # of the aircraft relative to the tripod at time one
-            # TODO: Decide
-            # lead_time = parameters[3]
-            lead_time = self.lead_time
             r_ENz_a_1_t = (
                 np.array(data["aircraft"]["r_ENz_a_0_t"])
-                + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
-                    lead_time + data["aircraft"]["flight_msg_age"]
-                )
+                # + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
+                #     data["aircraft"]["lead_time"] + data["aircraft"]["flight_msg_age"]
+                # )
             )
 
             # Compute position, at time one, in the geocentric (XYZ)
@@ -554,50 +541,38 @@ class AutoCalibrator(BaseMQTTPubSub):
             Pitch that minimizes pointing error
         gamma: float
             Roll that minimizes pointing error
-        lead_time: float
-            Lead time that minimizes pointing error
         """
         # Use current yaw, pitch, roll, and lead time for initial
         # minimization guess
-        # TODO: Decide
-        # x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
         x0 = [self.alpha, self.beta, self.gamma]
 
         # Calculate alpha, beta, gamma, and lead time that minimizes
         # pointing error
-        # alpha, beta, gamma, lead_time = fmin_bfgs(
-        #     self._calculate_pointing_error,
-        #     x0,
-        #     args=[data, rho_epsilon, tau_epsilon],
-        # )
+        # TODO: Make bounds a parameter?
         res = minimize(
             self._calculate_pointing_error,
             x0,
             args=(self.data_list, self.rho_epsilon_list, self.tau_epsilon_list),
             bounds=Bounds(
-                lb=[-0.5, -0.5, -0.5, 0.0],
-                ub=[0.5, 0.5, 0.5, 3.0]
+                lb=[-0.5, -0.5, -0.5],
+                ub=[0.5, 0.5, 0.5]
             )
         )
         if res.success:
             alpha = res.x[0]
             beta = res.x[1]
             gamma = res.x[2]
-            # TODO: Decide
-            # lead_time  = res.x[3]
-            lead_time = self.lead_time
             logger.info(
-                f"Minimization gives updated alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
+                f"Minimization gives updated alpha: {alpha}, beta: {beta}, and gamma: {gamma}"
             )
         else:
             alpha = self.alpha
             beta = self.beta
             gamma = self.gamma
-            lead_time = self.lead_time
             logger.info(
-                f"Minimization failed, using original alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
+                f"Minimization failed, using original alpha: {alpha}, beta: {beta}, and gamma: {gamma}"
             )
-        return alpha, beta, gamma, lead_time
+        return alpha, beta, gamma
 
     def main(self: Any) -> None:
         """Schedule heartbeat and subscribes to calibration and config
