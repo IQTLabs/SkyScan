@@ -210,16 +210,20 @@ class PtzController(BaseMQTTPubSub):
         # camera housing fixed (uvw) coordinates
         self.E_XYZ_to_uvw = None
 
+        # Age of flight message
+        self.flight_msg_age = 0.0  # [s]
+
+        # Position and velocity in the topocentric (ENz) coordinate
+        # system of the aircraft relative to the tripod at time zero
+        self.r_ENz_a_0_t = None
+        self.v_ENz_a_0_t = None
+
         # Distance between the aircraft and the tripod at time one
         distance3d = 0.0  # [m]
 
         # Aircraft azimuth and elevation angles
         self.azm_a = 0.0  # [deg]
         self.elv_a = 0.0  # [deg]
-
-        # Position at time one in the geocentric (XYZ) coordinate
-        # system of the aircraft relative to the tripod
-        self.r_XYZ_a_1_t = None
 
         # Aircraft pan and tilt angles
         self.rho_a = 0.0  # [deg]
@@ -278,6 +282,7 @@ class PtzController(BaseMQTTPubSub):
                     "tripod_yaw": self.alpha,
                     "tripod_pitch": self.beta,
                     "tripod_roll": self.gamma,
+                    "lead_time": self.lead_time,
                 }
             }
         }
@@ -431,6 +436,7 @@ class PtzController(BaseMQTTPubSub):
         self.alpha = camera["tripod_yaw"]  # [deg]
         self.beta = camera["tripod_pitch"]  # [deg]
         self.gamma = camera["tripod_roll"]  # [deg]
+        self.lead_time = camera["lead_time"]  # [s]
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system
@@ -516,29 +522,34 @@ class PtzController(BaseMQTTPubSub):
         # message, if enabled
         lead_time = self.lead_time  # [s]
         if self.include_age:
-            datetime_a = ptz_utilities.convert_time(self.time_a)
-            lead_time += (datetime.utcnow() - datetime_a).total_seconds()  # [s]
+            self.flight_msg_age = (
+                datetime.utcnow() - ptz_utilities.convert_time(self.time_a)
+            ).total_seconds()  # [s]
+            logger.info(f"Flight msg age: {self.flight_msg_age} [s]")
+            lead_time += self.flight_msg_age
+        else:
+            self.flight_msg_age = 0.0
         logger.info(f"Using lead time: {lead_time} [s]")
 
         # Compute position and velocity in the topocentric (ENz)
         # coordinate system of the aircraft relative to the tripod at
         # time zero, and position at slightly later time one
-        r_ENz_a_0_t = np.matmul(self.E_XYZ_to_ENz, r_XYZ_a_0_t)
+        self.r_ENz_a_0_t = np.matmul(self.E_XYZ_to_ENz, r_XYZ_a_0_t)
         track_a = math.radians(track_a)
-        v_ENz_a_0_t = np.array(
+        self.v_ENz_a_0_t = np.array(
             [
                 ground_speed_a * math.sin(track_a),
                 ground_speed_a * math.cos(track_a),
                 vertical_rate_a,
             ]
         )
-        r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * lead_time
+        r_ENz_a_1_t = self.r_ENz_a_0_t + self.v_ENz_a_0_t * lead_time
 
         # Compute position, at time one, and velocity, at time zero,
         # in the geocentric (XYZ) coordinate system of the aircraft
         # relative to the tripod
-        self.r_XYZ_a_1_t = np.matmul(self.E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
-        v_XYZ_a_0_t = np.matmul(self.E_XYZ_to_ENz.transpose(), v_ENz_a_0_t)
+        r_XYZ_a_1_t = np.matmul(self.E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
+        v_XYZ_a_0_t = np.matmul(self.E_XYZ_to_ENz.transpose(), self.v_ENz_a_0_t)
 
         # Compute the distance between the aircraft and the tripod at
         # time one
@@ -563,7 +574,7 @@ class PtzController(BaseMQTTPubSub):
         logger.info(f"Aircraft azimuth and elevation: {self.azm_a}, {self.elv_a} [deg]")
 
         # Compute pan and tilt to point the camera at the aircraft
-        r_uvw_a_1_t = np.matmul(self.E_XYZ_to_uvw, self.r_XYZ_a_1_t)
+        r_uvw_a_1_t = np.matmul(self.E_XYZ_to_uvw, r_XYZ_a_1_t)
         self.rho_a = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
         self.tau_a = math.degrees(
             math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
@@ -774,7 +785,9 @@ class PtzController(BaseMQTTPubSub):
                     "zoom": self.zoom,
                 },
                 "aircraft": {
-                    "r_XYZ_a_1_t": self.r_XYZ_a_1_t.tolist(),
+                    "flight_msg_age": self.flight_msg_age,
+                    "r_ENz_a_0_t": self.r_ENz_a_0_t.tolist(),
+                    "v_ENz_a_0_t": self.v_ENz_a_0_t.tolist(),
                 },
             }
             logger.info(
