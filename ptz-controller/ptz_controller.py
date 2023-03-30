@@ -50,7 +50,7 @@ class PtzController(BaseMQTTPubSub):
         update_interval: float = 0.1,
         capture_interval: float = 2.0,
         capture_dir: str = ".",
-        lead_time: float = 0.25,
+        lead_time: float = 0.5,
         pan_gain: float = 0.2,
         pan_rate_min: float = 1.8,
         pan_rate_max: float = 150.0,

@@ -51,7 +51,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         alpha: float = 0.0,
         beta: float = 0.0,
         gamma: float = 0.0,
-        lead_time: float = 0.25,
+        lead_time: float = 0.5,
         use_mqtt: bool = True,
         **kwargs: Any,
     ):
@@ -128,6 +128,12 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Age of flight message
         self.flight_msg_age = 0.0  # [s]
+
+        # List of pointing error data dictionaries and corresponding
+        # pan and tilt errors
+        self.data_list = []
+        self.rho_epsilon_list = []
+        self.tau_epsilon_list = []
 
         # Connect client on construction
         if self.use_mqtt:
@@ -210,10 +216,9 @@ class AutoCalibrator(BaseMQTTPubSub):
             data = msg
         logger.info(f"Received: {data}, from topic: {self.pointing_error_topic}")
 
-        # Process one message per aircraft describing an image with
-        # sufficiently large score and small size. Note that the bbox
-        # provides the screen coordinates of the upper left and lower
-        # right corners.
+        # Process messages describing images with sufficiently large
+        # score and small size. Note that the bbox provides the screen
+        # coordinates of the upper left and lower right corners.
         icao24 = Path(data["imagefile"]).stem.split("_")[0]
         bbox_data = data["aircraft"]["bbox"][0]
         bbox = bbox_data["bbox"]
@@ -235,18 +240,35 @@ class AutoCalibrator(BaseMQTTPubSub):
             )
             self.icao24 = icao24
 
-        # TODO: Review weighting scheme
-        # Find tripod yaw, pitch, and roll that minimize pointing
-        # error, and assign an exponentially weighted average for the
-        # current yaw, pitch, and roll
+        # Accumulate pointing error data dictionaries and
+        # corresponding pan and tilt errors
+        self.data_list.append(data)
         rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
-        alpha, beta, gamma, lead_time = self._minimize_pointing_error(
-            data, rho_epsilon, tau_epsilon
-        )
+        self.rho_epsilon_list.append(rho_epsilon)
+        self.tau_epsilon_list.append(tau_epsilon)
+        if len(self.data_list) < 8:
+            return
+
+        # Find tripod yaw, pitch, roll and lead time that minimize
+        # pointing error.
+        # TODO: Decide
+        # alpha, beta, gamma, lead_time = self._minimize_pointing_error()
+        alpha, beta, gamma = self._minimize_pointing_error()
+
+        # Clear pointing error data dictionaries and corresponding pan
+        # and tilt errors
+        self.data_list = []
+        self.rho_epsilon_list = []
+        self.tau_epsilon_list = []
+
+        # Assign an exponentially weighted average for the current
+        # yaw, pitch, roll, and lead time
+        # TODO: Review weighting scheme
         self.alpha = (self.alpha + alpha) / 2.0
         self.beta = (self.beta + beta) / 2.0
         self.gamma = (self.gamma + gamma) / 2.0
-        self.lead_time = (self.lead_time + lead_time) / 2.0
+        # TODO: Decide
+        # self.lead_time = (self.lead_time + lead_time) / 2.0
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
@@ -378,15 +400,15 @@ class AutoCalibrator(BaseMQTTPubSub):
         Returns
         -------
         rho_epsilon : float
-            Pan error [degrees]
+            Pan error [deg]
         tau_epsilon : float
-            Tilt error [degrees]
+            Tilt error [deg]
         """
         # Calculate FoV based on current zoom
         zoom = data["camera"]["zoom"]
 
         # Calculate horizontal and vertical fov based on exponential
-        # fov fit and aspect ratio
+        # FoV fit and aspect ratio
         fit_horizontal_fov = (
             self.max_horizontal_fov_fit * math.exp(-self.scale_horizontal_fov_fit * zoom)
             + self.min_horizontal_fov_fit
@@ -406,10 +428,10 @@ class AutoCalibrator(BaseMQTTPubSub):
         bbox = data["aircraft"]["bbox"][0]["bbox"]
         logger.info(f"Got bbox: {bbox}")
 
-        # Calculate pan and tilt error in degrees
+        # Calculate pan and tilt error in degrees. Note that positive
+        # values are toward right and top, respectively
         horizontal_box_center = (bbox[0] + bbox[2]) / 2
         vertical_box_center = (bbox[1] + bbox[3]) / 2
-        # Positive values toward right and top, respectively
         horizontal_pixel_difference = horizontal_box_center - self.horizontal_pixels / 2
         vertical_pixel_difference = self.vertical_pixels / 2 - vertical_box_center
         rho_epsilon = horizontal_pixel_difference * horizontal_degrees_per_pixel
@@ -421,9 +443,9 @@ class AutoCalibrator(BaseMQTTPubSub):
     @staticmethod
     def _calculate_pointing_error(
         parameters,
-        data,
-        rho_epsilon,
-        tau_epsilon,
+        data_list,
+        rho_epsilon_list,
+        tau_epsilon_list,
     ):
         """Calculates the pointing error with given yaw, pitch, roll,
         and lead time.
@@ -433,103 +455,113 @@ class AutoCalibrator(BaseMQTTPubSub):
         parameters: List [int]
             Minimization parameters: yaw, pitch, roll, [deg], and lead
             time [s]
-        data: Dict
-            A Dict with calibration information
-        rho_epsilon : float
-            Pan error [degrees]
-        tau_epsilon : float
-            Tilt error [degrees]
+        data_list: List [Dict]
+            A list of dicts with calibration information
+        rho_epsilon_list : List [float]
+            A list of pan errors [degrees]
+        tau_epsilon : List [float]
+            A list of tilt errors [degrees]
 
         Returns
         -------
         ___ : float
             Pointing error with given yaw, pitch, roll, and lead time
         """
-        # Assign camera pan and tilt
-        rho_c = data["camera"]["rho_c"]
-        tau_c = data["camera"]["tau_c"]
+        # Consider each element in the data, and pointing error lists
+        pointing_error = 0
+        for idx in range(len(data_list)):
+            data = data_list[idx]
+            rho_epsilon = rho_epsilon_list[idx]
+            tau_epsilon = tau_epsilon_list[idx]
 
-        # Compute orthogonal transformation matrix from geocentric
-        # (XYZ) to topocentric (ENz) coordinates, and corresponding
-        # topocentric unit vectors
-        lambda_t = data["camera"]["lambda_t"]  # [deg]
-        varphi_t = data["camera"]["varphi_t"]  # [deg]
-        E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = ptz_utilities.compute_E_XYZ_to_ENz(
-            lambda_t, varphi_t
-        )
+            # Assign camera pan and tilt
+            rho_c = data["camera"]["rho_c"]
+            tau_c = data["camera"]["tau_c"]
 
-        # Compute the rotations from the geocentric (XYZ) coordinate
-        # system to the camera housing fixed (uvw) coordinate system
-        alpha = parameters[0]  # [deg]
-        beta = parameters[1]  # [deg]
-        gamma = parameters[2]  # [deg]
-        _, _, _, E_XYZ_to_uvw, _, _, _ = ptz_utilities.compute_camera_rotations(
-            e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
-        )
-
-        # Compute position in the topocentric (ENz) coordinate system
-        # of the aircraft relative to the tripod at time one
-        lead_time = parameters[3]
-        r_ENz_a_1_t = (
-            np.array(data["aircraft"]["r_ENz_a_0_t"])
-            + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
-                lead_time + data["aircraft"]["flight_msg_age"]
+            # Compute orthogonal transformation matrix from geocentric
+            # (XYZ) to topocentric (ENz) coordinates, and corresponding
+            # topocentric unit vectors
+            lambda_t = data["camera"]["lambda_t"]  # [deg]
+            varphi_t = data["camera"]["varphi_t"]  # [deg]
+            E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = ptz_utilities.compute_E_XYZ_to_ENz(
+                lambda_t, varphi_t
             )
-        )
 
-        # Compute position, at time one, in the geocentric (XYZ)
-        # coordinate system of the aircraft relative to the tripod
-        r_XYZ_a_1_t = np.matmul(E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
+            # Compute the rotations from the geocentric (XYZ) coordinate
+            # system to the camera housing fixed (uvw) coordinate system
+            alpha = parameters[0]  # [deg]
+            beta = parameters[1]  # [deg]
+            gamma = parameters[2]  # [deg]
+            _, _, _, E_XYZ_to_uvw, _, _, _ = ptz_utilities.compute_camera_rotations(
+                e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
+            )
 
-        # Compute position in the camera housing fixed (uvw)
-        # coordinate system of the aircraft relative to the tripod
-        r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
+            # Compute position in the topocentric (ENz) coordinate system
+            # of the aircraft relative to the tripod at time one
+            # TODO: Decide
+            # lead_time = parameters[3]
+            lead_time = self.lead_time
+            r_ENz_a_1_t = (
+                np.array(data["aircraft"]["r_ENz_a_0_t"])
+                + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
+                    lead_time + data["aircraft"]["flight_msg_age"]
+                )
+            )
 
-        # Compute pan and tilt to point the camera at the aircraft
-        # given the updated values of alpha, beta, and gamma
-        rho_a = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
-        tau_a = math.degrees(
-            math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
-        )  # [deg]
+            # Compute position, at time one, in the geocentric (XYZ)
+            # coordinate system of the aircraft relative to the tripod
+            r_XYZ_a_1_t = np.matmul(E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
 
-        # Return pointing error. Note that rho_c + rho_epsilon gives
-        # the pan required to point at the aircraft with rho_c
-        # computed with intial camera housing yaw, pitch, and roll,
-        # while rho_a gives the pan required to point at the aircraft
-        # with updated camera housing yaw, pitch, and roll. As a
-        # result, the updated camera housing yaw, pitch, and roll that
-        # minimizes the difference will allow the camera to point at
-        # the aircraft with minimum error. Of course, the same comment
-        # applies for tilt.
-        return math.sqrt(
-            (rho_c + rho_epsilon - rho_a) ** 2 + (tau_c + tau_epsilon - tau_a) ** 2
-        )
+            # Compute position in the camera housing fixed (uvw)
+            # coordinate system of the aircraft relative to the tripod
+            r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
 
-    def _minimize_pointing_error(self, data, rho_epsilon, tau_epsilon):
-        """Find tripod yaw, pitch, and roll that minimizes pointing
-        error.
+            # Compute pan and tilt to point the camera at the aircraft
+            # given the updated values of alpha, beta, and gamma
+            rho_a = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
+            tau_a = math.degrees(
+                math.atan2(r_uvw_a_1_t[2], ptz_utilities.norm(r_uvw_a_1_t[0:2]))
+            )  # [deg]
+
+            # Accumulate pointing error. Note that rho_c + rho_epsilon
+            # gives the measured pan required to point at the
+            # aircraft, while rho_a gives the pan required to point at
+            # the aircraft with updated yaw, pitch, roll, and lead
+            # time. As a result, the updated camera yaw, pitch, roll,
+            # and lead time that minimizes the difference will allow
+            # the pan required to point at the aircraft to be computed
+            # with minimum error. Of course, the same comment applies
+            # for tilt.
+            pointing_error += math.sqrt(
+                (rho_c + rho_epsilon - rho_a) ** 2 + (tau_c + tau_epsilon - tau_a) ** 2
+            )
+
+        return pointing_error
+
+    def _minimize_pointing_error(self):
+        """Find tripod yaw, pitch, roll, and lead time that minimizes
+        pointing error.
 
         Parameters
         ----------
-        data: Dict
-            A Dict with calibration information
-        rho_epsilon : float
-            Pan pointing error [degrees]
-        tau_epsilon : float
-            Tilt pointing error [degrees]
+        None
 
         Returns
         -------
-        alpha_1: float
+        alpha: float
             Yaw that minimizes pointing error
-        beta_1: float
+        beta: float
             Pitch that minimizes pointing error
-        gamma_1: float
+        gamma: float
             Roll that minimizes pointing error
+        lead_time: float
+            Lead time that minimizes pointing error
         """
         # Use current yaw, pitch, roll, and lead time for initial
         # minimization guess
-        x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
+        # TODO: Decide
+        # x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
+        x0 = [self.alpha, self.beta, self.gamma]
 
         # Calculate alpha, beta, gamma, and lead time that minimizes
         # pointing error
@@ -541,7 +573,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         res = minimize(
             self._calculate_pointing_error,
             x0,
-            args=(data, rho_epsilon, tau_epsilon),
+            args=(self.data_list, self.rho_epsilon_list, self.tau_epsilon_list),
             bounds=Bounds(
                 lb=[-0.5, -0.5, -0.5, 0.0],
                 ub=[0.5, 0.5, 0.5, 3.0]
@@ -551,7 +583,9 @@ class AutoCalibrator(BaseMQTTPubSub):
             alpha = res.x[0]
             beta = res.x[1]
             gamma = res.x[2]
-            lead_time  = res.x[3]
+            # TODO: Decide
+            # lead_time  = res.x[3]
+            lead_time = self.lead_time
             logger.info(
                 f"Minimization gives updated alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
             )
