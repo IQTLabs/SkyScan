@@ -11,7 +11,7 @@ from typing import Any, Dict
 import numpy as np
 import paho.mqtt.client as mqtt
 import schedule
-from scipy.optimize import fmin_bfgs
+from scipy.optimize import minimize, Bounds
 
 from base_mqtt_pub_sub import BaseMQTTPubSub
 import ptz_utilities
@@ -51,6 +51,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         alpha: float = 0.0,
         beta: float = 0.0,
         gamma: float = 0.0,
+        lead_time: float = 0.25,
         use_mqtt: bool = True,
         **kwargs: Any,
     ):
@@ -93,6 +94,9 @@ class AutoCalibrator(BaseMQTTPubSub):
             Tripod pitch
         gamma: float
             Tripod roll
+        lead_time: float
+            Lead time used when computing camera pointing to the
+            aircraft [s]
         use_mqtt: bool
             Flag to use MQTT, or not
 
@@ -119,7 +123,11 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
+        self.lead_time = lead_time
         self.use_mqtt = use_mqtt
+
+        # Age of flight message
+        self.flight_msg_age = 0.0  # [s]
 
         # Connect client on construction
         if self.use_mqtt:
@@ -147,6 +155,7 @@ class AutoCalibrator(BaseMQTTPubSub):
     alpha = {alpha}
     beta = {beta}
     gamma = {gamma}
+    lead_time = {lead_time}
     use_mqtt = {use_mqtt}
             """
         )
@@ -214,7 +223,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         if (
             score < self.min_image_score
             or bbox_area > self.max_bbox_area
-            or icao24 == self.icao24
+            # or icao24 == self.icao24  # Include this test to calibrate once per aircraft
         ):
             logger.info(
                 f"Skipping aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}"
@@ -231,12 +240,13 @@ class AutoCalibrator(BaseMQTTPubSub):
         # error, and assign an exponentially weighted average for the
         # current yaw, pitch, and roll
         rho_epsilon, tau_epsilon = self._calculate_calibration_error(data)
-        alpha, beta, gamma = self._minimize_pointing_error(
+        alpha, beta, gamma, lead_time = self._minimize_pointing_error(
             data, rho_epsilon, tau_epsilon
         )
         self.alpha = (self.alpha + alpha) / 2.0
         self.beta = (self.beta + beta) / 2.0
         self.gamma = (self.gamma + gamma) / 2.0
+        self.lead_time = (self.lead_time + lead_time) / 2.0
 
         # Publish results to calibration topic which is subscribed to
         # by PTZ controller
@@ -247,6 +257,7 @@ class AutoCalibrator(BaseMQTTPubSub):
                     "tripod_yaw": self.alpha,
                     "tripod_pitch": self.beta,
                     "tripod_roll": self.gamma,
+                    "lead_time": self.lead_time
                 }
             },
         }
@@ -409,19 +420,19 @@ class AutoCalibrator(BaseMQTTPubSub):
 
     @staticmethod
     def _calculate_pointing_error(
-        alpha_beta_gamma,  # Independent vars
-        data,  # Parameters
+        parameters,
+        data,
         rho_epsilon,
         tau_epsilon,
     ):
-        """Calculates the pointing error with given yaw, pitch, and
-        roll.
+        """Calculates the pointing error with given yaw, pitch, roll,
+        and lead time.
 
         Parameters
         ----------
-        alpha_beta_gamma: List [int]
-            Represents first iteration of yaw pitch and roll [alpha,
-            beta, gamma]
+        parameters: List [int]
+            Minimization parameters: yaw, pitch, roll, [deg], and lead
+            time [s]
         data: Dict
             A Dict with calibration information
         rho_epsilon : float
@@ -432,7 +443,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         Returns
         -------
         ___ : float
-            Pointing error with given yaw, pitch and roll
+            Pointing error with given yaw, pitch, roll, and lead time
         """
         # Assign camera pan and tilt
         rho_c = data["camera"]["rho_c"]
@@ -449,16 +460,30 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Compute the rotations from the geocentric (XYZ) coordinate
         # system to the camera housing fixed (uvw) coordinate system
-        alpha = alpha_beta_gamma[0]  # [deg]
-        beta = alpha_beta_gamma[1]  # [deg]
-        gamma = alpha_beta_gamma[2]  # [deg]
+        alpha = parameters[0]  # [deg]
+        beta = parameters[1]  # [deg]
+        gamma = parameters[2]  # [deg]
         _, _, _, E_XYZ_to_uvw, _, _, _ = ptz_utilities.compute_camera_rotations(
             e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
         )
 
+        # Compute position in the topocentric (ENz) coordinate system
+        # of the aircraft relative to the tripod at time one
+        lead_time = parameters[3]
+        r_ENz_a_1_t = (
+            np.array(data["aircraft"]["r_ENz_a_0_t"])
+            + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
+                lead_time + data["aircraft"]["flight_msg_age"]
+            )
+        )
+
+        # Compute position, at time one, in the geocentric (XYZ)
+        # coordinate system of the aircraft relative to the tripod
+        r_XYZ_a_1_t = np.matmul(E_XYZ_to_ENz.transpose(), r_ENz_a_1_t)
+
         # Compute position in the camera housing fixed (uvw)
         # coordinate system of the aircraft relative to the tripod
-        r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, data["aircraft"]["r_XYZ_a_1_t"])
+        r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
 
         # Compute pan and tilt to point the camera at the aircraft
         # given the updated values of alpha, beta, and gamma
@@ -502,21 +527,43 @@ class AutoCalibrator(BaseMQTTPubSub):
         gamma_1: float
             Roll that minimizes pointing error
         """
-        # Get current yaw, pitch, roll for initial minimization guess
-        alpha_0 = self.alpha  # [deg]
-        beta_0 = self.beta  # [deg]
-        gamma_0 = self.gamma  # [deg]
-        x0 = [alpha_0, beta_0, gamma_0]
+        # Use current yaw, pitch, roll, and lead time for initial
+        # minimization guess
+        x0 = [self.alpha, self.beta, self.gamma, self.lead_time]
 
-        # Calculate alpha, beta, gamma that minimizes pointing error
-        alpha_1, beta_1, gamma_1 = fmin_bfgs(
+        # Calculate alpha, beta, gamma, and lead time that minimizes
+        # pointing error
+        # alpha, beta, gamma, lead_time = fmin_bfgs(
+        #     self._calculate_pointing_error,
+        #     x0,
+        #     args=[data, rho_epsilon, tau_epsilon],
+        # )
+        res = minimize(
             self._calculate_pointing_error,
             x0,
-            args=[data, rho_epsilon, tau_epsilon],
+            args=(data, rho_epsilon, tau_epsilon),
+            bounds=Bounds(
+                lb=[-0.5, -0.5, -0.5, 0.0],
+                ub=[0.5, 0.5, 0.5, 3.0]
+            )
         )
-        logger.info(f"Minimization gives alpha: {alpha_1}, beta: {beta_1}, and gamma: {gamma_1}")
-
-        return alpha_1, beta_1, gamma_1
+        if res.success:
+            alpha = res.x[0]
+            beta = res.x[1]
+            gamma = res.x[2]
+            lead_time  = res.x[3]
+            logger.info(
+                f"Minimization gives updated alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
+            )
+        else:
+            alpha = self.alpha
+            beta = self.beta
+            gamma = self.gamma
+            lead_time = self.lead_time
+            logger.info(
+                f"Minimization failed, using original alpha: {alpha}, beta: {beta}, gamma: {gamma}, and lead time: {lead_time}"
+            )
+        return alpha, beta, gamma, lead_time
 
     def main(self: Any) -> None:
         """Schedule heartbeat and subscribes to calibration and config
