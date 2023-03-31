@@ -504,7 +504,6 @@ class PtzController(BaseMQTTPubSub):
             logger.info(f"Required keys missing from flight message data: {data}")
             return
         logger.info(f"Processing flight msg data: {data}")
-
         self.time_a = data["latLonTime"]  # [s]
         self.datetime_a = ptz_utilities.convert_time(self.time_a)
         self.time_c = self.time_a
@@ -780,8 +779,8 @@ class PtzController(BaseMQTTPubSub):
             # Populate and publish image metadata, getting current pan
             # and tilt, and accounting for flight message age relative
             # to the image capture
-            flight_msg_age = (datetime_c - self.datetime_a).total_seconds()  # [s]
             rho_c, tau_c, _zoom = self.camera_control.get_ptz()
+            flight_msg_age = (datetime_c - self.datetime_a).total_seconds()  # [s]
             image_metadata = {
                 "timestamp": timestamp,
                 "imagefile": str(image_filepath),
