@@ -6,11 +6,14 @@ import auto_calibrator
 
 
 # Set expected test results
-RHO_EPSILON_EXPECTED = 0.272939225747946
-TAU_EPSILON_EXPECTED = 0.9167572668664233
-ALPHA_EXPECTED = 0.28128766932337035
-BETA_EXPECTED = -0.8980084867517584
-GAMMA_EXPECTED = 0.8502402424547709
+RHO_EPSILON_EXPECTED = 0.8232437187424534
+TAU_EPSILON_EXPECTED = 0.29720679135508243
+ALPHA_EXPECTED = -0.05741640058288248
+BETA_EXPECTED = -0.2086519072401008
+GAMMA_EXPECTED = 0.5212586272873916
+CALLBACK_ALPHA_EXPECTED = -0.0009024826257139674
+CALLBACK_BETA_EXPECTED = -0.755986887017733
+CALLBACK_GAMMA_EXPECTED = 0.18989302171916092
 MIN_ZOOM_EXPECTED = 0
 MAX_ZOOM_EXPECTED = 9999
 
@@ -46,9 +49,25 @@ def config_msg():
 
 
 @pytest.fixture
-def pointing_error_msg():
+def pointing_error_msg_1():
     """Load mock calibration message."""
-    with open("data/pointing_error_msg.json") as f:
+    with open("data/pointing_error_msg_1.json") as f:
+        msg = json.load(f)
+    return msg
+
+
+@pytest.fixture
+def pointing_error_msg_2():
+    """Load mock calibration message."""
+    with open("data/pointing_error_msg_2.json") as f:
+        msg = json.load(f)
+    return msg
+
+
+@pytest.fixture
+def pointing_error_msg_3():
+    """Load mock calibration message."""
+    with open("data/pointing_error_msg_3.json") as f:
         msg = json.load(f)
     return msg
 
@@ -58,13 +77,13 @@ class TestAutoCalibrator:
     pointing.
     """
 
-    def test_calculate_calibration_error(self, calibrator, pointing_error_msg):
+    def test_calculate_calibration_error(self, calibrator, pointing_error_msg_1):
         """Test calculation of calibration error."""
 
         (
             rho_epsilon,
             tau_epsilon,
-        ) = calibrator._calculate_calibration_error(pointing_error_msg)
+        ) = calibrator._calculate_calibration_error(pointing_error_msg_1)
 
         assert rho_epsilon == RHO_EPSILON_EXPECTED
         assert tau_epsilon == TAU_EPSILON_EXPECTED
@@ -73,15 +92,15 @@ class TestAutoCalibrator:
         """Tested implicitly."""
         pass
 
-    def test_minimize_pointing_error(self, calibrator, pointing_error_msg):
+    def test_minimize_pointing_error(self, calibrator, pointing_error_msg_1):
         """Test pointing error minimization."""
 
-        rho_epsilon = RHO_EPSILON_EXPECTED
-        tau_epsilon = TAU_EPSILON_EXPECTED
+        # _minimize_pointing_error method is designed to work with minimum data
+        calibrator.rho_epsilon_list = [RHO_EPSILON_EXPECTED] * 8
+        calibrator.tau_epsilon_list = [TAU_EPSILON_EXPECTED] * 8
+        calibrator.data_list = [pointing_error_msg_1] * 8
 
-        alpha, beta, gamma = calibrator._minimize_pointing_error(
-            pointing_error_msg, rho_epsilon, tau_epsilon
-        )
+        alpha, beta, gamma = calibrator._minimize_pointing_error()
 
         assert math.fabs(alpha - ALPHA_EXPECTED) < PRECISION
         assert math.fabs(beta - BETA_EXPECTED) < PRECISION
@@ -105,14 +124,20 @@ class TestAutoCalibrator:
         assert calibrator.min_zoom == MIN_ZOOM_EXPECTED
         assert calibrator.max_zoom == MAX_ZOOM_EXPECTED
 
-    def test_calibration_callback(self, calibrator, pointing_error_msg):
-        """Test calibration callback reads message, calculates alpha,
+    def test_pointing_error_callback(self, calibrator, pointing_error_msg_1, pointing_error_msg_2, pointing_error_msg_3):
+        """Test calibration callback reads messages, calculates alpha,
         beta, and gamma correctly, and updates those values.
         """
         _client = None
         _userdata = None
-        calibrator._pointing_error_callback(_client, _userdata, pointing_error_msg)
-        # Calibrator saves alpha beta gamma by averaging previous value. In this case 0.0
-        assert math.fabs(calibrator.alpha - ((ALPHA_EXPECTED + 0.0) / 2)) < PRECISION
-        assert math.fabs(calibrator.beta - ((BETA_EXPECTED + 0.0) / 2)) < PRECISION
-        assert math.fabs(calibrator.gamma - ((GAMMA_EXPECTED + 0.0) / 2)) < PRECISION
+
+        # pointing_error_callback requires a minimum amount of data before processing.
+        # while loop ensures calibrator processes before moving on
+        while calibrator.alpha == 0.0 and calibrator.beta == 0.0 and calibrator.gamma == 0.0:
+            calibrator._pointing_error_callback(_client, _userdata, pointing_error_msg_1)
+            calibrator._pointing_error_callback(_client, _userdata, pointing_error_msg_2)
+            calibrator._pointing_error_callback(_client, _userdata, pointing_error_msg_3)
+
+        assert math.fabs(calibrator.alpha - CALLBACK_ALPHA_EXPECTED) < PRECISION
+        assert math.fabs(calibrator.beta - CALLBACK_BETA_EXPECTED) < PRECISION
+        assert math.fabs(calibrator.gamma - CALLBACK_GAMMA_EXPECTED) < PRECISION
