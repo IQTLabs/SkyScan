@@ -264,9 +264,11 @@ class PtzController(BaseMQTTPubSub):
         # North, and zenith unit vectors
         config_msg = {
             "data": {
-                "lambda_t": self.lambda_t,
-                "varphi_t": self.varphi_t,
-                "h_t": self.h_t,
+                "camera": {
+                    "lambda_t": self.lambda_t,
+                    "varphi_t": self.varphi_t,
+                    "h_t": self.h_t,
+                }
             }
         }
         self._config_callback(None, None, config_msg)
@@ -369,25 +371,29 @@ class PtzController(BaseMQTTPubSub):
         -------
         None
         """
-        # Assign data attributes allowed to change during operation
+        # Assign data attributes allowed to change during operation,
+        # ignoring config message data without a "camera" key
         if type(msg) == mqtt.MQTTMessage:
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
+        if "camera" not in data:
+            return
         logger.info(f"Processing config msg data: {data}")
-        self.lambda_t = data.get("tripod_longitude", self.lambda_t)  # [deg]
-        self.varphi_t = data.get("tripod_latitude", self.varphi_t)  # [deg]
-        self.h_t = data.get("tripod_altitude", self.h_t)  # [m]
-        self.update_interval = data.get("update_interval", self.update_interval)  # [s]
-        self.capture_interval = data.get(
+        camera = data["camera"]
+        self.lambda_t = camera.get("tripod_longitude", self.lambda_t)  # [deg]
+        self.varphi_t = camera.get("tripod_latitude", self.varphi_t)  # [deg]
+        self.h_t = camera.get("tripod_altitude", self.h_t)  # [m]
+        self.update_interval = camera.get("update_interval", self.update_interval)  # [s]
+        self.capture_interval = camera.get(
             "capture_interval", self.capture_interval
         )  # [s]
-        self.capture_dir = data.get("capture_dir", self.capture_dir)
-        self.lead_time = data.get("lead_time", self.lead_time)  # [s]
-        self.pan_gain = data.get("pan_gain", self.pan_gain)  # [1/s]
-        self.tilt_gain = data.get("tilt_gain", self.tilt_gain)  # [1/s]
-        self.include_age = data.get("include_age", self.include_age)
-        self.log_to_mqtt = data.get("log_to_mqtt", self.log_to_mqtt)
+        self.capture_dir = camera.get("capture_dir", self.capture_dir)
+        self.lead_time = camera.get("lead_time", self.lead_time)  # [s]
+        self.pan_gain = camera.get("pan_gain", self.pan_gain)  # [1/s]
+        self.tilt_gain = camera.get("tilt_gain", self.tilt_gain)  # [1/s]
+        self.include_age = camera.get("include_age", self.include_age)
+        self.log_to_mqtt = camera.get("log_to_mqtt", self.log_to_mqtt)
 
         # Compute tripod position in the geocentric (XYZ) coordinate
         # system

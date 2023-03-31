@@ -293,88 +293,89 @@ class AutoCalibrator(BaseMQTTPubSub):
         -------
         None
         """
-        # Decode config message, ignoring config message without a
-        # "camera" key
+        # Assign data attributes allowed to change during operation,
+        # ignoring config message data without a "camera" key
         if self.use_mqtt:
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
         if "camera" not in data:
             return
-        logger.info(f"Received: {data}, from topic: {self.config_topic}")
+        logger.info(f"Processing config msg data: {data}")
 
         # Set camera config values. Config message can include any or
         # all values
         # TODO: Update with current values
-        if "min_zoom" in data["camera"]:
+        camera = data["camera"]
+        if "min_zoom" in camera:
             old_min_zoom = self.min_zoom
-            self.min_zoom = data["camera"]["min_zoom"]
+            self.min_zoom = camera["min_zoom"]
             logger.info(
                 f"Configuration min_zoom updated from {old_min_zoom} to {self.min_zoom}"
             )
-        if "max_zoom" in data["camera"]:
+        if "max_zoom" in camera:
             old_max_zoom = self.max_zoom
-            self.max_zoom = data["camera"]["max_zoom"]
+            self.max_zoom = camera["max_zoom"]
             logger.info(
                 f"Configuration max_zoom updated from {old_max_zoom} to {self.max_zoom}"
             )
-        if "min_horizontal_fov_fit" in data["camera"]:
+        if "min_horizontal_fov_fit" in camera:
             old_min_horizontal_fov_fit = self.min_horizontal_fov_fit
-            self.min_horizontal_fov_fit = data["camera"]["min_horizontal_fov_fit"]
+            self.min_horizontal_fov_fit = camera["min_horizontal_fov_fit"]
             logger.info(
                 f"Configuration min_horizontal_fov_fit updated from {old_min_horizontal_fov_fit} to {self.min_horizontal_fov_fit} "
             )
-        if "max_horizontal_fov_fit" in data["camera"]:
+        if "max_horizontal_fov_fit" in camera:
             old_max_horizontal_fov_fit = self.max_horizontal_fov_fit
-            self.max_horizontal_fov_fit = data["camera"]["max_horizontal_fov_fit"]
+            self.max_horizontal_fov_fit = camera["max_horizontal_fov_fit"]
             logger.info(
                 f"Configuration max_horizontal_fov_fit updated from {old_max_horizontal_fov_fit} to {self.max_horizontal_fov_fit} "
             )
-        if "scale_horizontal_fov_fit" in data["camera"]:
+        if "scale_horizontal_fov_fit" in camera:
             old_scale_horizontal_fov_fit = self.scale_horizontal_fov_fit
-            self.scale_horizontal_fov_fit = data["camera"]["scale_horizontal_fov_fit"]
+            self.scale_horizontal_fov_fit = camera["scale_horizontal_fov_fit"]
             logger.info(
                 f"Configuration scale_horizontal_fov_fit updated from {old_scale_horizontal_fov_fit} to {self.scale_horizontal_fov_fit} "
             )
-        if "horizontal_pixels" in data["camera"]:
+        if "horizontal_pixels" in camera:
             old_horizontal_pixels = self.horizontal_pixels
-            self.horizontal_pixels = data["camera"]["horizontal_pixels"]
+            self.horizontal_pixels = camera["horizontal_pixels"]
             logger.info(
                 f"Configuration horizontal_pixels updated from {old_horizontal_pixels} to {self.horizontal_pixels}"
             )
-        if "vertical_pixels" in data["camera"]:
+        if "vertical_pixels" in camera:
             old_vertical_pixels = self.vertical_pixels
-            self.vertical_pixels = data["camera"]["vertical_pixels"]
+            self.vertical_pixels = camera["vertical_pixels"]
             logger.info(
                 f"Configuration vertical_pixels updated from {old_vertical_pixels} to {self.vertical_pixels}"
             )
-        if "min_image_score" in data["camera"]:
+        if "min_image_score" in camera:
             old_min_image_score = self.min_image_score
-            self.min_image_score = data["camera"]["min_image_score"]
+            self.min_image_score = camera["min_image_score"]
             logger.info(
                 f"Configuration min_image_score updated from {old_min_image_score} to {self.min_image_score}"
             )
-        if "max_bbox_area" in data["camera"]:
+        if "max_bbox_area" in camera:
             old_max_bbox_area = self.max_bbox_area
-            self.max_bbox_area = data["camera"]["max_bbox_area"]
+            self.max_bbox_area = camera["max_bbox_area"]
             logger.info(
                 f"Configuration max_bbox_area updated from {old_max_bbox_area} to {self.max_bbox_area}"
             )
-        if "tripod_yaw" in data["camera"]:
+        if "tripod_yaw" in camera:
             old_alpha = self.alpha
-            self.alpha = data["camera"]["tripod_yaw"]
+            self.alpha = camera["tripod_yaw"]
             logger.info(
                 f"Configuration tripod_yaw updated from {old_alpha} to {self.alpha}"
             )
-        if "tripod_pitch" in data["camera"]:
+        if "tripod_pitch" in camera:
             old_beta = self.beta
-            self.beta = data["camera"]["tripod_pitch"]
+            self.beta = camera["tripod_pitch"]
             logger.info(
                 f"Configuration tripod_pitch updated from {old_beta} to {self.beta}"
             )
-        if "tripod_roll" in data["camera"]:
+        if "tripod_roll" in camera:
             old_gamma = self.gamma
-            self.gamma = data["camera"]["tripod_roll"]
+            self.gamma = camera["tripod_roll"]
             logger.info(
                 f"Configuration tripod_roll updated from {old_gamma} to {self.gamma}"
             )
