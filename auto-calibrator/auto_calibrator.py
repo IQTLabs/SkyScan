@@ -305,6 +305,7 @@ class AutoCalibrator(BaseMQTTPubSub):
 
         # Set camera config values. Config message can include any or
         # all values
+        # TODO: Use module specific key?
         # TODO: Update with current values
         camera = data["camera"]
         if "min_zoom" in camera:
@@ -603,7 +604,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         while True:
             try:
                 schedule.run_pending()
-                # TODO: Make a parameter
+                # TODO: Make a parameter?
                 sleep(0.001)
 
             except Exception as e:
