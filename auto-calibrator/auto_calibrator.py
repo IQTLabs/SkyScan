@@ -228,11 +228,10 @@ class AutoCalibrator(BaseMQTTPubSub):
                 f"Skipping aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}"
             )
             return
-        else:
-            logger.info(
-                f"Processing aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}"
-            )
-            self.icao24 = icao24
+        logger.info(
+            f"Processing aircraft: {icao24}, with bbox area: {bbox_area}, and score: {score}"
+        )
+        self.icao24 = icao24
 
         # Accumulate pointing error data dictionaries and
         # corresponding pan and tilt errors
@@ -399,7 +398,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         # Calculate horizontal and vertical fov based on exponential
         # FoV fit and aspect ratio
         fit_horizontal_fov = (
-            self.max_horizontal_fov_fit * math.exp(-self.scale_horizontal_fov_fit * zoom)
+            self.max_horizontal_fov_fit
+            * math.exp(-self.scale_horizontal_fov_fit * zoom)
             + self.min_horizontal_fov_fit
         )
         aspect_ratio = self.vertical_pixels / self.horizontal_pixels
@@ -425,7 +425,9 @@ class AutoCalibrator(BaseMQTTPubSub):
         vertical_pixel_difference = self.vertical_pixels / 2 - vertical_box_center
         rho_epsilon = horizontal_pixel_difference * horizontal_degrees_per_pixel
         tau_epsilon = vertical_pixel_difference * vertical_degrees_per_pixel
-        logger.info(f"Found rho_epsilon: {rho_epsilon}, tau_epsilon: {tau_epsilon} [deg]")
+        logger.info(
+            f"Found rho_epsilon: {rho_epsilon}, tau_epsilon: {tau_epsilon} [deg]"
+        )
 
         return rho_epsilon, tau_epsilon
 
@@ -471,9 +473,12 @@ class AutoCalibrator(BaseMQTTPubSub):
             # topocentric unit vectors
             lambda_t = data["camera"]["lambda_t"]  # [deg]
             varphi_t = data["camera"]["varphi_t"]  # [deg]
-            E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = ptz_utilities.compute_E_XYZ_to_ENz(
-                lambda_t, varphi_t
-            )
+            (
+                E_XYZ_to_ENz,
+                e_E_XYZ,
+                e_N_XYZ,
+                e_z_XYZ,
+            ) = ptz_utilities.compute_E_XYZ_to_ENz(lambda_t, varphi_t)
 
             # Compute the rotations from the geocentric (XYZ) coordinate
             # system to the camera housing fixed (uvw) coordinate system
@@ -486,12 +491,9 @@ class AutoCalibrator(BaseMQTTPubSub):
 
             # Compute position in the topocentric (ENz) coordinate system
             # of the aircraft relative to the tripod at time one
-            r_ENz_a_1_t = (
-                np.array(data["aircraft"]["r_ENz_a_0_t"])
-                + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
-                    data["aircraft"]["flight_msg_age"]
-                )
-            )
+            r_ENz_a_1_t = np.array(data["aircraft"]["r_ENz_a_0_t"]) + np.array(
+                data["aircraft"]["v_ENz_a_0_t"]
+            ) * (data["aircraft"]["flight_msg_age"])
 
             # Compute position, at time one, in the geocentric (XYZ)
             # coordinate system of the aircraft relative to the tripod
@@ -550,10 +552,7 @@ class AutoCalibrator(BaseMQTTPubSub):
             self._calculate_pointing_error,
             x0,
             args=(self.data_list, self.rho_epsilon_list, self.tau_epsilon_list),
-            bounds=Bounds(
-                lb=[-2.0, -2.0, -2.0],
-                ub=[2.0, 2.0, 2.0]
-            )
+            bounds=Bounds(lb=[-2.0, -2.0, -2.0], ub=[2.0, 2.0, 2.0]),
         )
         if res.success:
             alpha = res.x[0]

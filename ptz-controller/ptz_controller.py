@@ -217,7 +217,7 @@ class PtzController(BaseMQTTPubSub):
         self.v_ENz_a_0_t = None
 
         # Distance between the aircraft and the tripod at time one
-        distance3d = 0.0  # [m]
+        self.distance3d = 0.0  # [m]
 
         # Aircraft azimuth and elevation angles
         self.azm_a = 0.0  # [deg]
@@ -550,9 +550,9 @@ class PtzController(BaseMQTTPubSub):
         # time one
         self.distance3d = ptz_utilities.norm(r_ENz_a_1_t)
 
+        # TODO: Restore?
         # Compute the distance between the aircraft and the tripod
         # along the surface of a spherical Earth
-        # TODO: Restore?
         # distance2d = ptz_utilities.compute_great_circle_distance(
         #     self.self.lambda_t,
         #     self.varphi_t,
@@ -590,7 +590,9 @@ class PtzController(BaseMQTTPubSub):
             # Point the camera at any new aircraft directly
             if self.icao24 != icao24:
                 self.icao24 = icao24
-                logger.info(f"Absolute move to pan: {self.rho_a}, and tilt: {self.tau_a}")
+                logger.info(
+                    f"Absolute move to pan: {self.rho_a}, and tilt: {self.tau_a}"
+                )
                 self.camera_control.absolute_move(self.rho_a, self.tau_a, self.zoom, 50)
                 duration = max(
                     math.fabs(self.rho_c - self.rho_a) / (self.pan_rate_max / 2),
