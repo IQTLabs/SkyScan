@@ -293,11 +293,14 @@ class AutoCalibrator(BaseMQTTPubSub):
         -------
         None
         """
-        # Decode config message
+        # Decode config message, ignoring config message without a
+        # "camera" key
         if self.use_mqtt:
             data = self.decode_payload(msg.payload)
         else:
             data = msg["data"]
+        if "camera" not in data:
+            return
         logger.info(f"Received: {data}, from topic: {self.config_topic}")
 
         # Set camera config values. Config message can include any or
