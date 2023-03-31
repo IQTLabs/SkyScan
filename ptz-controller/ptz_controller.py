@@ -184,12 +184,13 @@ class PtzController(BaseMQTTPubSub):
             sleep(1)
             self.publish_registration("PTZ Controller Module Registration")
 
-        # Aircraft identifier, time of flight message and
+        # Aircraft identifier, time and datetime of flight message and
         # corresponding aircraft longitude, latitude, and altitude,
         # and position and velocity relative to the tripod in the
         # camera fixed (rst) coordinate system
         self.icao24 = "NA"
         self.time_a = 0.0  # [s]
+        self.datetime_a = None
         self.lambda_a = 0.0  # [deg]
         self.varphi_a = 0.0  # [deg]
         self.h_a = 0.0  # [m]
@@ -209,9 +210,6 @@ class PtzController(BaseMQTTPubSub):
         # Orthogonal transformation matrix from geocentric (XYZ) to
         # camera housing fixed (uvw) coordinates
         self.E_XYZ_to_uvw = None
-
-        # Age of flight message
-        self.flight_msg_age = 0.0  # [s]
 
         # Position and velocity in the topocentric (ENz) coordinate
         # system of the aircraft relative to the tripod at time zero
@@ -502,6 +500,7 @@ class PtzController(BaseMQTTPubSub):
         logger.info(f"Processing flight msg data: {data}")
 
         self.time_a = data["latLonTime"]  # [s]
+        self.datetime_a = ptz_utilities.convert_time(self.time_a)
         self.time_c = self.time_a
         self.lambda_a = data["lon"]  # [deg]
         self.varphi_a = data["lat"]  # [deg]
@@ -520,13 +519,11 @@ class PtzController(BaseMQTTPubSub):
         # message, if enabled
         lead_time = self.lead_time  # [s]
         if self.include_age:
-            self.flight_msg_age = (
-                datetime.utcnow() - ptz_utilities.convert_time(self.time_a)
+            flight_msg_age = (
+                datetime.utcnow() - self.datetime_a
             ).total_seconds()  # [s]
-            logger.info(f"Flight msg age: {self.flight_msg_age} [s]")
-            lead_time += self.flight_msg_age
-        else:
-            self.flight_msg_age = 0.0
+            logger.info(f"Flight msg age: {flight_msg_age} [s]")
+            lead_time += flight_msg_age
         logger.info(f"Using lead time: {lead_time} [s]")
 
         # Compute position and velocity in the topocentric (ENz)
@@ -751,7 +748,8 @@ class PtzController(BaseMQTTPubSub):
 
             # Capture an image in JPEG format
             self.capture_time = time()
-            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            datetime_c = datetime.now()
+            timestamp = datetime_c.strftime("%Y-%m-%d-%H-%M-%S")
             image_filepath = Path(self.capture_dir) / "{}_{}_{}_{}_{}.jpg".format(
                 self.icao24,
                 int(self.azm_a) % 360,
@@ -771,20 +769,23 @@ class PtzController(BaseMQTTPubSub):
                     )
                     shutil.move(list(Path(d).glob("*.jpg"))[0], image_filepath)
 
-            # Populate and publish image metadata
+            # Populate and publish image metadata, getting current pan
+            # and tilt, and accounting for flight message age relative
+            # to the image capture
+            flight_msg_age = (datetime_c - self.datetime_a).total_seconds()  # [s]
+            rho_c, tau_c, _zoom = self.camera_control.get_ptz()
             image_metadata = {
                 "timestamp": timestamp,
                 "imagefile": str(image_filepath),
                 "camera": {
-                    "rho_c": self.rho_c,
-                    "tau_c": self.tau_c,
+                    "rho_c": rho_c,
+                    "tau_c": tau_c,
                     "lambda_t": self.lambda_t,
                     "varphi_t": self.varphi_t,
                     "zoom": self.zoom,
                 },
                 "aircraft": {
-                    "lead_time": lead_time,
-                    "flight_msg_age": self.flight_msg_age,
+                    "flight_msg_age": flight_msg_age,
                     "r_ENz_a_0_t": self.r_ENz_a_0_t.tolist(),
                     "v_ENz_a_0_t": self.v_ENz_a_0_t.tolist(),
                 },

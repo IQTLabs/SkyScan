@@ -243,8 +243,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         if len(self.data_list) < 8:
             return
 
-        # Find tripod yaw, pitch, roll and lead time that minimize
-        # pointing error.
+        # Find tripod yaw, pitch, and roll that minimize pointing
+        # error
         alpha, beta, gamma = self._minimize_pointing_error()
 
         # Clear pointing error data dictionaries and corresponding pan
@@ -254,7 +254,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         self.tau_epsilon_list = []
 
         # Assign an exponentially weighted average for the current
-        # yaw, pitch, roll, and lead time
+        # yaw, pitch, and roll
         # TODO: Review weighting scheme
         self.alpha = (self.alpha + alpha) / 2.0
         self.beta = (self.beta + beta) / 2.0
@@ -436,14 +436,13 @@ class AutoCalibrator(BaseMQTTPubSub):
         rho_epsilon_list,
         tau_epsilon_list,
     ):
-        """Calculates the pointing error with given yaw, pitch, roll,
-        and lead time.
+        """Calculates the pointing error with given yaw, pitch, and
+        roll.
 
         Parameters
         ----------
         parameters: List [int]
-            Minimization parameters: yaw, pitch, roll, [deg], and lead
-            time [s]
+            Minimization parameters: yaw, pitch, and roll [deg]
         data_list: List [Dict]
             A list of dicts with calibration information
         rho_epsilon_list : List [float]
@@ -454,7 +453,7 @@ class AutoCalibrator(BaseMQTTPubSub):
         Returns
         -------
         ___ : float
-            Pointing error with given yaw, pitch, roll, and lead time
+            Pointing error with given yaw, pitch, and roll
         """
         # Consider each element in the data, and pointing error lists
         pointing_error = 0
@@ -485,14 +484,13 @@ class AutoCalibrator(BaseMQTTPubSub):
                 e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
             )
 
-            # TODO: Remove?
             # Compute position in the topocentric (ENz) coordinate system
             # of the aircraft relative to the tripod at time one
             r_ENz_a_1_t = (
                 np.array(data["aircraft"]["r_ENz_a_0_t"])
-                # + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
-                #     data["aircraft"]["lead_time"] + data["aircraft"]["flight_msg_age"]
-                # )
+                + np.array(data["aircraft"]["v_ENz_a_0_t"]) * (
+                    data["aircraft"]["flight_msg_age"]
+                )
             )
 
             # Compute position, at time one, in the geocentric (XYZ)
@@ -513,12 +511,11 @@ class AutoCalibrator(BaseMQTTPubSub):
             # Accumulate pointing error. Note that rho_c + rho_epsilon
             # gives the measured pan required to point at the
             # aircraft, while rho_a gives the pan required to point at
-            # the aircraft with updated yaw, pitch, roll, and lead
-            # time. As a result, the updated camera yaw, pitch, roll,
-            # and lead time that minimizes the difference will allow
-            # the pan required to point at the aircraft to be computed
-            # with minimum error. Of course, the same comment applies
-            # for tilt.
+            # the aircraft with updated yaw, pitch, roll. As a result,
+            # the updated camera yaw, pitch, and roll that minimizes
+            # the difference will allow the pan required to point at
+            # the aircraft to be computed with minimum error. Of
+            # course, the same comment applies for tilt.
             pointing_error += math.sqrt(
                 (rho_c + rho_epsilon - rho_a) ** 2 + (tau_c + tau_epsilon - tau_a) ** 2
             )
@@ -526,8 +523,8 @@ class AutoCalibrator(BaseMQTTPubSub):
         return pointing_error
 
     def _minimize_pointing_error(self):
-        """Find tripod yaw, pitch, roll, and lead time that minimizes
-        pointing error.
+        """Find tripod yaw, pitch, and roll that minimizes pointing
+        error.
 
         Parameters
         ----------
@@ -542,20 +539,20 @@ class AutoCalibrator(BaseMQTTPubSub):
         gamma: float
             Roll that minimizes pointing error
         """
-        # Use current yaw, pitch, roll, and lead time for initial
-        # minimization guess
+        # Use current yaw, pitch, and roll for initial minimization
+        # guess
         x0 = [self.alpha, self.beta, self.gamma]
 
-        # Calculate alpha, beta, gamma, and lead time that minimizes
-        # pointing error
+        # Calculate alpha, beta, and gamma that minimizes pointing
+        # error
         # TODO: Make bounds a parameter?
         res = minimize(
             self._calculate_pointing_error,
             x0,
             args=(self.data_list, self.rho_epsilon_list, self.tau_epsilon_list),
             bounds=Bounds(
-                lb=[-0.5, -0.5, -0.5],
-                ub=[0.5, 0.5, 0.5]
+                lb=[-2.0, -2.0, -2.0],
+                ub=[2.0, 2.0, 2.0]
             )
         )
         if res.success:
