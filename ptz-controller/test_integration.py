@@ -86,13 +86,14 @@ def get_config_msg():
     """
     msg = {}
     msg["data"] = {}
-    msg["data"]["tripod_longitude"] = float(
+    msg["data"]["camera"] = {}
+    msg["data"]["camera"]["tripod_longitude"] = float(
         os.getenv("TRIPOD_LONGITUDE", "-77.0")
     )  # [deg]
-    msg["data"]["tripod_latitude"] = float(
+    msg["data"]["camera"]["tripod_latitude"] = float(
         os.getenv("TRIPOD_LATITUDE", "38.0")
     )  # [deg]
-    msg["data"]["tripod_altitude"] = 86.46  # [m]
+    msg["data"]["camera"]["tripod_altitude"] = 86.46  # [m]
     return msg
 
 

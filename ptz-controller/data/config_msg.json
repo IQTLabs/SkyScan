@@ -1,8 +1,10 @@
 {
     "timestamp": "2023-01-01-00-00-00",
     "data": {
-        "tripod_longitude": 270.0,
-        "tripod_latitude": 90.0,
-        "tripod_altitude": 0.0
+        "camera": {
+            "tripod_longitude": 270.0,
+            "tripod_latitude": 90.0,
+            "tripod_altitude": 0.0
+        }
     }
 }
