@@ -3,6 +3,7 @@
 
 import argparse
 from datetime import datetime, timedelta
+from distutils.util import strtobool
 import errno
 import json
 from json.decoder import JSONDecodeError
@@ -18,7 +19,6 @@ import logging
 import logging.config  # This gets rid of the annoying log messages from Vapix_Control
 import coloredlogs
 
-from geographiclib.geodesic import Geodesic
 import numpy as np
 from requests.auth import HTTPDigestAuth
 import paho.mqtt.client as mqtt
@@ -75,16 +75,54 @@ angularVelocityHorizontal = 0  # in meters
 angularVelocityVertical = 0  # in meters
 planeTrack = 0  # This is the direction that the plane is moving in
 
-currentPlane = None
+camera_roll = 0
+camera_pitch = 0
+camera_yaw = 0
 
+currentPlane = None
+camera_altitude = None
 camera_latitude = None
 camera_longitude = None
-camera_altitude = None
-camera_lead = None
 
+camera_lead = None
+include_age = strtobool(os.getenv("INCLUDE_AGE", "True"))
 
 def calculate_bearing_correction(b):
     return (b + cameraBearingCorrection) % 360
+
+def _format_file_save_filepath(file_extension: str = None):
+    """
+    A method for formatting the filepath of an image based off of the current state of global variables.
+    For use in JPEG, BMP, and JSON saving. 
+    Args:
+        file_extension: The desired file extension with leading dot (.jpg, .bmp)
+    Returns:
+        A String object representing the filepath without the filetype extension. 
+    """
+    captureDir = None
+
+    if args.flat_file_structure:
+        captureDir = "capture"
+    else:
+        captureDir = "capture{}".format(currentPlane["type"])
+    try:
+        os.makedirs(captureDir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise  # This was not a "directory exist" error..
+    filepath = "{}/{}_{}_{}_{}_{}".format(
+        captureDir,
+        currentPlane["icao24"],
+        int(bearing),
+        int(elevation),
+        int(distance3d),
+        datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+    )
+
+    if file_extension is not None:
+        filepath = filepath + str(file_extension)
+
+    return str(filepath)
 
 
 # Copied from VaPix/Sensecam to customize the folder structure for saving pictures
@@ -118,6 +156,8 @@ def get_jpeg_request():  # 5.2.4.1
         "compression": 5,
         "camera": 1,
     }
+    global args
+
     url = "http://" + args.axis_ip + "/axis-cgi/jpg/image.cgi"
     start_time = datetime.now()
     try:
@@ -133,20 +173,7 @@ def get_jpeg_request():  # 5.2.4.1
 
     disk_time = datetime.now()
     if resp.status_code == 200:
-        captureDir = "capture/{}".format(currentPlane["type"])
-        try:
-            os.makedirs(captureDir)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}_{}_{}_{}.jpg".format(
-            captureDir,
-            currentPlane["icao24"],
-            int(bearing),
-            int(elevation),
-            int(distance3d),
-            datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
-        )
+        filename = _format_file_save_filepath(file_extension=".jpg")
 
         # Original
         with open(filename, "wb") as var:
@@ -213,20 +240,7 @@ def get_bmp_request():  # 5.2.4.1
     )
 
     if resp.status_code == 200:
-        captureDir = "capture/{}".format(currentPlane["type"])
-        try:
-            os.makedirs(captureDir)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise  # This was not a "directory exist" error..
-        filename = "{}/{}_{}_{}_{}_{}.bmp".format(
-            captureDir,
-            currentPlane["icao24"],
-            int(bearing),
-            int(elevation),
-            int(distance3d),
-            datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
-        )
+        filename = _format_file_save_filepath(file_extension=".bmp")
 
         with open(filename, "wb") as var:
             var.write(resp.content)
@@ -262,19 +276,19 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
 
     Returns
     -------
-    q_alpha : qn.quaternion
+    q_alpha : quaternion.quaternion
         Yaw rotation quaternion
-    q_beta : qn.quaternion
+    q_beta : quaternion.quaternion
         Pitch rotation quaternion
-    q_gamma : qn.quaternion
+    q_gamma : quaternion.quaternion
         Roll rotation quaternion
-    E_XYZ_to_uvw : np.ndarray
+    E_XYZ_to_uvw : numpy.ndarray
         Orthogonal transformation matrix from XYZ to uvw
-    q_rho : qn.quaternion
+    q_rho : quaternion.quaternion
         Pan rotation quaternion
-    q_tau : qn.quaternion
+    q_tau : quaternion.quaternion
         Tilt rotation quaternion
-    E_XYZ_to_rst : np.ndarray
+    E_XYZ_to_rst : numpy.ndarray
         Orthogonal transformation matrix from XYZ to rst
     """
     # Assign unit vectors of the uvw coordinate system prior to
@@ -373,7 +387,9 @@ def compute_rotations(e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, rho, tau):
     return q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, q_rho, q_tau, E_XYZ_to_rst
 
 
-def calculateCameraPositionB():
+def calculateCameraPositionB(
+    r_XYZ_t, E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, E_XYZ_to_uvw
+):
     """Calculates camera pointing at a specified lead time."""
     # Define global variables
     # TODO: Eliminate use of global variables
@@ -389,32 +405,35 @@ def calculateCameraPositionB():
     # Assign position and velocity of the aircraft
     a_varphi = currentPlane["lat"]  # [deg]
     a_lambda = currentPlane["lon"]  # [deg]
-    # currentPlane["latLonTime"]
+    a_time = currentPlane["latLonTime"]  # [s]
     a_h = currentPlane["altitude"]  # [m]
-    # currentPlane["altitudeTime"]
+    # currentPlane["altitudeTime"]  # Expect altitudeTime to equal latLonTime
     a_track = currentPlane["track"]  # [deg]
-    a_ground_speed = (
-        currentPlane["groundSpeed"]
-    )  # [m/s]
+    a_ground_speed = currentPlane["groundSpeed"]  # [m/s]
     a_vertical_rate = currentPlane["verticalRate"]  # [m/s]
     # currentPlane["icao24"]
     # currentPlane["type"]
 
+    # Compute lead time accounting for age of message, and specified
+    # lead time
+    a_datetime = utils.convert_time(a_time)
+    if include_age:
+        a_lead = (datetime.utcnow() - a_datetime).total_seconds() + camera_lead  # [s]
+    else:
+        a_lead = camera_lead  # [s]
+
     # Assign position of the tripod
     t_varphi = camera_latitude  # [deg]
     t_lambda = camera_longitude  # [deg]
-    t_h = camera_altitude  # [m]
 
     # Compute position in the XYZ coordinate system of the aircraft
     # relative to the tripod at time zero, the observation time
     r_XYZ_a_0 = utils.compute_r_XYZ(a_lambda, a_varphi, a_h)
-    r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
     r_XYZ_a_0_t = r_XYZ_a_0 - r_XYZ_t
 
     # Compute position and velocity in the ENz coordinate system of
     # the aircraft relative to the tripod at time zero, and position at
     # slightly later time one
-    E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
     r_ENz_a_0_t = np.matmul(E_XYZ_to_ENz, r_XYZ_a_0 - r_XYZ_t)
     a_track = math.radians(a_track)
     v_ENz_a_0_t = np.array(
@@ -424,7 +443,7 @@ def calculateCameraPositionB():
             a_vertical_rate,
         ]
     )
-    r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * camera_lead
+    r_ENz_a_1_t = r_ENz_a_0_t + v_ENz_a_0_t * a_lead
 
     # Compute position, at time one, and velocity, at time zero, in
     # the XYZ coordinate system of the aircraft relative to the tripod
@@ -433,32 +452,26 @@ def calculateCameraPositionB():
 
     # Compute the distance between the aircraft and the tripod at time
     # one
-    distance3d = np.linalg.norm(r_ENz_a_1_t)
+    distance3d = utils.norm(r_ENz_a_1_t)
 
     # Compute the distance between the aircraft and the tripod along
-    # the surface of the Earth
-    geod = Geodesic.WGS84
-    g = geod.Inverse(
+    # the surface of a spherical Earth
+    distance2d = utils.compute_great_circle_distance(
         t_varphi,
         t_lambda,
         a_varphi,
         a_lambda,
-    )
-    distance2d = g["s12"]  # [m]
+    )  # [m]
 
     # Compute the bearing from north of the aircraft from the tripod
     bearing = math.degrees(math.atan2(r_ENz_a_1_t[0], r_ENz_a_1_t[1]))
 
     # Compute pan and tilt to point the camera at the aircraft
-    alpha = 0.0  # [deg]
-    beta = 0.0  # [deg]
-    gamma = 0.0  # [deg]
-    q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
-        e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
-    )
     r_uvw_a_1_t = np.matmul(E_XYZ_to_uvw, r_XYZ_a_1_t)
     rho = math.degrees(math.atan2(r_uvw_a_1_t[0], r_uvw_a_1_t[1]))  # [deg]
-    tau = math.degrees(math.atan2(r_uvw_a_1_t[2], np.linalg.norm(r_uvw_a_1_t[0:2])))  # [deg]
+    tau = math.degrees(
+        math.atan2(r_uvw_a_1_t[2], utils.norm(r_uvw_a_1_t[0:2]))
+    )  # [deg]
     cameraPan = rho
     cameraTilt = tau
 
@@ -473,7 +486,7 @@ def calculateCameraPositionB():
 
     # Compute the components of the angular velocity of the aircraft
     # in the rst coordinate system
-    omega = np.cross(r_rst_a_0_t, v_rst_a_0_t) / np.linalg.norm(r_rst_a_0_t) ** 2
+    omega = utils.cross(r_rst_a_0_t, v_rst_a_0_t) / utils.norm(r_rst_a_0_t) ** 2
     angularVelocityHorizontal = math.degrees(-omega[2])
     angularVelocityVertical = math.degrees(omega[0])
 
@@ -488,7 +501,7 @@ def calculateCameraPositionA():
     global angularVelocityVertical
     global elevation
 
-    (lat, lon, alt) = utils.calc_travel_3d(currentPlane, camera_lead)
+    (lat, lon, alt) = utils.calc_travel_3d(currentPlane, camera_lead, include_age=include_age)
     distance3d = utils.coordinate_distance_3d(
         camera_latitude, camera_longitude, camera_altitude, lat, lon, alt
     )
@@ -503,7 +516,7 @@ def calculateCameraPositionA():
         distance2d, cameraAltitude=camera_altitude, airplaneAltitude=alt
     )
     (angularVelocityHorizontal, angularVelocityVertical) = utils.angular_velocity(
-        currentPlane, camera_latitude, camera_longitude, camera_altitude
+        currentPlane, camera_latitude, camera_longitude, camera_altitude, include_age=include_age
     )
     # logging.info("Angular Velocity - Horizontal: {} Vertical: {}".format(angularVelocityHorizontal, angularVelocityVertical))
     cameraTilt = elevation
@@ -512,21 +525,82 @@ def calculateCameraPositionA():
     )
     cameraPan = calculate_bearing_correction(cameraPan)
 
+def get_json_request():
+    """
+    A method to save the metadata of the currently-tracking aircraft and the camera to a JSON file alongside BMP and 
+    JPEG requests. 
+    Args:
+        None
+    Returns:
+        A dictionary containing the contents os the JSON metadata file.  
+    """
+    image_filepath = _format_file_save_filepath(file_extension=".jpg")
 
-def moveCamera(ip, username, password):
+    file_content_dictionary = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+        "imagefile": image_filepath,
+        "camera": {
+            "bearing": bearing,
+            "zoom": cameraZoom,
+            "pan": cameraPan,
+            "tilt": cameraTilt,
+            "lat": camera_latitude,
+            "long": camera_longitude,
+            "alt": camera_altitude
+        },
+        "aircraft": {
+            "lat": currentPlane["lat"],
+            "long": currentPlane["lon"],
+            "alt": currentPlane["altitude"]
+        }
+    }
+
+    return file_content_dictionary
+
+
+def moveCamera(ip, username, password, mqtt_client):
 
     movePeriod = 100  # milliseconds
     moveTimeout = datetime.now()
     captureTimeout = datetime.now()
     camera = vapix_control.CameraControl(ip, username, password)
 
+    # Assign position of the tripod
+    t_varphi = camera_latitude  # [deg]
+    t_lambda = camera_longitude  # [deg]
+    t_h = camera_altitude  # [m]
+
+    # Compute orthogonal transformation matrix from geocentric to
+    # topocentric coordinates, and position in the XYZ coordinate
+    # system of the tripod
+    E_XYZ_to_ENz, e_E_XYZ, e_N_XYZ, e_z_XYZ = utils.compute_E(t_lambda, t_varphi)
+    r_XYZ_t = utils.compute_r_XYZ(t_lambda, t_varphi, t_h)
+
     while True:
+        # Compute the rotations from the XYZ coordinate system to the uvw
+        # (camera housing fixed) coordinate system
+        alpha = camera_yaw   # [deg]
+        beta = camera_pitch  # [deg]
+        gamma = camera_roll  # [deg]
+        q_alpha, q_beta, q_gamma, E_XYZ_to_uvw, _, _, _ = compute_rotations(
+            e_E_XYZ, e_N_XYZ, e_z_XYZ, alpha, beta, gamma, 0.0, 0.0
+        )
         if active:
             if not "icao24" in currentPlane:
                 logging.info(" 🚨 Active but Current Plane is not set")
                 continue
             if moveTimeout <= datetime.now():
-                calculateCameraPositionB()
+                calculateCameraPositionB(
+                    r_XYZ_t,
+                    E_XYZ_to_ENz,
+                    e_E_XYZ,
+                    e_N_XYZ,
+                    e_z_XYZ,
+                    alpha,
+                    beta,
+                    gamma,
+                    E_XYZ_to_uvw,
+                )
                 camera.absolute_move(cameraPan, cameraTilt, cameraZoom, cameraMoveSpeed)
                 # logging.info("Moving to Pan: {} Tilt: {}".format(cameraPan, cameraTilt))
                 moveTimeout = moveTimeout + timedelta(milliseconds=movePeriod)
@@ -543,6 +617,13 @@ def moveCamera(ip, username, password):
                 if captureTimeout <= datetime.now():
                     time.sleep(cameraDelay)
                     get_jpeg_request()
+                    capture_metadata = get_json_request()
+                    mqtt_client.publish(
+                        "skyscan/captures/data",
+                        json.dumps(capture_metadata),
+                        0,
+                        False
+                    )
                     captureTimeout = captureTimeout + timedelta(
                         milliseconds=capturePeriod
                     )
@@ -569,10 +650,15 @@ def update_config(config):
     global cameraDelay
     global cameraPan
     global camera_lead
+    global camera_longitude
+    global camera_latitude
     global camera_altitude
     global cameraBearingCorrection
     global inhibitPhotos
     global capturePeriod
+    global camera_roll
+    global camera_pitch
+    global camera_yaw
 
     if "cameraZoom" in config:
         cameraZoom = int(config["cameraZoom"])
@@ -589,6 +675,12 @@ def update_config(config):
     if "cameraAltitude" in config:
         camera_altitude = float(config["cameraAltitude"])
         logging.info("Setting Camera Altitude to: {}".format(camera_altitude))
+    if "cameraLatitude" in config:
+        camera_latitude = float(config["cameraLatitude"])
+        logging.info("Setting Camera Latitude to: {}".format(camera_latitude))
+    if "cameraLongitude" in config:
+        camera_longitude = float(config["cameraLongitude"])
+        logging.info("Setting Camera Longitude to: {}".format(camera_longitude))
     if "cameraBearingCorrection" in config:
         cameraBearingCorrection = float(config["cameraBearingCorrection"])
         logging.info(
@@ -603,6 +695,15 @@ def update_config(config):
     if "capturePeriod" in config:
         capturePeriod = float(config["capturePeriod"])
         logging.info("Setting Camera Capture Period (sec) to: {}".format(capturePeriod))
+    if "cameraRoll" in config:
+        camera_roll = float(config["cameraRoll"])
+        logging.info("Setting Camera Roll Angle to: {}".format(camera_roll))
+    if "cameraPitch" in config:
+        camera_pitch = float(config["cameraPitch"])
+        logging.info("Setting Camera Pitch Angle to: {}".format(camera_pitch))
+    if "cameraYaw" in config:
+        camera_yaw = float(config["cameraYaw"])
+        logging.info("Setting Camera Yaw Angle to: {}".format(camera_yaw))
 
 
 #############################################
@@ -623,6 +724,9 @@ def on_message_impl(client, userdata, message):
     global camera_longitude
     global camera_latitude
     global camera_altitude
+    global camera_roll
+    global camera_pitch
+    global camera_yaw
 
     global active
 
@@ -677,6 +781,9 @@ def on_message_impl(client, userdata, message):
         camera_longitude = float(update["long"])
         camera_latitude = float(update["lat"])
         camera_altitude = float(update["alt"])
+        camera_roll = float(update["roll"])
+        camera_pitch = float(update["pitch"])
+        camera_yaw = float(update["yaw"])
     else:
         logging.info(
             "Message: {} Object: {} Flight: {}".format(
@@ -702,15 +809,22 @@ def main():
     global camera_altitude
     global camera_latitude
     global camera_longitude
+    global camera_roll
+    global camera_pitch
+    global camera_yaw
     global camera_lead
     global cameraConfig
     global flight_topic
     global object_topic
+    global logging_directory
     global Active
 
     parser = argparse.ArgumentParser(description="An MQTT based camera controller")
     parser.add_argument("--lat", type=float, help="Latitude of camera")
     parser.add_argument("--lon", type=float, help="Longitude of camera")
+    parser.add_argument("--roll", type=float, help="Roll angle of camera", default=0.0)
+    parser.add_argument("--pitch", type=float, help="Pitch angle of camera", default=0.0)
+    parser.add_argument("--yaw", type=float, help="Yaw angle of camera", default=0.0)
     parser.add_argument(
         "--alt", type=float, help="altitude of camera in METERS!", default=0
     )
@@ -765,7 +879,25 @@ def main():
         help="The zoom setting for the camera (0-9999)",
         default=9999,
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    parser.add_argument(
+        "-l",
+        "--log-directory",
+        type=str,
+        help="The directory for the camera to write capture logs to.",
+        default="/flash/processed/log"
+    )
+    parser.add_argument(
+        "-v", 
+        "--verbose", 
+        action="store_true", 
+        help="Verbose output"
+    )
+    parser.add_argument(
+        "-f",
+        "--flat-file-structure",
+        action="store_true",
+        help="Use a flat file structure (all images saved to ./) rather than organizing images in folder by plane type.",
+    )
 
     args = parser.parse_args()
 
@@ -814,18 +946,14 @@ def main():
     camera_longitude = args.lon
     camera_latitude = args.lat
     camera_altitude = args.alt  # Altitude is in METERS
+    camera_roll = args.roll
+    camera_pitch = args.pitch
+    camera_yaw = args.yaw  # Altitude is in METERS
     camera_lead = args.camera_lead
     # cameraConfig = vapix_config.CameraConfiguration(args.axis_ip, args.axis_username, args.axis_password)
 
-    cameraMove = threading.Thread(
-        target=moveCamera,
-        args=[args.axis_ip, args.axis_username, args.axis_password],
-        daemon=True,
-    )
-    cameraMove.start()
-    # Sleep for a bit so we're not hammering the HAT with updates
-    delay = 0.005
-    time.sleep(delay)
+    logging_directory = args.log_directory
+
     flight_topic = args.mqtt_flight_topic
     object_topic = args.mqtt_object_topic
     print(
@@ -852,6 +980,16 @@ def main():
         0,
         False,
     )
+
+    cameraMove = threading.Thread(
+        target=moveCamera,
+        args=[args.axis_ip, args.axis_username, args.axis_password, client],
+        daemon=True,
+    )
+    cameraMove.start()
+    # Sleep for a bit so we're not hammering the HAT with updates
+    delay = 0.005
+    time.sleep(delay)
 
     #############################################
     ##                Main Loop                ##
