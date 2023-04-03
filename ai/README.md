@@ -13,6 +13,7 @@ Install the [YOLOv7 repo](https://github.com/WongKinYiu/yolov7), following the i
 * `test2.py`
 * `localizer_rev2.yaml`
 * `detector_rev2.yaml`
+* `taxon.json`
 
 Copy the following files into the `utils` folder:
 * `metrics2.py`
