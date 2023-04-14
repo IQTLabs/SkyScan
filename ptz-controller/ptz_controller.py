@@ -390,6 +390,7 @@ class PtzController(BaseMQTTPubSub):
         )  # [s]
         self.capture_dir = camera.get("capture_dir", self.capture_dir)
         self.lead_time = camera.get("lead_time", self.lead_time)  # [s]
+        self.zoom = camera.get("zoom", self.zoom)  # [0-9999]
         self.pan_gain = camera.get("pan_gain", self.pan_gain)  # [1/s]
         self.tilt_gain = camera.get("tilt_gain", self.tilt_gain)  # [1/s]
         self.include_age = camera.get("include_age", self.include_age)
