@@ -380,6 +380,7 @@ class PtzController(BaseMQTTPubSub):
         if "camera" not in data:
             return
         logger.info(f"Processing config msg data: {data}")
+        # TODO: Use module specific key?
         camera = data["camera"]
         self.lambda_t = camera.get("tripod_longitude", self.lambda_t)  # [deg]
         self.varphi_t = camera.get("tripod_latitude", self.varphi_t)  # [deg]
