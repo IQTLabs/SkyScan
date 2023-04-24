@@ -7,25 +7,27 @@ echo "Installing skyscan on ${HOSTNAME} at $(pwd)"
 echo "Configuring Mobian base"
 bash <(curl -fsSL https://short.iqt.org/pinephonepro)
 
+
+mkdir skyscan
+cd skyscan
 mkdir data
 cd data
 curl -O https://opensky-network.org/datasets/metadata/aircraftDatabase.csv
 cd ..
 
 # Make necessary folders
-mkdir /flash
-mkdir /flash/raw
-mkdir /flash/coral
-mkdir /flash/coral/plane
-mkdir /flash/coral/noplane
-mkdir /flash/coral/log
-mkdir /flash/weights
-mkdir /flash/edge
-mkdir /flash/edge/plane
-mkdir /flash/edge/noplane
-mkdir /flash/edge/log
-mkdir /flash/processed
-mkdir /flash/processed/log
+mkdir raw
+mkdir coral
+mkdir coral/plane
+mkdir coral/noplane
+mkdir coral/log
+mkdir weights
+mkdir edge
+mkdir edge/plane
+mkdir edge/noplane
+mkdir edge/log
+mkdir processed
+mkdir processed/log
 
 curl -O $COMPOSE_FILE_URL
 curl -O $ENV_FILE_URL
