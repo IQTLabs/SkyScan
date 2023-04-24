@@ -1,6 +1,6 @@
 # Set environment variables
-export COMPOSE_FILE_URL=
-export ENV_FILE_URL=
+export COMPOSE_FILE_URL=https://raw.githubusercontent.com/meadej/SkyScan/main/docker-compose.yml
+export ENV_FILE_URL=https://raw.githubusercontent.com/meadej/SkyScan/main/.env-example
 
 echo "Installing skyscan on ${HOSTNAME} at $(pwd)"
 
