@@ -2,49 +2,62 @@ version: '3.7'
 
 services:
   tracker:
-    image: iqtlabs/skyscan-tracker
-    command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
+    image: iqtlabs/skyscan-tracker:${SERVICES_VERSION:-latest}
+    command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/${HOSTNAME}/flight/tracker/JSON -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
     volumes:
       - ./data:/data
-    ports:
-      - 5000:5000
-    depends_on:
-      - mqtt
+    env_file:
+      - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
     restart: unless-stopped
 
   axis-ptz:
-    image: iqtlabs/skyscan-axis-ptz
-    command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT} --roll ${ROLL} --pitch ${PITCH} --yaw ${YAW}"
+    image: iqtlabs/edgetech-axis-ptz-controller
+    command: "./camera.py --publish-topic skyscan/${HOSTNAME}/image/edgetech-axis-ptz/JSON -f -m mqtt -t skyscan/${HOSTNAME}/flight/tracker/JSON -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT} --roll ${ROLL} --pitch ${PITCH} --yaw ${YAW}"
     volumes:
       - /flash/raw:/app/capture
+      - /flash/processed/log:/flash/processed/log
     depends_on:
       - mqtt
-    restart: unless-stopped
-      
-  piaware:
-    image: iqtlabs/skyscan-piaware
-    tty: true
-    container_name: piaware
-    devices:
-      - /dev/bus/usb:/dev/bus/usb
-    ports:
-      - 8080:80
-      - 30003:30003
-      - 30005:30005
-    environment:
-      - TZ=${TZ}
-      - LAT=${LAT}
-      - LONG=${LONG}
-      - FEEDER_ID=${FEEDER_ID}
-      - RECEIVER_TYPE=rtlsdr
-      - DUMP1090_DEVICE=${RTL_DEV}
+    env_file:
+      - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
     restart: unless-stopped
 
-  notebook:
-    image: iqtlabs/skyscan-notebook-server
-    ports:
-        - "8888:8888"
+  coral-detect:
+    image: iqtlabs/skyscan-coral-detect
+    volumes:
+      - /flash/raw:/data/tosort
+      - /flash/coral/plane:/data/plane
+      - /flash/coral/noplane:/data/noplane
+      - /flash/coral/log:/data/log
+      - /flash/weights:/data/weights
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
     restart: unless-stopped
+
+  edge-detect:
+    image: iqtlabs/skyscan-yolo-detect
+    volumes:
+      - /flash/coral/plane:/data/tosort
+      - /flash/edge/plane:/data/plane
+      - /flash/edge/log:/data/log
+      - /flash/edge/noplane:/data/noplane
+      - /flash/weights:/data/weights
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+    env_file:
+      - .env
     depends_on:
       - mqtt
 
@@ -53,14 +66,8 @@ services:
     ports:
         - "9001:9001"
         - "1883:1883"
-    restart: unless-stopped
-
-  egi:
-    image: iqtlabs/skyscan-egi
-    entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
-    devices:
-      - /dev/ttyACM0
-    privileged: true
-    depends_on:
-      - mqtt
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
     restart: unless-stopped
