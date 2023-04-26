@@ -20,3 +20,4 @@ ml-model/notebooks/*.json
 notes.md
 semgrep.out
 localizer.pt
+password.txt
