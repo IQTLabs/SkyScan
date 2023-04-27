@@ -1,7 +1,8 @@
 FROM python:3
 RUN apt-get update
 RUN pip3 install --upgrade pip
-RUN pip3 install jupyter paho-mqtt
+RUN pip3 install notebook paho-mqtt
 RUN mkdir /opt/notebooks
 COPY ./Config.ipynb /opt/notebooks
-ENTRYPOINT ["jupyter", "notebook", "--notebook-dir=/opt/notebooks", "--ip='*'", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.password='$(cat /run/secrets/login_info)'"]
+COPY jupyter.sh .
+ENTRYPOINT ["./jupyter.sh"]
