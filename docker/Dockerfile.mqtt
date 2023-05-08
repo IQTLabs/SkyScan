@@ -3,4 +3,5 @@ LABEL maintainer = "Arizbeth Rojas <arojas@iqt.org>"
 RUN apk add --update curl mosquitto && rm -rf /var/cache/apk/*
 COPY mosquitto.conf /etc/mosquitto/nmosquitto.conf
 EXPOSE 1883
-ENTRYPOINT ["/usr/sbin/mosquitto", "-v", "-c", "/etc/mosquitto/mosquitto.conf"]
+#ENTRYPOINT ["/usr/sbin/mosquitto", "-v", "-c", "/etc/mosquitto/mosquitto.conf"]
+ENTRYPOINT ["/bin/sh"]
