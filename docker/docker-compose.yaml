@@ -1,0 +1,15 @@
+version: '3.7'
+services: 
+ mqtt:
+    image: iqtlabs/edgetech-mqtt
+    ports:
+        - "443:443"
+        - "8883:8883"
+    secrets: 
+        - login_info_MQTT
+    restart: unless-stopped
+    hostname: mqtt-skyscan
+
+secrets: 
+  login_info_MQTT: 
+    file: ./login_info_MQTT.txt
