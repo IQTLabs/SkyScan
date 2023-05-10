@@ -1,0 +1,10 @@
+FROM eclipse-mosquitto
+LABEL maintainer = "Arizbeth Rojas <arojas@iqt.org>"
+#RUN apk update && apk add --no-cache certbot curl 
+RUN apk add --update curl mosquitto && rm -rf /var/cache/apk/*
+COPY mosquitto.conf /etc/mosquitto/mosquitto.conf
+COPY mqtt.sh .
+EXPOSE 1883
+RUN chmod +x ./mqtt.sh
+ENTRYPOINT ["./mqtt.sh"]
+

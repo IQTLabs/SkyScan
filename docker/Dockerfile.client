@@ -1,0 +1,3 @@
+FROM efrecon/mqtt-client:latest
+
+ENTRYPOINT ["tail", "-f", "/dev/null"]

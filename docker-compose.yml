@@ -54,12 +54,14 @@ services:
         - "9001:9001"
         - "1883:1883"
     restart: unless-stopped
+    hostname: mqtt-skyscan
 
   egi:
     image: iqtlabs/skyscan-egi
     entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
     devices:
       - "/dev/ttyACM0: /dev/ttyACM0"
+      #- "/flash/raw: /flash/raw"
     #privileged: true
     depends_on:
       - mqtt

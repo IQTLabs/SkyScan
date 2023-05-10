@@ -1,15 +1,49 @@
 version: '3.7'
 services: 
- mqtt:
-    image: iqtlabs/edgetech-mqtt
-    ports:
-        - "443:443"
-        - "8883:8883"
-    secrets: 
-        - login_info_MQTT
-    restart: unless-stopped
-    hostname: mqtt-skyscan
+    mqtt:
+        #image: iqtlabs/edgetech-mqtt
+        image: mqtt-test-server
+        build: 
+            context: .
+            dockerfile: Dockerfile.server
+        hostname: mqtt-server
+        #hostname: mqtt-skyscan
+        ports:
+            - "9001:9001"
+            - "1883:1883"
+            #- "443:443"
+            #- "8883:8883"
+        restart: unless-stopped
+        networks: 
+            - test
+        secrets:
+            - mqtt_passwd
+            - mqtt_user 
+            #- login_info_MQTT
+        
+    client: 
+        image: mqtt-test-client
+        build:
+            context: .
+            dockerfile: Dockerfile.client
+        hostname: mqtt-client
+        depends_on:
+            - mqtt
+        restart: unless-stopped
+        networks:
+            - test
+        secrets:
+            - mqtt_passwd
+            - mqtt_user
+    
+networks:
+    test:
+        name: test
 
-secrets: 
-  login_info_MQTT: 
-    file: ./login_info_MQTT.txt
+secrets:
+    mqtt_passwd:
+        file: ./mqtt_passwd.txt
+    mqtt_user:
+        file: ./mqtt_user.txt 
+    #login_info_MQTT: 
+        #file: ./login_info_MQTT.txt
