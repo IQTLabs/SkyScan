@@ -619,7 +619,7 @@ def moveCamera(ip, username, password, mqtt_client):
                     get_jpeg_request()
                     capture_metadata = get_json_request()
                     mqtt_client.publish(
-                        "skyscan/captures/data",
+                        publish_topic,
                         json.dumps(capture_metadata),
                         0,
                         False
@@ -816,6 +816,7 @@ def main():
     global cameraConfig
     global flight_topic
     global object_topic
+    global publish_topic
     global logging_directory
     global Active
 
@@ -893,6 +894,12 @@ def main():
         help="Verbose output"
     )
     parser.add_argument(
+        "--publish-topic",
+        type=str,
+        help="The topic to publish capture information to",
+        default="skyscan/captures/data"
+    )
+    parser.add_argument(
         "-f",
         "--flat-file-structure",
         action="store_true",
@@ -956,6 +963,7 @@ def main():
 
     flight_topic = args.mqtt_flight_topic
     object_topic = args.mqtt_object_topic
+    publish_topic = args.publish_topic
     print(
         "connecting to MQTT broker at "
         + args.mqtt_host
