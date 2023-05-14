@@ -1,0 +1,9 @@
+train: /data/dataset/localizer_train
+val: /data/dataset/localizer_val
+test: [/data/dataset/detector_train, /data/dataset/detector_val]
+test2: /data/dataset/localizer_test
+test3: /data/dataset/detector_test
+
+nc: 1
+
+names: ['aircraft']

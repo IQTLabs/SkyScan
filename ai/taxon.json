@@ -1,0 +1,902 @@
+{
+    "version": 0.4,
+    "helicopters": ["Bell", "Eurocopter", "MBB", "Robinson", "Sikorsky"],
+    "homebuilt": ["Van's", "(Kit)"],
+    "make_model_strings": {
+	"Aeronca": {
+	    "Champion": [
+		"Aeronca 7AC",
+		"Bellanca 7ACA"
+	    ]
+	},
+	"Aero Commander": {
+	    "500 Family": [
+		"Aero Commander 560-A"
+	    ]
+	},
+	"Aero Vodochody": {
+	    "L-39 Albatros": [
+		"Aero L-39 ALBATROS",
+		"Aero Vodochody L-39",
+		"Aero Vodochody L-39 C",
+		"Aero Vodochody L39C"
+	    ]
+	},
+        "Airbus": {
+            "A300": [
+                "Airbus A300B4-662R",
+		"Airbus A300 B4-622R"
+            ],
+            "A319": [
+                "Airbus A319 112",
+                "Airbus A319-112",
+                "Airbus A319-114",
+                "Airbus A319-115",
+                "Airbus A319 115SL",
+                "Airbus A319-132",
+                "Airbus Industrie A319-112",
+                "Airbus Industrie A319-114",
+                "Airbus Industrie A319-131",
+                "Airbus Industrie A319-132"
+            ],
+            "A320": [
+		"Airbus A320 211",
+		"Airbus A320-211",
+		"Airbus A320 214",
+                "Airbus A320-214",
+		"Airbus A320 214SL",
+                "Airbus A320 232",
+                "Airbus A320-232",
+                "Airbus A320 232SL",
+                "Airbus A320-232SL",
+                "Airbus A320-251N",
+                "Airbus Industrie A320-211",
+                "Airbus Industrie A320-212",
+                "Airbus Industrie A320-214",
+                "Airbus Industrie A320-232",
+                "Airbus Sas A320-251N"
+            ],
+            "A321": [
+                "Airbus A321-211",
+		"Airbus A321 211SL",
+                "Airbus A321-231",
+                "Airbus A321 231SL",
+                "Airbus A321-253N",
+		"Airbus A321-253NX",
+                "Airbus A321-271NX",
+                "Airbus Industrie A321-211",
+		"Airbus Industrie A321-211 (Airbus)",
+                "Airbus Industrie A321-231",
+		"Airbus Sas A321-211",
+		"Airbus Sas A321-213"
+            ],
+	    "A330": [
+		"Airbus A330 203"
+	    ],
+            "A340": [
+                "Airbus A340-313"
+            ],
+            "A350": [
+                "Airbus Industrie A350-1041",
+		"Airbus Airbus A350 941"
+            ]
+        },
+        "Beechcraft": {
+	    "Model 18": [
+		"Beech Beech 18 C / S"
+	    ],
+	    "Musketeer": [
+		"Beech B24R"
+	    ],
+	    "Bonanza": [
+		"Beech F33A",
+		"Beech 35-C33",
+		"Beech D35",
+		"Beech F35",
+		"Beech J35",
+		"Beech K35",
+		"Beech P35",
+		"Beech S35",
+		"Beech V35",
+		"Beech V35B",
+		"Beech A36",
+		"Raytheon Aircraft Company G36"
+	    ],
+	    "Model 45": [
+		"Beech A45"
+	    ],
+	    "Baron": [
+		"Beech E-55",
+		"Beech 58",
+		"Beech 95-55",
+		"Beech 95-B55 (T42A)",
+		"Hawker Beechcraft Corp G58",
+		"Raytheon Aircraft Company 58",
+		"Textron Aviation Inc G58"
+	    ],
+	    "Model 99": [
+		"Beech 99"
+	    ],
+            "Super King Air": [
+		"Beech 200",
+		"Beech B200",
+		"Beech B300",
+                "Hawker Beechcraft Corp B300C",
+                "Beech C-12C Huron",
+                "Raytheon Aircraft Company MC-12S Liberty",
+                "Textron Aviation Inc B300"
+            ],
+	    "Premier I": [
+		"Raytheon Aircraft Company 390"
+	    ]
+        },
+        "Bell": {
+            "206": [
+		"Bell 206B",
+                "Bell 206L-3"
+            ],
+            "407": [
+                "Bell 407"
+            ],
+	    "429": [
+		"Bell Helicopter Textron Canada 429"
+	    ]
+        },
+	"Bellanca": {
+	    "Decathlon": [
+		"Bellanca 8KCAB",
+		"American Champion Aircraft Corp. 8KCAB (Bellanca)"
+	    ]
+	},
+        "Boeing": {
+	    "717": [
+		"Boeing 717 2BD",
+		"Boeing 717-200",
+		"Boeing Boeing 717-2BD"
+	    ],
+            "737": [
+                "Boeing 737-4B7",
+		"Boeing 737-71Q",
+                "Boeing 737-724",
+		"Boeing 737-73V",
+                "Boeing 737-752",
+                "Boeing 737-76Q",
+                "Boeing 737-7AD",
+                "Boeing 737-7BD",
+                "Boeing 737-7CT",
+                "Boeing 737-7H4",
+		"Boeing 737-7L9",
+		"Boeing 737-7Q8",
+                "Boeing 737-8",
+                "Boeing 737-800",
+                "Boeing 737-823",
+                "Boeing 737-824",
+                "Boeing 737-832",
+		"Boeing 737-852",
+                "Boeing 737-8H4",
+		"Boeing 737-8KN",
+                "Boeing 737-8Q8",
+		"Boeing 737-890",
+		"Boeing 737-9",
+                "Boeing 737-900ER",
+                "Boeing 737-924ER",
+		"Boeing 737-932ER",
+                "Boeing 737NG 7H4",
+		"Boeing 737NG 7H4/W",
+		"Boeing 737NG 800/W",
+                "Boeing 737NG 823",
+		"Boeing 737NG 823/W",
+		"Boeing 737NG 824/W",
+                "Boeing 737NG 852",
+                "Boeing 737NG 86N",
+		"Boeing 737NG 86N/W",
+		"Boeing 737NG 8Q8/W",
+		"Boeing 737NG 900ER/W",
+                "Boeing 737NG 924ER",
+		"Boeing 737NG 924ER/W",
+                "Boeing Boeing 737-823",
+		"The Boeing Company 737-8Q8 (Boeing)",
+                "Boeing Boeing C-40A",
+		"Boeing C-40C"
+            ],
+            "747": [
+                "Boeing 747 4R7F",
+		"Boeing 747 830"
+            ],
+            "757": [
+                "Boeing 757-224",
+		"Boeing 757-232",
+                "Boeing 757-251",
+		"Boeing 757 2Q8/W"
+            ],
+            "767": [
+		"Boeing 767-223",
+                "Boeing 767-281",
+		"Boeing 767-322",
+		"Boeing 767-424ER",
+                "The Boeing Company Commercial Airplane Division 767-33A (Boeing)"
+            ],
+            "777": [
+		"Boeing 777-222",
+                "Boeing 777-223",
+		"Boeing 777-300ER",
+		"Boeing 777 368ER",
+		"Boeing 777 3F2ER",
+                "Boeing 777 FDZ",
+		"Boeing Boeing 777-328(ER)"
+            ],
+            "787": [
+		"Boeing 787 8",
+		"Boeing 787-8",
+		"Boeing 787 9",
+                "Boeing Company BOEING 787-9 Dreamliner"
+            ],
+	    "B-17 Flying Fortress": [
+		"Boeing B-17G"
+	    ],
+	    "C-17 Globemaster III": [
+		"Boeing C-17A Globemaster III"
+	    ]
+        },
+        "Bombardier": {
+	    "BD-100": [
+		"Bombardier Challenger 300",
+		"Bombardier Inc BD-100-1A10"
+	    ],
+            "BD-500": [
+		"Airbus Canada Lp BD-500-1A11",
+                "Airbus Canada Ltd Ptnrsp BD-500-1A10",
+                "C Series Aircraft Ltd Ptnrsp BD-500-1A10"
+            ],
+            "BD-700": [
+                "Bombardier Inc BD-700-1A10",
+                "Bombardier Inc BD-700-1A11",
+                "Bombardier Inc BD-700-2A12"
+            ],
+            "CL-600": [
+                "Bombardier Inc CL-600-2B16",
+                "Bombardier Inc CL-600-2B19",
+                "Bombardier Inc CL-600-2C10",
+                "Bombardier Inc CL-600-2C11",
+                "Bombardier Inc CL-600-2D24",
+		"Bombardier Inc. CL-600-2B19 (Series 100) (Bombardier)",
+                "Canadair Ltd CL-600-2B16",
+		"Bombardier CRJ 900 LR NG",
+		"Bombardier Global 6000"
+            ]
+        },
+        "British Aerospace": {
+            "Jetstream 3101": [
+                "British Aerospace BAE JETSTREAM 3101"
+            ]
+        },
+        "Cessna": {
+	    "120/140": [
+		"Cessna 120",
+		"Cessna 140"
+	    ],
+	    "150/152": [
+		"Cessna 150F",
+		"Cessna 150G",
+		"Cessna 150H",
+		"Cessna 150J",
+		"Cessna 150L",
+		"Cessna 150M",
+		"Cessna 152"
+	    ],
+	    "170": [
+		"Cessna 170B"
+	    ],
+            "Skyhawk": [
+		"Cessna 172",
+		"Cessna 172D",
+		"Cessna 172E",
+		"Cessna 172F",
+		"Cessna 172G",
+		"Cessna 172H",
+                "Cessna 172K",
+		"Cessna 172L",
+		"Cessna 172M",
+		"Cessna 172N",
+		"Cessna 172P",
+		"Cessna 172R",
+		"Cessna 172S",
+		"Cessna R172K",
+		"Cessna Aircraft Company 172M (Cessna)"
+            ],
+	    "Skylark": [
+		"Cessna 175"
+	    ],
+	    "Cardinal": [
+		"Cessna 177A",
+		"Cessna 177B",
+		"Cessna 177RG"
+	    ],
+	    "Skywagon": [
+		"Cessna 180",
+		"Cessna 180J",
+		"Cessna 180K",
+		"Cessna A185F"
+	    ],
+            "Skylane": [
+		"Cessna 182A",
+		"Cessna 182C",
+		"Cessna 182F",
+		"Cessna 182J",
+		"Cessna 182N",
+		"Cessna 182P",
+		"Cessna 182Q",
+		"Cessna 182R",
+		"Cessna 182S",
+                "Cessna 182T",
+		"Cessna R182",
+		"Cessna T182T",
+		"Cessna TR182",
+		"Cessna Aircraft Company 182Q (Cessna)"
+            ],
+	    "190/195": [
+		"Cessna 195",
+		"Cessna 195A"
+	    ],
+	    "206": [
+		"Cessna U206G",
+		"Cessna T206H"
+	    ],
+	    "Caravan": [
+		"Cessna 208",
+		"Cessna 208B"
+	    ],
+	    "Centurion": [
+		"Cessna 210J",
+		"Cessna T210L",
+		"Cessna 210M",
+		"Cessna T210N"
+	    ],
+	    "310/320": [
+		"Cessna 310E",
+		"Cessna 310K",
+		"Cessna 310R",
+		"Cessna 320F"
+	    ],
+	    "401/402/411/421": [
+		"Cessna 402B",
+		"Cessna 421C"
+	    ],
+	    "SkyCourier": [
+		"Textron Aviation Inc 408"
+	    ],
+	    "414": [
+		"Cessna 414"
+	    ],
+            "Citation": [
+		"Cessna 501",
+		"Cessna 510",
+                "Cessna 525B",
+                "Cessna 550",
+                "Cessna 560",
+                "Cessna 560XL",
+                "Cessna 650",
+                "Cessna 680",
+                "Cessna 750",
+                "Cessna Aircraft Co 560XLS",
+                "Cessna Citation Excel",
+		"Cessna Citation S/II",
+		"Cessna Citation V",
+		"Cessna Citation VII",
+		"Cessna Citation XLS",
+                "Cessna UC-35C Citation",
+		"Textron Aviation Inc 525B",
+                "Textron Aviation Inc 525C",
+                "Textron Aviation Inc 680A"
+            ]
+        },
+	"Cirrus": {
+	    "SR20/22": [
+		"Cirrus Design Corp SR20",
+		"Cirrus Design Corp SR22",
+		"Cirrus Design Corp SR22T"
+	    ],
+	    "SF50": [
+		"Cirrus Design Corp SF50"
+	    ]
+	},
+	"Consolidated Vultee": {
+	    "BT-13 Valiant": [
+		"Consolidated Vultee BT-13A"
+	    ],
+	    "PBY Catalina": [
+		"Consolidated Vultee 28-5ACF"
+	    ]
+	},
+	"Curtiss": {
+	    "P-40 Warhawk": [
+		"Curtiss Wright P-40N"
+	    ]
+	},
+        "Dassault": {
+            "Falcon": [
+		"Dassault FALCON 900 EX",
+		"Dassault Aviation FALCON 7X",
+                "Dassault Aviation FALCON 900EX"
+            ]
+        },
+	"De Havilland": {
+	    "Dash 8": [
+		"Bombardier Inc. DHC-8-402 (Dehavilland)"
+	    ]
+	},
+	"Diamond": {
+	    "DA40": [
+		"Diamond Aircraft Ind Inc DA 40"
+	    ]
+	},
+	"Douglas": {
+	    "DC-3": [
+		"Douglas DC3A",
+		"Douglas DC3C-R",
+		"Douglas DC3C-S1C3G",
+		"Douglas DC3C-S4C4G"
+	    ]
+	},
+        "Embraer": {
+	    "ERJ-135/140/145": [
+		"Embraer EMB-135LR",
+		"Embraer ERJ-145 LR",
+		"Embraer EMB-145LR",
+		"Embraer EMB-145XR"
+	    ],
+            "ERJ-170": [
+                "Embraer ERJ 170-100 LR",
+                "Embraer ERJ 170-100 SE",
+                "Embraer ERJ 170-100SU",
+                "Embraer ERJ 170-200 LR",
+                "Embraer S A ERJ 170-200 LR",
+                "Embraer-empresa Brasileira De ERJ 170-200 LR",
+		"Yabora Industria Aeronautica S ERJ 170-200 LR"
+	    ],
+	    "ERJ-175": [
+		"Embraer EMB-175 200LR"
+            ],
+            "ERJ-190": [
+                "Embraer ERJ 190-100 IGW",
+		"Embraer EMB-190 AR"
+            ],
+	    "EMB-500": [
+                "Embraer Sa EMB-500",
+		"Embraer-empresa Brasileira De EMB-500"
+            ],
+            "EMB-505": [
+		"Embraer Phenom 300",
+                "Embraer S A EMB-505",
+                "Embraer Executive Aircraft Inc EMB-505",
+		"Embraer-empresa Brasileira De EMB-505"
+            ],
+            "EMB-545/550": [
+		"Embraer S A EMB-545",
+                "Embraer Sa EMB-550"
+            ]
+        },
+        "Eurocopter": {
+            "BK-117": [
+                "Eurocopter Deutschland Gmbh MBB-BK 117 C-2"
+            ],
+	    "EC-120": [
+		"Eurocopter EC120B"
+	    ],
+            "EC-135": [
+                "Eurocopter Deutschland Gmbh EC 135 P2+"
+            ],
+            "AS-350": [
+                "Eurocopter AS 350 B3"
+            ]
+        },
+	"Evolution": {
+	    "Revo": [
+		"Evolution Aircraft Inc REVO"
+	    ]
+	},
+	"Extra Flugzeugbau": {
+	    "EA-300": [
+		"Extra Flugzeugproduktions EA 300/SC"
+	    ]
+	},
+	"Flight Design": {
+	    "CT": [
+		"Flight Design Gmbh CTLS"
+	    ]
+	},
+	"Game Composites": {
+	    "GB1 GameBird": [
+		"Game Composites Llc GB1 GAMEBIRD"
+	    ]
+	},
+	"Grumman": {
+	    "F6F Hellcat": [
+		"Grumman A/c Eng Corp-nichols F6F-5"
+	    ]
+	},
+	"Grumman American": {
+	    "AA-5": [
+		"Grumman American Avn. Corp. AA-5B"
+	    ]
+	},
+        "Gulfstream": {
+            "GIV": [
+                "Gulfstream Aerospace G-IV",
+                "Gulfstream Aerospace GIV-X (G450)"
+            ],
+            "GV": [
+		"Gulfstream Aerospace GV",
+                "Gulfstream Aerospace G-V",
+		"Gulfstream Aerospace GV-SP (G550)"
+            ],
+            "GVI": [
+                "Gulfstream Aerospace Corp GVI(G650ER)",
+		"Gulfstream Aerospace Corp GVI (G650ER)"
+            ]
+        },
+        "Hawker": {
+            "400": [
+                "Raytheon Aircraft Company 400A",
+                "Hawker Beechcraft Corp 400A"
+            ],
+            "800/900": [
+		"British Aerospace 125 700A",
+                "Raytheon Aircraft Company HAWKER 800XP",
+                "Raytheon Aircraft Company 125 800XP",
+                "Hawker Beechcraft Corp Hawker 900XP",
+		"Hawker Beechcraft Corp HAWKER 900XP"
+            ]
+        },
+        "Honda": {
+            "HondaJet": [
+                "Honda Aircraft Co Llc HA-420"
+            ]
+        },
+	"Howard": {
+	    "DGA-15": [
+		"Howard Aircraft DGA-15P"
+	    ]
+	},
+        "IAI": {
+	    "G150": [
+		"Iai Ltd GULFSTREAM G150"
+	    ],
+            "G200": [
+                "Israel Aerospace Industriesltd G200",
+                "Israel Aircraft Industries GULFSTREAM 200"
+            ],
+            "G280": [
+                "Iai Ltd GULFSTREAM G280"
+            ]
+        },
+	"Learjet": {
+	    "31": [
+                "Learjet Inc 31",
+		"Learjet Inc 31A",
+                "Bombardier Learjet 31 A"
+            ],
+            "35/36": [
+		"Gates Lear Jet 36A",
+                "Gates Lear Jet 36 A"
+            ],
+            "45": [
+                "Learjet Inc 45",
+		"Bombardier Learjet 45"
+            ],
+            "60": [
+                "Learjet Inc 60"
+            ]
+	},
+        "Lockheed": {
+            "Hercules": [
+                "Lockheed L-100-30 Hercules"
+            ],
+	    "Silver Star": [
+		"Canadair T33-AN MK3"
+	    ]
+        },
+	"Luscombe": {
+	    "8": [
+		"Luscombe 8A"
+	    ]
+	},
+	"Maule": {
+	    "M-7": [
+		"Maule M-7-235C"
+	    ]
+	},
+	"MBB": {
+	    "Bo 105": [
+		"Mbb BO105 CBS4"
+	    ]
+	},
+        "Mooney": {
+            "M20": [
+		"Mooney M20C",
+		"Mooney M20E",
+		"Mooney M20F",
+		"Mooney M20J",
+		"Mooney M20M",
+                "Mooney M20R",
+		"Mooney Aircraft Corp. M20K",
+		"Mooney Airplane Co Inc M20TN"
+            ]
+        },
+	"North American": {
+	    "B-25 Mitchell": [
+		"North American B-25H",
+		"North American B-25J"
+	    ],
+	    "P-51 Mustang": [
+		"North American F-51",
+		"North American F-51D",
+		"North American/aero Classics P-51D"
+	    ],
+	    "T-6 Texan": [
+		"North American AT-6D Texan",
+		"North American T-6G",
+		"North American T-6G Texan",
+		"North American HARVARD 2",
+		"North American SNJ-2",
+		"North American SNJ-6"
+	    ],
+	    "T-28 Trojan": [
+		"North American T-28B",
+		"North American NA-200"
+	    ]
+	},
+	"Northrop": {
+	    "F-5": [
+		"Northrop RF-5A Freedom Fighter"
+	    ]
+	},
+        "Pilatus": {
+            "PC-12": [
+                "Pilatus PC-12",
+		"Pilatus PC-12/45",
+		"Pilatus PC-XII 45",
+                "Pilatus Aircraft Ltd PC-12",
+		"Pilatus Aircraft Ltd PC-12/47E"
+            ]
+        },
+        "Piper": {
+	    "J-3 Cub": [
+		"Piper J3C-65"
+	    ],
+	    "PA-12 Super Cruiser": [
+		"Piper PA-12"
+	    ],
+	    "PA-18 Super Cub": [
+		"Piper PA-18-150"
+	    ],
+	    "PA-20/22": [
+		"Piper PA-22-108",
+		"Piper PA-22-150"
+	    ],
+	    "PA-23 Aztec": [
+		"Piper PA-23-250"
+	    ],
+	    "PA-24 Comanche": [
+		"Piper PA-24",
+		"Piper PA-24-250",
+		"Piper PA-24-260",
+		"Piper PA-24-400"
+	    ],
+	    "PA-28 Cherokee": [
+		"Piper PA-28-140",
+		"Piper PA-28-151",
+		"Piper PA-28-161",
+		"Piper PA-28-180",
+		"Piper PA-28R-180",
+		"Piper PA-28-181",
+		"Piper PA-28R-200",
+		"Piper PA-28RT-201T",
+		"Piper PA-28-235",
+		"Piper PA-28-236",
+		"Piper Aircraft Corporation PA-28-140 (Piper)"
+	    ],
+	    "PA-30 Twin Comanche": [
+		"Piper PA-30"
+	    ],
+            "PA-31 Navajo": [
+                "Piper PA-31T1",
+		"Piper PA-31T1 Cheyenne I",
+		"Piper PA-31-350"
+            ],
+	    "PA-32 Cherokee Six": [
+		"Piper PA-32-260",
+		"Piper PA-32-300",
+		"Piper PA-32R-300",
+		"Piper PA-32R-301",
+		"Piper PA-32R-301T",
+		"Piper PA-32RT-300"
+	    ],
+	    "PA-34 Seneca": [
+		"Piper PA-34-200T"
+	    ],
+	    "PA-46": [
+		"Piper PA46-500TP",
+		"Piper Aircraft Inc PA46-500TP",
+		"Piper Aircraft Inc PA-46-600TP"
+	    ]
+        },
+	"Quest": {
+	    "Kodiak": [
+		"Quest Aircraft Co Inc KODIAK 100"
+	    ]
+	},
+	"Robinson": {
+	    "R22": [
+		"Robinson R22 Beta II",
+		"Robinson Helicopter R22 BETA"
+	    ],
+	    "R44": [
+		"Robinson R44 Raven II",
+		"Robinson Helicopter Company R44 II"
+	    ],
+	    "R66": [
+		"Robinson Helicopter Co R66"
+	    ]
+	},
+	"Rockwell": {
+	    "OV-10 Bronco": [
+		"Rockwell OV-10D"
+	    ]
+	},
+	"Scottish Aviation": {
+	    "Bulldog": [
+		"Scottish Aviation SERIES 100 MDL 101"
+	    ]
+	},
+	"Siai-Marchetti": {
+	    "S.211": [
+		"Siai Marchetti S-211",
+		"Siai-marchetti Srl S 211"
+	    ],
+	    "SF.260": [
+		"Siai-marchetti SF260"
+	    ]
+	},
+	"Sikorsky": {
+	    "S-76": [
+		"Sikorsky S-76B"
+	    ]
+	},
+	"Socata": {
+	    "TB": [
+		"Socata TB 30 EPSILON",
+		"Compagnie Daher TB 30 EPSILON"
+	    ],
+	    "TBM": [
+		"Socata TBM 700",
+		"Compagnie Daher TBM 700",
+		"Eads Socata TBM 850"
+	    ]
+	},
+	"Stearman": {
+	    "Model 75": [
+		"Boeing A75N1(PT17)"
+	    ]
+	},
+	"Taylorcraft": {
+	    "B": [
+		"Taylorcraft BC12-D"
+	    ]
+	},
+	"Van's": {
+	    "RV-4": [
+		"Bendure Ryan RV-4",
+		"Giffin Walter C RV-4",
+		"Peterson Keith D HARMON ROCKET"
+	    ],
+	    "RV-6": [
+		"Barbee Michael C EXPERMINTAL RV-6",
+		"Cole Stanley T RV-6",
+		"Dane Julie RV6A",
+		"Kormylo Gene J VANS RV6A",
+		"Myers R.w. RV-6",
+		"Reisinger James A RV-6",
+		"Robb David M VANS RV6"
+	    ],
+	    "RV-7": [
+		"Gary A Barnes RV-7A",
+		"James K Hamilton RV-7"
+	    ],
+	    "RV-8": [
+		"Clark Michael J VANS RV-8",
+		"David M Schmitz/derek C James RV-8",
+		"Hammes Charles J VANS RV8",
+		"Keeling Larry RV8",
+		"Paine Lauran Jr RV-8",
+		"Quest One Llc RV-8",
+		"Richcreek Karl J VANS RV8",
+		"Rv83137 Llc RV-8"
+	    ],
+	    "RV-9": [
+		"Nyberg Randall L RV-9"
+	    ],
+	    "RV-10": [
+		"Hecker Robert J VANS RV-10",
+		"Paul Jeffrey Schwalen VANS RV10",
+		"Reeves Christopher D VANS RV10",
+		"Richard Dupee VANS RV-10",
+		"Sherman Michael VANS RV-10",
+		"Van Thomme Brendon S RV-10"
+	    ],
+	    "RV-12": [
+		"Steven G Isaacs RV-12",
+		"Vans Aircraft Inc RV-12"
+	    ],
+	    "RV-14": [
+		"Bernard L Hartnell RV 14A",
+		"Eisele Donald L VANS RV-14",
+		"Howard Dean RV-14",
+		"Meyers Robert A RV-14A",
+		"Michael J Konz RV-14A"
+	    ]
+	},
+	"Vought": {
+	    "F4U Corsair": [
+		"Chance Vought F4U-5",
+		"Goodyear FG1D"
+	    ]
+	},
+	"(Kit)": {
+	    "Aeroprakt A-22": [
+		"Aeroprakt Manufacturing Sp Zoo A22LS"
+	    ],
+	    "AMD Zodiac": [
+		"Jaime Rabins ZODIAC 650 B"
+	    ],
+	    "Barrows Bearhawk": [
+		"Yates Jared N AVIPRO BEARHAWK"
+	    ],
+	    "Bede BD-4": [
+		"Mahoney Steven BD-4"
+	    ],
+	    "Cub Crafters CC-11": [
+		"Cubcrafters Inc CC11-160"
+	    ],
+	    "Cub Crafters CC-19": [
+		"Cub Crafters Inc CC19-180"
+	    ],
+	    "Giles G-202": [
+		"Bergevin Steven GILES G-202"
+	    ],
+	    "Glasair III": [
+		"Broen Peter C GLASAIR III",
+		"Moman Guy E Jr GLASAIR III"
+	    ],
+	    "Glasair Sportsman 2+2": [
+		"Moring Ronald L SPORTSMAN 2+2"
+	    ],
+	    "Sling TSi": [
+		"Christopher P Bloch SLING 4 TSI"
+	    ],
+	    "Just Highlander": [
+		"Kyle Bessent JUST ACFT HIGHLANDER",
+		"Marlowe Thooft JUST ACFT HIGHLANDER"
+	    ],
+	    "Lancair Model 42": [
+		"Lancair Company LC42-550FG"
+	    ],
+	    "Lockwood Aircam": [
+		"Red Eagle Aviation Llc AIRCAM"
+	    ],
+	    "Quickie Q2": [
+		"Scheevel Jay QUICKIE TRI-Q2"
+	    ],
+	    "Rans S-9": [
+		"Sailer Denis R D&S-9A"
+	    ],
+	    "Robinson Special": [
+		"Lush Michael ROBINSON SPECIAL"
+	    ],
+	    "Velocity SE": [
+		"Hancock William J VELOCITY-STANDARD",
+		"Martino Thomas G VELCITY 173 ELITE RG"
+	    ]
+	}
+    }
+}
