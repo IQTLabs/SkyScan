@@ -17,10 +17,10 @@ services:
   ca:
     image: iqtlabs/edgetech-ca:${SERVICES_VERSION:-latest}
     env_file:
-      - ca.env 
+      - ${MQTT_PREFIX-.}/ca.env 
     hostname: ca
     volumes:
-      - "${PWD}/step:/home/step"
+      - "${MQTT_PREFIX-.}/step:/home/step"
     networks:
       mqtt:
           aliases:
@@ -59,10 +59,10 @@ networks:
 
 secrets:
   ca_pass:
-    file: .ca_password
+    file: ${MQTT_PREFIX-.}/.ca_password
   mqtt_pass:
-    file: .mqtt_password
+    file: ${MQTT_PREFIX-.}/.mqtt_password
   mqtt_user:
-    file: .mqtt_user
+    file: ${MQTT_PREFIX-.}/.mqtt_user
 
   
