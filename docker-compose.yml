@@ -7,7 +7,7 @@ services:
     volumes:
       - ./data:/data
     env_file:
-      - ./.env
+      - container.env
     deploy:
       resources:
         limits:
@@ -26,7 +26,7 @@ services:
     networks:
       - mqtt
     env_file:
-      - ./.env
+      - container.env
     deploy:
       resources:
         limits:
@@ -60,7 +60,7 @@ services:
         limits:
           cpus: '1.0'
     env_file:
-      - ./.env
+      - container.env
     depends_on:
       mqtt:
         condition: service_healthy

@@ -32,7 +32,7 @@ mkdir processed/log
 curl -O $COMPOSE_FILE_URL
 curl -O $ENV_FILE_URL
 
-docker-compose pull
+docker-compose -f docker-compose.yml -f mqtt/docker-compose.mqtt.yml pull
 
 echo "Installation complete. Run `docker-compose up` to start the system"
 echo "Before running, ensure you have replaced the demo weights with your own trained weights"
