@@ -7,7 +7,7 @@ services:
     volumes:
       - ./data:/data
     env_file:
-      - .env
+      - container.env
     deploy:
       resources:
         limits:
@@ -21,9 +21,12 @@ services:
       - /flash/raw:/app/capture
       - /flash/processed/log:/flash/processed/log
     depends_on:
+      mqtt:
+        condition: service_healthy
+    networks:
       - mqtt
     env_file:
-      - .env
+      - container.env
     deploy:
       resources:
         limits:
@@ -57,17 +60,9 @@ services:
         limits:
           cpus: '1.0'
     env_file:
-      - .env
+      - container.env
     depends_on:
+      mqtt:
+        condition: service_healthy
+    networks:
       - mqtt
-
-  mqtt:
-    image: iqtlabs/edgetech-mqtt
-    ports:
-        - "9001:9001"
-        - "1883:1883"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-    restart: unless-stopped
