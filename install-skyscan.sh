@@ -32,7 +32,16 @@ mkdir processed/log
 curl -O $COMPOSE_FILE_URL
 curl -O $ENV_FILE_URL
 
+#MQTT structures
+if [ ! -d "mqtt/" ]; then
+    mkdir mqtt;
+fi
+pushd mqtt
+curl -fsSL https://raw.githubusercontent.com/IQTLabs/SkyScan/main/mqtt/docker-compose.mqtt.yml -o docker-compose.mqtt.yml
+curl -fsSL https://raw.githubusercontent.com/IQTLabs/SkyScan/main/mqtt/ca.env -o ca.env
+popd
+
 docker-compose -f docker-compose.yml -f mqtt/docker-compose.mqtt.yml pull
 
-echo "Installation complete. Run `docker-compose up` to start the system"
+echo "Installation complete. Run `docker-compose -f docker-compose.yml -f mqtt/docker-compose.mqtt.yml up` to start the system"
 echo "Before running, ensure you have replaced the demo weights with your own trained weights"
