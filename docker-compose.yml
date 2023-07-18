@@ -3,6 +3,7 @@ version: '3.7'
 services:
 
   tracker:
+    image: iqtlabs/skyscan-tracker:${RELEASE_NAME}
     build: ./tracker
     command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
     volumes:
@@ -13,22 +14,8 @@ services:
       - mqtt
     restart: unless-stopped
 
-#  pan-tilt-pi:
-#    build: ./pan-tilt-pi
-#    entrypoint: "./camera.py -m mqtt -t skyscan/flight/json"
-#    volumes:
-#      - /opt/vc:/opt/vc
-#      - ./capture:/app/capture
-#    devices:
-#      - /dev/i2c-1:/dev/i2c-1       
-#      - "/dev/vchiq:/dev/vchiq" 
-#    environment: 
-#      - LD_LIBRARY_PATH=/opt/vc/lib
-#    privileged: true
-#    depends_on:
-#      - mqtt
-
   axis-ptz:
+    image: iqtlabs/skyscan-axis-ptz:${RELEASE_NAME}
     build: ./axis-ptz
     command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT}"
     volumes:
@@ -38,6 +25,7 @@ services:
     restart: unless-stopped
       
   piaware:
+    image: iqtlabs/skyscan-piaware:${RELEASE_NAME}
     build: ./piaware
     tty: true
     container_name: piaware
@@ -58,6 +46,7 @@ services:
 
     
   notebook:
+    image: iqtlabs/skyscan-notebook-server:${RELEASE_NAME}
     build: ./notebook-server
     ports:
         - "8888:8888"
@@ -65,8 +54,8 @@ services:
     depends_on:
       - mqtt
 
-
   mqtt:
+    image: iqtlabs/skyscan-mqtt:${RELEASE_NAME}
     build: ./mqtt
     ports:
         - "9001:9001"
@@ -74,6 +63,7 @@ services:
     restart: unless-stopped
 
   egi:
+    image: iqtlabs/skyscan-egi:${RELEASE_NAME}
     build: ./egi
     entrypoint: bash -c "gpsd ${GPS_SERIAL} -F /var/run/gpsd.sock && python3 egi_mqtt.py -m mqtt -l ${LAT} -L ${LONG} -a ${ALT} -r ${ROLL} -p ${PITCH} -y ${YAW}"
     devices:
