@@ -6,7 +6,7 @@ RUN apt update && \
 RUN mkdir -p /app/
 WORKDIR /app
 ADD *.txt /app/ 
-RUN pip3 install -r requirements.txt
+RUN pip3 install --break-system-packages -r requirements.txt
 ADD *.py /app/
 
 ENTRYPOINT sh -c "gpsd /dev/ttyACM0 -F /var/run/gpsd.sock && bash"
