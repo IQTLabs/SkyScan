@@ -55,6 +55,6 @@ jobs:
           echo $RELEASE_NAME
           docker buildx build $folder \
           --push \
-          --tag $DOCKER_NAMESPACE/$PUBLISHNAME:$RELEASE_NAME
+          --tag $DOCKER_NAMESPACE/$PUBLISHNAME:$RELEASE_NAME \
           --platform linux/arm64,linux/amd64
         done
