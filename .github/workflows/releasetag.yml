@@ -35,6 +35,7 @@ jobs:
         DOCKER_FOLDERS: "axis-ptz,egi,mqtt,notebook-server,piaware,tracker,pan-tilt-pi"
         DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE }}
         RELEASE_NAME: ${{ github.event.release.name }}
+        TAG_NAME: ${{ github.event.release.tag_name }}
         PROJECT_NAME: "skyscan"
       run: |
         IFS=","
@@ -53,8 +54,9 @@ jobs:
           echo "TAGGING..."
           echo $PUBLISHNAME
           echo $RELEASE_NAME
+          echo $TAG_NAME
           docker buildx build $folder \
           --push \
-          --tag $DOCKER_NAMESPACE/$PUBLISHNAME:$RELEASE_NAME \
+          --tag $DOCKER_NAMESPACE/$PUBLISHNAME:$TAG_NAME \
           --platform linux/arm64,linux/amd64
         done
