@@ -1,10 +1,9 @@
-version: '3.7'
+version: '3'
 
 services:
 
   tracker:
     image: iqtlabs/skyscan-tracker:${RELEASE_NAME}
-    build: ./tracker
     command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
     volumes:
       - ./data:/data
@@ -16,7 +15,6 @@ services:
 
   axis-ptz:
     image: iqtlabs/skyscan-axis-ptz:${RELEASE_NAME}
-    build: ./axis-ptz
     command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT}"
     volumes:
       - ./capture:/app/capture
@@ -26,7 +24,6 @@ services:
       
   piaware:
     image: iqtlabs/skyscan-piaware:${RELEASE_NAME}
-    build: ./piaware
     tty: true
     container_name: piaware
     devices:
@@ -43,11 +40,9 @@ services:
       - RECEIVER_TYPE=rtlsdr
       - DUMP1090_DEVICE=${RTL_DEV}
     restart: unless-stopped
-
     
   notebook:
     image: iqtlabs/skyscan-notebook-server:${RELEASE_NAME}
-    build: ./notebook-server
     ports:
         - "8888:8888"
     restart: unless-stopped
@@ -56,7 +51,6 @@ services:
 
   mqtt:
     image: iqtlabs/skyscan-mqtt:${RELEASE_NAME}
-    build: ./mqtt
     ports:
         - "9001:9001"
         - "1883:1883"

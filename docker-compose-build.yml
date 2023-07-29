@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+
+  tracker:
+    image: iqtlabs/skyscan-tracker
+    build: 
+      context: ./tracker
+      dockerfile: ./Dockerfile
+    command: "./flighttracker.py -m mqtt -H piaware -l ${LAT} -L ${LONG} -a ${ALT} -P skyscan/planes/json -T skyscan/flight/json -M ${MIN_ELEVATION} -c ${CAMERA_LEAD}"
+    volumes:
+      - ./data:/data
+    ports:
+      - 5000:5000
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+
+  axis-ptz:
+    image: iqtlabs/skyscan-axis-ptz
+    build: ./axis-ptz
+    command: "./camera.py -m mqtt -t skyscan/flight/json -u ${AXIS_USERNAME} -p ${AXIS_PASSWORD} -a ${AXIS_IP} -z ${CAMERA_ZOOM} -s ${CAMERA_MOVE_SPEED} -d ${CAMERA_DELAY} --lat ${LAT} --lon ${LONG} --alt ${ALT}"
+    volumes:
+      - ./capture:/app/capture
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+      
+  piaware:
+    image: iqtlabs/skyscan-piaware
+    build: ./piaware
+    tty: true
+    container_name: piaware
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - 8080:80
+      - 30003:30003
+      - 30005:30005
+    environment:
+      - TZ=${TZ}
+      - LAT=${LAT}
+      - LONG=${LONG}
+      - FEEDER_ID=${FEEDER_ID}
+      - RECEIVER_TYPE=rtlsdr
+      - DUMP1090_DEVICE=${RTL_DEV}
+    restart: unless-stopped
+
+    
+  notebook:
+    image: iqtlabs/skyscan-notebook-server
+    build: ./notebook-server
+    ports:
+        - "8888:8888"
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+
+  mqtt:
+    image: iqtlabs/skyscan-mqtt
+    build: ./mqtt
+    ports:
+        - "9001:9001"
+        - "1883:1883"
+    restart: unless-stopped
