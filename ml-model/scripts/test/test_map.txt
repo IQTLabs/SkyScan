@@ -1,8 +1,0 @@
-item {
-  name: "plane"
-  id: 1
-}
-item {
-  name: "train"
-  id: 2
-}
