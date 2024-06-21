@@ -49,7 +49,7 @@ services:
   piaware:
     networks:
       - skyscan
-    image: mikenye/piaware:latest
+    image: mikenye/piaware:v9.0.1
     tty: true
     container_name: piaware
     devices:

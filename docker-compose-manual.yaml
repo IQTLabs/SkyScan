@@ -25,7 +25,7 @@ services:
   controller:
     networks:
       - skyscan
-    image: iqtlabs/edgetech-axis-ptz-controller:latest
+    image: iqtlabs/edgetech-axis-ptz-controller:v2.0
     volumes:
       - ./data/to_sort:/data/to_sort
     restart: unless-stopped
@@ -38,7 +38,7 @@ services:
   skyscan-c2:
     networks:
       - skyscan
-    image: iqtlabs/edgetech-skyscan-c2:latest
+    image: iqtlabs/edgetech-skyscan-c2:v1.0
     volumes:
       - ./data/mapping:/data/mapping
     restart: unless-stopped
