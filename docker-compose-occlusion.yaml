@@ -1,0 +1,55 @@
+version: "3"
+
+networks:
+    skyscan:
+      driver: bridge
+      driver_opts:
+        com.docker.network.driver.mtu: 900
+
+services:
+
+  mqtt:
+    networks:
+      - skyscan
+    image: iqtlabs/edgetech-mqtt-dev:latest
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10M"
+        max-file: "10"
+
+  controller:
+    networks:
+      - skyscan
+    image: iqtlabs/edgetech-axis-ptz-controller:v2.0
+    volumes:
+      - ./data/to_sort:/data/to_sort
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+    env_file:
+      - .env
+      - axis-ptz-controller.env
+
+  occlusion-mapper:
+    networks:
+      - skyscan
+    image: iqtlabs/edgetech-occlusion-mapper:v1.0
+    volumes:
+      - ./data/mapping:/data/mapping
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10M"
+        max-file: "10"
+    env_file:
+      - .env

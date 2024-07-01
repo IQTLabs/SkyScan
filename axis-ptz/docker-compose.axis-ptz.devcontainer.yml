@@ -1,8 +1,0 @@
-version: '3.7'
-
-services:
-  axis-ptz:
-    command: /bin/sh -c "while sleep 1000; do :; done"
-    volumes:
-      - /home/pi/Projects/SkyScan-Private/axis-ptz:/workspace:cached # Additional bind mount
-    working_dir: /workspace

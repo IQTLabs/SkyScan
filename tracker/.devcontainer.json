@@ -1,8 +1,0 @@
-{
-    "name": "Plane Tracker",
-    "dockerComposeFile": ["../docker-compose.yml","./docker-compose.tracker.devcontainer.yml"], //"../docker-compose.devcontainer.yml",
-    "service": "tracker",
-    "shutdownAction": "none",
-    // Open the sub-folder with the source code
-    "workspaceFolder":  "/workspace", //"/workspace/tracker",
-}
