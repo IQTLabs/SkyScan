@@ -10,7 +10,7 @@
 
 <div>
 <a href="https://youtu.be/tm_L4FvWtto?si=xqbN541eXFFGLOf1"><img src="media/sample_video_thumbnail.jpg"/></a>
-<p>Sample of video captured by SkyScan</p>
+<p><a href="https://youtu.be/tm_L4FvWtto?si=xqbN541eXFFGLOf1">Sample of video captured by SkyScan</a></p>
 </div>
 
 <div >
