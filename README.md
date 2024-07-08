@@ -8,8 +8,10 @@
 
 *This is an update version of the [SkyScan](https://github.com/IQTLabs/SkyScan) system that is built using IQT's [EdgeTech components](https://github.com/IQTLabs/edgetech-core).*
 
-
-<img src="media/skyscan-clouds.gif" />
+<div>
+<a href="https://youtu.be/tm_L4FvWtto?si=xqbN541eXFFGLOf1"><img src="media/sample_video_thumbnail.jpg"/></a>
+<p>Sample of video captured by SkyScan</p>
+</div>
 
 <div >
 SkyScan use the ADS-B location broadcasts from aircraft to track them with a camera. A standard Pan Tilt Zoom (PTZ) security can be used, a specialized camera is not required. A control loop is used to smoothly track the aircraft as it flies by.
