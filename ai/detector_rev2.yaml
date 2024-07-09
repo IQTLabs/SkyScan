@@ -1,0 +1,10 @@
+train: /data/dataset/detector_train.txt
+val: /data/dataset/detector_val.txt
+test: /data/dataset/detector_test.txt
+
+nc: 12
+
+names: ['Airbus A319', 'Airbus A320', 'Airbus A321',
+        'Beechcraft Bonanza', 'Boeing 737', 'Bombardier CL-600',
+        'Cessna Citation', 'Cessna Skyhawk', 'Cessna Skylane',
+        'Embraer ERJ-170', 'Piper PA-28 Cherokee', 'Piper PA-32 Cherokee Six']
